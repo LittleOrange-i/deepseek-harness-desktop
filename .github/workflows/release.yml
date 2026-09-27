@@ -99,7 +99,7 @@ jobs:
           RELEASE_TAG: ${{ steps.meta.outputs.tag }}
         run: |
           git fetch --force origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
-          pnpm exec changelogithub --draft --to "$RELEASE_TAG" --name "DeepSeek Harness Desktop $RELEASE_TAG"
+          pnpm exec changelogithub --draft --to "$RELEASE_TAG" --name "Release $RELEASE_TAG"
 
       - name: Append Artifacts section to release
         if: steps.meta.outputs.should_release == 'true'
@@ -115,6 +115,10 @@ jobs:
           - **macOS (Intel)**: 下载 `x64.dmg`
           - **Windows**: 下载 `.exe`
           - **Linux (x64)**: 下载 `.AppImage` 或 `.deb`（基于 Ubuntu 22.04 构建）
+
+          > 文件名带 `_Bundle` 后缀的是**离线捆绑包**：安装包里已内置 Node.js 运行时、pnpm
+          > 与打包好的 dsh 内核，首次启动无需联网即可直接运行。不带该后缀的是常规安装包，
+          > 首次启动时按需下载运行时依赖。
           EOF
           gh release edit "$RELEASE_TAG" --notes-file release_notes.md
 
@@ -210,7 +214,7 @@ jobs:
           PRERELEASE: ${{ github.event_name == 'workflow_dispatch' || needs.prepare.outputs.prerelease == 'true' }}
         run: |
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG" --draft --title "DeepSeek Harness Desktop $RELEASE_TAG"
+            gh release create "$RELEASE_TAG" --draft --title "Release $RELEASE_TAG"
           fi
           mapfile -d '' assets < <(find release-assets -type f -print0)
           gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber

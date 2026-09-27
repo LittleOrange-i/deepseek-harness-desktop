@@ -6,11 +6,11 @@ import type {
   WorktreeParams,
   WorktreeProcessController,
 } from '../types'
-import { existsSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs'
 import process from 'node:process'
 import { defineService, DSH_HOME } from 'dsh-tauri'
 import { compact, filter, find, get, isEmpty, map, reject, some } from 'lodash-es'
-import { join, resolve } from 'pathe'
+import { basename, dirname, join, resolve } from 'pathe'
 import { TRASH_DIR, WORKTREES_DIR } from '../config/constants'
 import { getCurrentHostInstance } from '../config/runtime'
 import {
@@ -18,8 +18,6 @@ import {
   isDependencyInstallCommand,
   linkWorktreeDependencies,
   normalizeLinkDirectories,
-  normalizeSeedDirectories,
-  seedWorktreeDirectories,
   shellCommandFrom,
   shellSessionIdFrom,
   unlinkWorktreeDependencies,
@@ -53,8 +51,6 @@ const AGENT_SKILLS_DIRECTORY = '.agents'
 
 const LINK_DEPENDENCIES = true
 
-const SEED_DEPENDENCIES = true
-
 const SWEEP_MIN_AGE_MS = 60_000
 
 export const worktree = defineService({
@@ -72,8 +68,6 @@ export const worktree = defineService({
     const path = worktreePath(hash, dirname)
     const linkDirectories = normalizeLinkDirectories(options.linkDependencyDirectories)
     const linkDependencies = options.linkDependencies ?? LINK_DEPENDENCIES
-    const seedDirectories = normalizeSeedDirectories(options.seedDependencyDirectories)
-    const seedDependencies = options.seedDependencies ?? SEED_DEPENDENCIES
 
     const existing = ledger.load(sessionId)
     if (existing && !samePath(existing.worktreePath, path)) {
@@ -180,26 +174,13 @@ export const worktree = defineService({
       }
     }
 
-    if (seedDependencies && seedDirectories.length > 0) {
-      try {
-        const seedRoots = await seedSourceRoots(root, path, seedDirectories[0])
-        const seeded = await seedWorktreeDirectories(seedRoots, path, seedDirectories)
-        if (seeded.seeded.length > 0)
-          log.push(`Seeded the build cache from ${seeded.sources.join(', ')} (${seeded.seeded.join(', ')}); marked ${seeded.touched} local source file(s) for rebuild`)
-        log.push(...map(seeded.errors, error => `Build cache seed skipped: ${error}`))
-      }
-      catch (error) {
-        log.push(`Build cache seed skipped: ${get(error, 'message', String(error))}`)
-      }
-    }
-
     const binding: Binding = {
       sessionId,
       sourceSessionId: options.sourceSessionId || sessionId,
       hash,
       dirname,
       worktreePath: path,
-      projectPath: root,
+      projectPath: resolve(projectPath),
       branchName: activeBranch,
       ownsBranch: Boolean(branchName),
       createdAt: new Date().toISOString(),
@@ -522,39 +503,34 @@ async function inheritAgentSkills(root: string, path: string, log: string[]): Pr
   }
 }
 
-/**
- * 构建缓存的种子来源：优先源仓库，其次回退到同一项目里最近构建过的工作树（源仓库可能自己还没构建过）。
- * 只认 `.git` 指回同一仓库的工作树，避免把无关项目的缓存搬进来。
- */
-async function seedSourceRoots(projectPath: string, worktreePath: string, seedDirectory: string): Promise<string[]> {
-  const worktreesRoot = join(DSH_HOME, WORKTREES_DIR)
-  const candidates: { path: string, mtime: number }[] = []
-  for (const hash of listDirectoryNames(worktreesRoot)) {
-    for (const name of listDirectoryNames(join(worktreesRoot, hash))) {
-      const path = join(worktreesRoot, hash, name)
-      if (samePath(path, worktreePath) || !samePath(projectFromWorktree(path), projectPath))
-        continue
-      const mtime = directoryMtime(join(path, seedDirectory))
-      if (mtime > 0)
-        candidates.push({ path, mtime })
-    }
-  }
-  candidates.sort((left, right) => right.mtime - left.mtime)
-  return [projectPath, ...map(candidates, candidate => candidate.path)]
-}
-
-function directoryMtime(path: string): number {
+function canonicalPath(p: string): string {
   try {
-    return statSync(path).mtimeMs
+    return realpathSync.native(p)
   }
   catch {
-    return 0
+    const resolved = resolve(p)
+    const segments: string[] = []
+    let current = resolved
+    while (true) {
+      const parent = dirname(current)
+      if (parent === current)
+        break
+      segments.unshift(basename(current))
+      try {
+        const canonicalParent = realpathSync.native(parent)
+        return join(canonicalParent, ...segments)
+      }
+      catch {
+        current = parent
+      }
+    }
+    return resolved
   }
 }
 
 function samePath(a: string, b: string): boolean {
-  const left = resolve(a)
-  const right = resolve(b)
+  const left = canonicalPath(a)
+  const right = canonicalPath(b)
   return process.platform === 'win32'
     ? left.replaceAll('/', '\\').toLowerCase() === right.replaceAll('/', '\\').toLowerCase()
     : left === right
