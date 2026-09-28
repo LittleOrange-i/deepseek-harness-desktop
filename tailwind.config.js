@@ -13,10 +13,13 @@ export default {
         'line': 'var(--color-line)',
         'line-strong': 'var(--color-line-strong)',
         'ink': 'var(--color-ink)',
-        'muted': 'var(--color-muted)',
-        'accent': 'var(--color-accent)',
-        'accent2': 'var(--color-accent-2)',
-        'danger': 'var(--color-danger)',
+        // muted / accent / danger 与 HeroUI 语义变量同名，取值以 HeroUI 为准
+        // （HeroUI 的 @theme inline 会把变量内联进工具类，见 src/styles/main.css）
+        'muted': 'var(--muted)',
+        'accent': 'var(--accent)',
+        'danger': 'var(--danger)',
+        'info': 'var(--color-info)',
+        'info-hover': 'var(--color-info-hover)',
         'ok': 'var(--color-ok)',
         'log-bg': 'var(--color-log-bg)',
         'log-ink': 'var(--color-log-ink)',

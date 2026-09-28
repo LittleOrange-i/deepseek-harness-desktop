@@ -61,7 +61,7 @@ export function ConnectDialog() {
                       key={`${phase}-${index}`}
                       className={cn(
                         'rounded-md px-2 py-0.5 text-xs',
-                        index === all.length - 1 && !failed ? 'bg-accent/10 text-accent' : 'bg-panel2 text-muted',
+                        index === all.length - 1 && !failed ? 'bg-info/10 text-info' : 'bg-panel2 text-muted',
                       )}
                     >
                       {t(`remote.step.${phase}`)}
