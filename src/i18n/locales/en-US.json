@@ -263,8 +263,6 @@
   "plugins.remove_confirm_desc": "Uninstall {{name}}? Its features will no longer be available after removal.",
   "plugins.remove_failed": "Failed to uninstall {{name}}",
   "plugins.upgrade_failed": "Failed to upgrade {{name}}",
-  "plugins.upgrade_held": "{{name}} was not upgraded",
-  "plugins.upgrade_held_hint": "The profile pins this dependency, or the new release has not passed the supply-chain age window (releases younger than 24 hours are not installed by default). Retry later, or add the exact version to minimumReleaseAgeExclude in the profile.",
   "plugins.updated_toast": "Plugin {{name}} updated",
   "plugins.removed_toast": "Plugin {{name}} uninstalled",
   "plugins.disable": "Disable",
