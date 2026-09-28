@@ -23,6 +23,9 @@ const CONFIG_FILES = new Set(['tailwind.config.js', 'tailwind.plugins.config.js'
 const SOURCE_FILE_PATTERN = /[\\/]src[\\/].*\.(?:css|js|jsx|ts|tsx)$/
 const DEBOUNCE_MS = 120
 
+/** dev（`dev` 脚本传 `--no-minify`）不压缩，浏览器 DevTools 里能直接读；build / generate 一律压缩，提交的是压缩产物。 */
+const MINIFY = !process.argv.includes('--no-minify')
+
 // 内存中缓存输出文件内容，避免频繁磁盘读操作
 let cachedOutputFileContent: string | null = null
 
@@ -31,18 +34,18 @@ let cachedOutputFileContent: string | null = null
 // ==========================================
 
 /**
- * 把 index.css 编译成插件侧 Tailwind 产物（lightningcss 压缩后再内嵌）。
+ * 把 index.css 编译成插件侧 Tailwind 产物（默认 lightningcss 压缩后再内嵌）。
  *
- * 产物会被塞进一个模板字符串里，体积直接算进插件包：不压缩时 CSS 里的
- * 换行/缩进/注释占掉三成以上，故固定 `optimize.minify`（不跟随 NODE_ENV，
- * dev 与 build 产出同一份字节，产物 diff 才可读）。
+ * 产物会被塞进一个模板字符串里，体积直接算进插件包：不压缩时 CSS 里的换行/缩进/注释
+ * 占掉三成以上。dev 传 `--no-minify` 便于在 DevTools 里直接读样式，提交前用
+ * `pnpm build:taiwindcss` 生成压缩产物。
  *
  * 空结果必须当成失败：`@config` / `content` 解析不出来时 Tailwind 只往 stderr 打日志、
  * 照常返回空 CSS，直接落盘就会用空样式覆盖上一份产物，而构建仍然「成功」。
  */
 async function compile(): Promise<string> {
   const rawCss = await readFile(INPUT_FILE, 'utf8')
-  const result = await postcss([tailwindcss({ optimize: { minify: true } })]).process(rawCss, {
+  const result = await postcss([tailwindcss(MINIFY ? { optimize: { minify: true } } : {})]).process(rawCss, {
     from: INPUT_FILE,
   })
 
@@ -125,7 +128,7 @@ async function regenerate(reason: string): Promise<void> {
     const fileName = basename(OUTPUT_FILE)
 
     console.log(
-      `[tailwindcss] ${reason}: ${changed ? 'generated' : 'unchanged'} ${fileName} (${sizeKiB} KiB, ${duration} ms)`,
+      `[tailwindcss] ${reason}: ${changed ? 'generated' : 'unchanged'} ${fileName} (${sizeKiB} KiB, ${duration} ms, ${MINIFY ? 'minified' : 'unminified'})`,
     )
   }
   finally {
