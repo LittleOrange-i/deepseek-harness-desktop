@@ -74,8 +74,8 @@ pub struct Setting {
     /// 桌宠能力是否永久启用；临时隐藏不能改动此字段。
     #[serde(default)]
     pub pet_enabled: bool,
-    /// 当前选中的桌宠模型包（`x.x.x.sprites/` 目录名或用户导入的 .zip 包名）；
-    /// `None` 或空串对外统一映射到内置默认宠物。
+    /// 当前选中的桌宠模型包（预设 id，或 `chat:` / `codex:` 来源限定 id）；
+    /// `None` = 从未选择，对外回落清单里的第一只预设宠物；空串 = 用户显式取消选择。
     #[serde(default)]
     pub active_pet: Option<String>,
     /// 桌宠精灵图的显示宽度（逻辑像素）；`None` = 沿用窗口侧默认值。

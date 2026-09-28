@@ -125,27 +125,42 @@ pub struct PetAsset {
     pub rows: u8,
 }
 
-/// 将缺省、旧版未限定 id 或非法选择归一化为空字符串（未选择任何宠物）。
+/// 全新安装（从未写过 `active_pet`）或旧版非法值默认选中的宠物：清单里的第一个预设
+/// 条目。清单是唯一事实来源，不在这里硬编码 id（条目直连远端素材，选中即可渲染）。
+fn default_active_pet(app: &AppHandle) -> String {
+    crate::bridge::preset_pet::read_preset_catalog(app)
+        .ok()
+        .and_then(|catalog| catalog.into_iter().next().map(|spec| spec.id))
+        .unwrap_or_default()
+}
+
+/// 将缺省、旧版未限定 id 或非法选择归一化为可渲染的激活 id。
+///
 /// 合法值：预设宠物 id（清单 `pets.built-in` 的安全字符集）或来源限定 id。
-/// 注意：不再默认给内置宠物 —— 全新安装下 active_pet 为空，由用户在设置页主动启用
-/// （预设条目直连远端素材，启用即用，无需任何安装步骤）。
-fn normalize_active_pet(active_pet: Option<&str>) -> String {
-    let Some(id) = active_pet.map(str::trim).filter(|id| !id.is_empty()) else {
-        return String::new();
+/// 缺省（`None`）与非法值回落到 [`default_active_pet`]：新手第一次打开设置页就应看到
+/// 一只被选中的宠物，而不是「什么都没有」的透明窗口。空串是**显式**清除（设置页
+/// 「取消选择」），保持为空，否则取消选择会被默认值立刻撤销。
+fn normalize_active_pet(active_pet: Option<&str>, default_id: &str) -> String {
+    let Some(raw) = active_pet else {
+        return default_id.to_string();
     };
+    let id = raw.trim();
+    if id.is_empty() {
+        return String::new();
+    }
     if crate::bridge::preset_pet::safe_preset_id(id) || parse_qualified_id(id).is_ok() {
         id.to_string()
     } else {
-        String::new()
+        default_id.to_string()
     }
 }
 
 /// 由持久设置推导唯一的对外状态（窗口可见性 = 持久开关，没有额外的进程内状态）。
-fn status_from_setting(setting: &config::Setting) -> PetStatus {
+fn status_from_setting(setting: &config::Setting, default_id: &str) -> PetStatus {
     PetStatus {
         enabled: setting.pet_enabled,
         visible: setting.pet_enabled,
-        active_pet: normalize_active_pet(setting.active_pet.as_deref()),
+        active_pet: normalize_active_pet(setting.active_pet.as_deref(), default_id),
         pet_size: setting.pet_size,
     }
 }
@@ -162,7 +177,10 @@ fn emit_pet_status(app: &AppHandle, status: &PetStatus) {
 /// 查询桌宠当前完整状态。
 #[tauri::command]
 pub fn get_pet_status(app: AppHandle) -> PetStatus {
-    status_from_setting(&config::get_store_dat_setting(&app))
+    status_from_setting(
+        &config::get_store_dat_setting(&app),
+        &default_active_pet(&app),
+    )
 }
 
 /// 查询当前运行环境能否让桌宠窗口置顶并定位（issue #649）。
@@ -204,40 +222,50 @@ pub fn set_force_xwayland(app: AppHandle, enabled: bool) -> Result<bool, String>
 ///
 /// **持久化是刻意的**：`enabled=false` 落盘后重启不再自动拉起桌宠。从前「收起」只改
 /// 进程内瞬态，导致用户明明关了宠物、重启又自己出来。
+///
+/// 启用时若没有选中任何宠物（用户取消选择过），补上默认预设：启用的桌宠必须有内容可
+/// 渲染，否则用户看到的是一个空窗口 —— 观感与「宠物坏了」完全一样。
 #[tauri::command]
 pub fn set_pet_enabled(app: AppHandle, enabled: bool) -> Result<PetStatus, String> {
+    let fallback = default_active_pet(&app);
     let updated = config::update_store_dat_setting(&app, |setting| {
         setting.pet_enabled = enabled;
+        let selected = setting.active_pet.as_deref().map(str::trim).unwrap_or("");
+        if enabled && selected.is_empty() {
+            setting.active_pet = Some(fallback.clone());
+        }
     });
     // 关闭即无消费者：先停掉宿主会话流订阅，窗口销毁随后在后台完成。
     sync_pet_session_stream(&app, enabled);
     defer_pet_window_op(&app, enabled)?;
-    let status = status_from_setting(&updated);
+    let status = status_from_setting(&updated, &fallback);
     emit_pet_status(&app, &status);
     Ok(status)
 }
 
 /// 选择桌宠模型包并持久化 active_pet。
 ///
-/// 空串表示清除选择（存 `None`，与全新安装一致）：设置页已选卡片可再次点击取消，
-/// 而不是一旦选中就无法撤销。清空后桌宠窗口无内容可渲染，调用方应同时关闭窗口。
+/// 空串表示清除选择（存 `Some("")`，与缺省 `None` 区分开）：设置页已选卡片可再次点击
+/// 取消，而不是一旦选中就无法撤销；缺省值才回落默认预设。清空后桌宠窗口无内容可渲染，
+/// 调用方应同时关闭窗口。
 #[tauri::command]
 pub fn set_active_pet(app: AppHandle, id: String) -> Result<PetStatus, String> {
     let cleared = normalize_set_active_pet_id(&id)?;
     let updated = config::update_store_dat_setting(&app, |setting| {
         setting.active_pet = cleared;
     });
-    let status = status_from_setting(&updated);
+    let status = status_from_setting(&updated, &default_active_pet(&app));
     emit_pet_status(&app, &status);
     Ok(status)
 }
 
-/// 选择 id 归一化：空串（去除首尾空白后）表示清除选择；非空沿用既有合法性校验
-///（预设安全字符集或来源限定 id），非法 id 保持报错而不静默清空。
+/// 选择 id 归一化：空串（去除首尾空白后）表示清除选择（存空串，不存 `None`——`None` 是
+/// 「从未选择」，要回落默认预设）；非空沿用既有合法性校验（预设安全字符集或来源限定
+/// id），非法 id 保持报错而不静默清空。
 fn normalize_set_active_pet_id(id: &str) -> Result<Option<String>, String> {
     let trimmed = id.trim();
     if trimmed.is_empty() {
-        return Ok(None);
+        return Ok(Some(String::new()));
     }
     validate_active_pet_id(trimmed)?;
     Ok(Some(trimmed.to_string()))
@@ -258,7 +286,7 @@ pub fn set_pet_size(app: AppHandle, size: f64) -> Result<PetStatus, String> {
     // Rust 不再绕开前端重复 set_size，避免内置鲸鱼（16:9）与自定义图集比例不一致时被
     // 两处高度交替重设，造成大小变更时上下闪烁（issue #308）。DPI 变化仍由 Rust 的
     // ScaleFactorChanged 分支按当前宠物比例重设。
-    let status = status_from_setting(&updated);
+    let status = status_from_setting(&updated, &default_active_pet(&app));
     emit_pet_status(&app, &status);
     Ok(status)
 }
@@ -376,7 +404,10 @@ fn pet_stream_handle() -> &'static Mutex<Option<tauri::async_runtime::JoinHandle
 /// 关闭桌宠（`set_pet_enabled(false)`）会销毁窗口，同样视为无消费者——窗口不渲染时
 /// 转发毫无意义，停掉订阅即让宿主的热路径与逐会话累计态一并短路。
 pub fn pet_stream_wanted(app: &AppHandle) -> bool {
-    let status = status_from_setting(&config::get_store_dat_setting(app));
+    let status = status_from_setting(
+        &config::get_store_dat_setting(app),
+        &default_active_pet(app),
+    );
     status.enabled && status.visible
 }
 
@@ -515,7 +546,10 @@ fn defer_pet_window_op(app: &AppHandle, visible: bool) -> Result<(), String> {
             .unwrap_or_else(|error| error.into_inner());
         if let Err(error) = pet_window::set_pet_window_visible(&app, visible) {
             log::error!("PET_WINDOW_VISIBILITY_FAILED: visible={visible}: {error}");
-            let status = status_from_setting(&config::get_store_dat_setting(&app));
+            let status = status_from_setting(
+                &config::get_store_dat_setting(&app),
+                &default_active_pet(&app),
+            );
             emit_pet_status(&app, &status);
         }
     });
@@ -1335,37 +1369,41 @@ mod tests {
     }
 
     #[test]
-    fn active_pet_defaults_to_empty_when_unset_or_invalid() {
-        // 全新安装不再默认选中内置宠物：缺省/空白/非法 id 一律归一为空串（未选择）。
-        assert_eq!(normalize_active_pet(None), "");
-        assert_eq!(normalize_active_pet(Some("   ")), "");
+    fn active_pet_defaults_to_first_preset_when_unset_or_invalid() {
+        const DEFAULT: &str = "maid-deepseek-whale";
+        // 全新安装默认选中第一只预设宠物：设置页一打开就有选中的卡片，
+        // 启用的桌宠窗口也一定有内容可渲染。
+        assert_eq!(normalize_active_pet(None, DEFAULT), DEFAULT);
+        // 空串是显式清除（设置页「取消选择」），不能被默认值立刻撤销。
+        assert_eq!(normalize_active_pet(Some("   "), DEFAULT), "");
         assert_eq!(
-            normalize_active_pet(Some(" chat:custom-pet ")),
+            normalize_active_pet(Some(" chat:custom-pet "), DEFAULT),
             "chat:custom-pet",
             "有效 id 应只去除首尾空白"
         );
         assert_eq!(
-            normalize_active_pet(Some("codex:custom_pet")),
+            normalize_active_pet(Some("codex:custom_pet"), DEFAULT),
             "codex:custom_pet"
         );
         // 未限定 id（预设宠物，安全字符集）与来源限定 id 都是合法激活选择；
-        // 只有非法字符集 / 未知来源限定才归一为空串（未选择任何宠物）。
-        assert_eq!(normalize_active_pet(Some("cat")), "cat");
-        assert_eq!(normalize_active_pet(Some("shiba")), "shiba");
+        // 只有非法字符集 / 未知来源限定才回落到默认预设（同样是可渲染的宠物）。
+        assert_eq!(normalize_active_pet(Some("cat"), DEFAULT), "cat");
+        assert_eq!(normalize_active_pet(Some("shiba"), DEFAULT), "shiba");
         for legacy_or_invalid in ["other:pet", "chat:../pet", "bad id", "x/y"] {
             assert_eq!(
-                normalize_active_pet(Some(legacy_or_invalid)),
-                "",
-                "旧版或非法 id {legacy_or_invalid} 应归一为空串（未选择宠物）"
+                normalize_active_pet(Some(legacy_or_invalid), DEFAULT),
+                DEFAULT,
+                "旧版或非法 id {legacy_or_invalid} 应回落到默认预设"
             );
         }
     }
 
     #[test]
     fn set_active_pet_accepts_empty_as_clear() {
-        // 空串/纯空白表示清除选择：存 None（与全新安装一致），而不是非法 id 报错。
-        assert_eq!(normalize_set_active_pet_id(""), Ok(None));
-        assert_eq!(normalize_set_active_pet_id("   "), Ok(None));
+        // 空串/纯空白表示清除选择：存空串而非 None —— None 是「从未选择」，
+        // 会在读取时回落默认预设，清除就成了永远无效的操作。
+        assert_eq!(normalize_set_active_pet_id(""), Ok(Some(String::new())));
+        assert_eq!(normalize_set_active_pet_id("   "), Ok(Some(String::new())));
         // 非空保持既有校验：合法 id 原样存（去空白），非法 id 仍然报错。
         assert_eq!(
             normalize_set_active_pet_id("  maid-deepseek-whale  "),
@@ -1387,7 +1425,7 @@ mod tests {
             pet_enabled: false,
             ..Default::default()
         };
-        let status = status_from_setting(&setting);
+        let status = status_from_setting(&setting, "");
         assert!(!status.enabled);
         assert!(!status.visible);
         assert_eq!(status.active_pet, "");
