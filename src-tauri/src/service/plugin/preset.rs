@@ -55,8 +55,10 @@ impl PreinstallPluginInfo {
 
     /// 核心驱动的退役判定（弃用 / 被核心吸收后自动卸载）。
     ///
-    /// - 核心命中某代区间：已装版本不属于该代声明的插件区间 → 退役（安装流程会按该代
-    ///   区间钉版本重装，见 `preset_spec_for_install`）；
+    /// - 核心命中某代区间：已装版本**旧于**该代声明的插件区间 → 退役（安装流程会按该代
+    ///   区间钉版本重装，见 `preset_spec_for_install`）；已装版本达到或超过区间下界
+    ///   （含超出区间上界的自升级版本，如声明 `^0.21.1` 实装 `0.22.0`）→ 保留，
+    ///   区间是发布侧推荐而非硬上界，不能把用户的升级版本卸载掉；
     /// - 核心超出全部区间：已装版本仍落在任一同代区间内（旧版本）→ 退役；
     /// - 未声明区间 / 版本不可解析 / 已装版本无法解析 → 不退役（宁可保留也不误删）。
     pub(crate) fn retire_on(
@@ -70,7 +72,7 @@ impl PreinstallPluginInfo {
         if version.unsupported_on(core_version) {
             return version.matches_any_declared(installed_version);
         }
-        version.installed_matches_core_generation(core_version, installed_version) == Some(false)
+        version.outdated_for_core_generation(core_version, installed_version) == Some(true)
     }
 }
 
@@ -711,6 +713,34 @@ mod tests {
                 entry.retire_on(Some(core), Some(installed)),
                 retire,
                 "{id}@{installed} 在核心 {core} 下的退役判定"
+            );
+        }
+    }
+
+    /// 回归：用户把预设插件升级到**比清单声明区间更新**的版本时不得自动卸载。
+    ///
+    /// 清单给核心 `^0.1.7-rc.1` 声明 `dsh-better-sidebar: ^0.21.1`，装 0.22.0 时
+    /// `^0.21.1` 不匹配 0.22.0，旧判定「不匹配即退役」会在启动时把它自动卸载，
+    /// 用户永远无法升级插件。区间是发布侧推荐而非硬上界：高于下界就保留。
+    #[test]
+    fn newer_installed_preset_is_never_retired() {
+        for (id, core, installed) in [
+            ("dsh-better-sidebar", "0.1.7-rc.1", "0.22.0"),
+            ("dsh-better-sidebar", "0.1.7-rc.1", "0.23.5"),
+            ("dsh-better-sidebar", "0.1.7-rc.1", "1.0.0"),
+            ("dsh-rewind-plugin", "0.1.7-rc.1", "0.15.0"),
+            ("dsh-rewind-plugin", "0.1.7-rc.1", "1.0.0"),
+            ("@xmanrui/dsh-im", "0.1.7-rc.1", "4.29.0"),
+            ("@xmanrui/dsh-im", "0.1.7-rc.1", "5.0.0"),
+            ("dsh-better-sidebar", "0.1.5-rc.3", "0.25.0"),
+        ] {
+            let entry = load_presets_for_test()
+                .into_iter()
+                .find(|p| p.id == id)
+                .unwrap_or_else(|| panic!("{id}"));
+            assert!(
+                !entry.retire_on(Some(core), Some(installed)),
+                "{id}@{installed} 新于声明区间，不得退役（核心 {core}）"
             );
         }
     }
