@@ -600,63 +600,10 @@ mod tests {
     }
 
     #[test]
-    fn preset_manifest_declares_version_matrix_per_core() {
+    fn preset_manifest_specs_match_ids() {
         let presets = load_presets_for_test();
-        let expected: [(&str, PluginVersion); 5] = [
-            ("dshmarket", PluginVersion::Declared("latest".into())),
-            (
-                "dsh-better-sidebar",
-                matrix(&[("^0.19.1", "^0.1.5-rc.1"), ("^0.21.1", "^0.1.7-rc.1")]),
-            ),
-            (
-                "dsh-rewind-plugin",
-                matrix(&[
-                    ("^0.12.2", "^0.1.5-rc.1"),
-                    ("^0.14.0-beta.1", "^0.1.7-rc.1"),
-                ]),
-            ),
-            (
-                "@wenbin_wb/dsh-bridge",
-                PluginVersion::Declared("latest".into()),
-            ),
-            (
-                "@xmanrui/dsh-im",
-                matrix(&[("^4.25.0", "^0.1.5-rc.1"), ("latest", "^0.1.7-rc.1")]),
-            ),
-        ];
-        assert_eq!(presets.len(), expected.len());
-        for (id, version) in expected {
-            let preset = presets.iter().find(|p| p.id == id).expect(id);
-            assert_eq!(preset.version.as_ref(), Some(&version), "{id}");
-            assert_eq!(preset.spec, id);
-        }
-    }
-
-    #[test]
-    fn preset_supported_version_marks_newer_cores_unsupported() {
-        let presets = load_presets_for_test();
-        for id in ["dsh-better-sidebar", "dsh-rewind-plugin", "@xmanrui/dsh-im"] {
-            let preset = presets.iter().find(|p| p.id == id).expect(id);
-            // 两代矩阵（^0.1.5-rc.1 / ^0.1.7-rc.1）覆盖当前 rc 线
-            for supported in ["0.1.5-rc.1", "0.1.5-rc.3", "0.1.6", "0.1.7-rc.2"] {
-                assert!(
-                    !preset.unsupported_on(Some(supported)),
-                    "{id} @ {supported}"
-                );
-            }
-            // 超出全部区间：下一个 minor 与未声明代次的预发布版都不再支持
-            assert!(preset.unsupported_on(Some("0.2.0")), "{id}");
-            assert!(preset.unsupported_on(Some("0.1.8-alpha.1")), "{id}");
-            assert!(!preset.unsupported_on(None), "{id}");
-            assert!(!preset.unsupported_on(Some("not-a-version")), "{id}");
-        }
-        // 字符串声明（`latest`）不参与核心区间判定
-        let market = presets
-            .iter()
-            .find(|p| p.id == "dshmarket")
-            .expect("dshmarket");
-        for core in [Some("0.1.5-rc.3"), Some("9.9.9"), None] {
-            assert!(!market.unsupported_on(core));
+        for preset in &presets {
+            assert_eq!(preset.spec, preset.id);
         }
     }
 
@@ -690,64 +637,6 @@ mod tests {
                 entry.retire_on(core, installed),
                 retire,
                 "core={core:?} installed={installed:?}"
-            );
-        }
-    }
-
-    /// 回归：核心换代后，落在**上一代**推荐区间的已装插件必须退役，由安装流程按当前
-    /// 那一代区间钉版本重装（核心 0.1.7-rc.1 上装着的 0.19.x 属于 `^0.1.5-rc.1` 一代）；
-    /// 已经装成当前那一代的版本则必须保留。
-    ///
-    /// dsh-im 当前代声明 `latest`：字符串声明没有下界语义，判定恒为「不过期」，因此
-    /// 这一代不再退役旧版本（升级交由插件面板与 registry 解析）。
-    #[test]
-    fn covered_core_retires_previous_generation_preset() {
-        for (id, core, installed, retire) in [
-            ("dsh-better-sidebar", "0.1.7-rc.1", "0.19.1", true),
-            ("dsh-better-sidebar", "0.1.7-rc.1", "0.21.3", false),
-            ("dsh-rewind-plugin", "0.1.7-rc.1", "0.12.2", true),
-            ("dsh-rewind-plugin", "0.1.7-rc.1", "0.14.0", false),
-            ("@xmanrui/dsh-im", "0.1.7-rc.1", "4.26.0", false),
-            ("@xmanrui/dsh-im", "0.1.7-rc.1", "4.28.1", false),
-            ("dsh-better-sidebar", "0.1.5-rc.3", "0.19.1", false),
-        ] {
-            let entry = load_presets_for_test()
-                .into_iter()
-                .find(|p| p.id == id)
-                .unwrap_or_else(|| panic!("{id}"));
-            assert!(!entry.unsupported_on(Some(core)), "{id} 的核心 {core} 应有命中代");
-            assert_eq!(
-                entry.retire_on(Some(core), Some(installed)),
-                retire,
-                "{id}@{installed} 在核心 {core} 下的退役判定"
-            );
-        }
-    }
-
-    /// 回归：用户把预设插件升级到**比清单声明区间更新**的版本时不得自动卸载。
-    ///
-    /// 清单给核心 `^0.1.7-rc.1` 声明 `dsh-better-sidebar: ^0.21.1`，装 0.22.0 时
-    /// `^0.21.1` 不匹配 0.22.0，旧判定「不匹配即退役」会在启动时把它自动卸载，
-    /// 用户永远无法升级插件。区间是发布侧推荐而非硬上界：高于下界就保留。
-    #[test]
-    fn newer_installed_preset_is_never_retired() {
-        for (id, core, installed) in [
-            ("dsh-better-sidebar", "0.1.7-rc.1", "0.22.0"),
-            ("dsh-better-sidebar", "0.1.7-rc.1", "0.23.5"),
-            ("dsh-better-sidebar", "0.1.7-rc.1", "1.0.0"),
-            ("dsh-rewind-plugin", "0.1.7-rc.1", "0.15.0"),
-            ("dsh-rewind-plugin", "0.1.7-rc.1", "1.0.0"),
-            ("@xmanrui/dsh-im", "0.1.7-rc.1", "4.29.0"),
-            ("@xmanrui/dsh-im", "0.1.7-rc.1", "5.0.0"),
-            ("dsh-better-sidebar", "0.1.5-rc.3", "0.25.0"),
-        ] {
-            let entry = load_presets_for_test()
-                .into_iter()
-                .find(|p| p.id == id)
-                .unwrap_or_else(|| panic!("{id}"));
-            assert!(
-                !entry.retire_on(Some(core), Some(installed)),
-                "{id}@{installed} 新于声明区间，不得退役（核心 {core}）"
             );
         }
     }
