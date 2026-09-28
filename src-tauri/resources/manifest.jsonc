@@ -166,9 +166,9 @@
         "recommended": true,
         "checked": true,
         "version": [
-          { "version": "^0.19.1",  "dsh": "^0.1.5-rc.1" },
+          { "version": "^0.19.1", "dsh": "^0.1.5-rc.1" },
           { "version": "^0.21.1", "dsh": "^0.1.7-rc.1" },
-          { "version": "^0.22.1",  "dsh": "^0.2.0-rc.1" }
+          { "version": "^0.22.1", "dsh": "^0.2.0-rc.1" }
         ]
       },
       {

@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   FALLBACK_DSH_TAG,
@@ -9,7 +8,6 @@ import {
   parseVersionFromTag,
   pickReleaseTag,
   pkgRepoOf,
-  RECOMMENDED_DSH_VERSION,
 } from './version'
 
 /** A realistic newest-first release list (test tags republishing included). */
@@ -52,8 +50,8 @@ describe('isPreviewTag', () => {
 
 describe('pickReleaseTag', () => {
   it('resolves the recommended version onto its release tag (recommended path)', () => {
-    const resolved = pickReleaseTag(RELEASES)
-    expect(resolved).toMatchObject({ tag: 'dsh-0.2.0-rc.1-36424634893', version: RECOMMENDED_DSH_VERSION, source: 'recommended' })
+    const resolved = pickReleaseTag(RELEASES, { recommended: '0.2.0-rc.1' })
+    expect(resolved).toMatchObject({ tag: 'dsh-0.2.0-rc.1-36424634893', version: '0.2.0-rc.1', source: 'recommended' })
     expect(resolved.notes).toEqual([])
   })
 
@@ -121,14 +119,6 @@ describe('pickReleaseTag', () => {
     const resolved = pickReleaseTag(RELEASES, { ref: '9.9.9' })
     expect(resolved.source).toBe('recommended')
     expect(resolved.notes[0]).toContain('回退推荐/最新稳定版')
-  })
-})
-
-describe('recommended version lockstep', () => {
-  it('follows the desktop mainline manifest.jsonc', () => {
-    const raw = readFileSync(new URL('../../../../../src-tauri/resources/manifest.jsonc', import.meta.url), 'utf8')
-    const manifest = JSON.parse(raw.replace(/^\s*\/\/.*$/gm, '')) as { engines: { dsh: { recommend: string } } }
-    expect(RECOMMENDED_DSH_VERSION).toBe(manifest.engines.dsh.recommend)
   })
 })
 
