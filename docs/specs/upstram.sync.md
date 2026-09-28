@@ -154,8 +154,8 @@ git diff --check
 
 | 实现模块 | 上游仓库 | 本地路径 | 已采纳基线 | 本地最新 Tag/Commit | 待评估项 / 备注 | 包内日志 |
 | --- | --- | --- | --- | --- | --- | --- |
-| `dsh-tauri-pet` | `PC2005-cloud/dsh-pet` | `source/dsh-pet` | `v0.2.6` (`e1ff8c1`) | `v0.2.9` (`b400159`) | `v0.2.7`–`v0.2.9` 待评估 | [日志](https://www.google.com/search?q=../packages/dsh-tauri-pet/docs/sync-log.md) |
-| `dsh-tauri-pet` | `QCYTSN/dsh-dafeiyu` | `source/dsh-dafeiyu` | `v0.1.9` (`f4f4482`) | `v0.1.14` (`9c0588c`) | `v0.1.10`–`v0.1.14` 待评估 | [日志](https://www.google.com/search?q=../packages/dsh-tauri-pet/docs/sync-log.md) |
+| `dsh-tauri-pet` | `PC2005-cloud/dsh-pet` | `source/dsh-pet` | `v0.2.12` (`631c531`) | `v0.2.12` (`631c531`) | `v0.2.7`–`v0.2.12` 已评估并采纳 2 项（`db73c36` goal 续跑轮不判成功、`bf7c4fb` 任务文案取末位 in_progress 并按码点截断），其余不采纳（渲染层归 `dsh-pet-component`、helper 专属适配不适用）；**资产 ref 保持 `e1ff8c1`**（区间内 `assets/webm`、`assets/mov` 零新增）；无待评估项 | [日志](https://www.google.com/search?q=../packages/dsh-tauri-pet/docs/sync-log.md) |
+| `dsh-tauri-pet` | `QCYTSN/dsh-dafeiyu` | `source/dsh-dafeiyu` | `v0.1.14` (`9c0588c`) | `v0.1.14` (`9c0588c`) | `v0.1.10`–`v0.1.14` 已评估：零可移植（文案表几无变化；其 `includeSubagents` opt-in 与本仓硬排除子代理会话**有意相反**）；无待评估项 | [日志](https://www.google.com/search?q=../packages/dsh-tauri-pet/docs/sync-log.md) |
 | `dsh-tauri-pet` | `Skylarking/dsh-plugin-codex-pets` | `source/dsh-plugin-codex-pets` | `22e93f4` | - | 未评估 main 分支更新 | [日志](https://www.google.com/search?q=../packages/dsh-tauri-pet/docs/sync-log.md) |
 | 桌宠窗口 | `ayangweb/BongoCat` | `source/BongoCat` | `44f44bc` | `v1.1.0` | HEAD 已超前 Tag 5 个 Commit | [日志](https://www.google.com/search?q=../packages/dsh-tauri-pet/docs/sync-log.md) |
 | `dsh-tauri-extension` | `qinyre/dsh-plugin-capabilities` | `source/dsh-plugin-capabilities` | `v0.3.11` (`52e3f66`) | `v0.3.11` | 暂无待评估项（该上游的 Market 模块确定不移植；扩展面板的市场页改为直接消费 `dshmarket` 的 `market` 服务） | [日志](../packages/dsh-tauri-extension/docs/sync-log.md) |
@@ -175,6 +175,12 @@ git diff --check
   `ecfe1e6`（`v0.1.51`），不再存在「gitlink 与工作区不一致」的未暂存变更。
 * `dsh-tauri-extension` 文档中引用的上游路径已更正为 `source/dsh-plugin-capabilities`。
 * 修复了 `dsh-tauri-extension/README.md` 中 `soruce` 的拼写错误。
+* **`dsh-tauri-pet` 的「资产 ref 与代码基线解耦」**：`src-tauri/resources/manifest.jsonc` 的素材 URL 内嵌
+  `source/dsh-pet` 的 ref，但它**不必等于已采纳代码基线**。2026 本轮把代码基线推进到 `v0.2.12` 的同时
+  把资产 ref 留在 `e1ff8c1`：`e1ff8c1..v0.2.12` 期间 `assets/webm`、`assets/mov` 零新增，升级只会让
+  `config` 指向含 `whisperImageEnabled`/`chatImageEnabled`/`memes`（本地渲染层不消费）的新 `config.jsonc`。
+  只有出现新 WebM/mov 时才升该 ref。同理，`src-tauri/resources/preset-pets.json` 是**已失效的旧路径**，
+  现为 `manifest.jsonc` 的 `pets.built-in`；`src/host/reducer.ts` 现为 `src/host/service/session-stream.utils.ts`。
 
 
 
