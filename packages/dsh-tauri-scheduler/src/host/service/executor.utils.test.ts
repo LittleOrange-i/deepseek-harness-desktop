@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
-import { decideRunOutcome, describeFailure, summarizeRun, waitForTurnStart } from './executor.utils'
+import {
+  decideRunOutcome,
+  describeFailure,
+  isPluginUnloadError,
+  summarizeCollectedRun,
+  summarizeRun,
+  waitForTurnStart,
+  watchSessionEvents,
+} from './executor.utils'
 
 const runEvents = [
   { seq: 0, type: 'turn/end', data: { reason: { kind: 'completed' } } },
@@ -104,5 +112,91 @@ describe('summarizeRun', () => {
   it('日志不可读时退化为「没有 turn/end」，交由 decideRunOutcome 兜底', () => {
     expect(summarizeRun({}, 0)).toEqual({ text: '' })
     expect(summarizeRun(undefined, 0)).toEqual({ text: '' })
+  })
+})
+
+describe('watchSessionEvents', () => {
+  const session = { seq: 1 }
+
+  function bind(fromSeq: number): { emit: (target: unknown, event: unknown) => void, watched: ReturnType<typeof watchSessionEvents> } {
+    const listeners: Array<(target: unknown, event: unknown) => void> = []
+    const watched = watchSessionEvents(
+      { on: (_name, listener) => {
+        listeners.push(listener)
+        return () => {
+          listeners.length = 0
+        }
+      } },
+      session,
+      fromSeq,
+    )
+    return {
+      emit: (target, event) => {
+        for (const listener of listeners) listener(target, event)
+      },
+      watched,
+    }
+  }
+
+  it('只收本会话、本轮之后的 turn 边界事件', () => {
+    const { emit, watched } = bind(1)
+    emit(session, { seq: 0, type: 'turn/end', data: { reason: { kind: 'aborted' } } })
+    emit({ seq: 1 }, { seq: 2, type: 'turn/end', data: { reason: { kind: 'aborted' } } })
+    emit(session, { seq: 2, type: 'request/header', data: {} })
+    emit(session, { seq: 3, type: 'assistant/message', data: { message: { content: [{ type: 'text', text: 'live' }] } } })
+    emit(session, { seq: 4, type: 'turn/end', data: { reason: { kind: 'completed' } } })
+
+    expect(watched.events).toEqual([
+      { seq: 3, type: 'assistant/message', data: { message: { content: [{ type: 'text', text: 'live' }] } } },
+      { seq: 4, type: 'turn/end', data: { reason: { kind: 'completed' } } },
+    ])
+  })
+
+  it('宿主没有 on 时退化为空增量，由快照兜底', () => {
+    const watched = watchSessionEvents({}, session, 0)
+    expect(watched.events).toEqual([])
+    expect(() => watched.stop()).not.toThrow()
+  })
+
+  it('stop 解绑订阅', () => {
+    const { emit, watched } = bind(1)
+    watched.stop()
+    emit(session, { seq: 2, type: 'turn/end', data: { reason: { kind: 'completed' } } })
+    expect(watched.events).toEqual([])
+  })
+})
+
+describe('summarizeCollectedRun', () => {
+  it('增量带收尾原因时直接采信，不再整段扫历史', () => {
+    const snapshot = vi.fn(() => runEvents)
+    const live = [
+      { seq: 3, type: 'assistant/message', data: { message: { content: [{ type: 'text', text: 'live' }] } } },
+      { seq: 4, type: 'turn/end', data: { reason: failureReason } },
+    ]
+    expect(summarizeCollectedRun(live, { snapshotEvents: snapshot }, 1)).toEqual({ text: 'live', reason: failureReason })
+    expect(snapshot).not.toHaveBeenCalled()
+  })
+
+  it('增量缺收尾原因（含丢掉 turn/end 只剩正文）时回退快照，失败不会被吞成成功', () => {
+    for (const live of [
+      [],
+      [{ seq: 2, type: 'turn/start', data: {} }],
+      [{ seq: 3, type: 'assistant/message', data: { message: { content: [{ type: 'text', text: 'done' }] } } }],
+    ]) {
+      const outcome = summarizeCollectedRun(live, { snapshotEvents: () => runEvents }, 1)
+      expect(outcome).toEqual({ text: 'done', reason: failureReason })
+      expect(decideRunOutcome({ started: true, timedOut: false, reason: outcome.reason }))
+        .toEqual({ status: 'failed', error: { code: 'llm_error', message: 'boom' } })
+    }
+  })
+})
+
+describe('isPluginUnloadError', () => {
+  it('只认 INACTIVE_EFFECT 错误码', () => {
+    expect(isPluginUnloadError(Object.assign(new Error('inactive'), { code: 'INACTIVE_EFFECT' }))).toBe(true)
+    expect(isPluginUnloadError(Object.assign(new Error('x'), { code: 'llm_error' }))).toBe(false)
+    expect(isPluginUnloadError(new Error('inactive'))).toBe(false)
+    expect(isPluginUnloadError(undefined)).toBe(false)
+    expect(isPluginUnloadError('INACTIVE_EFFECT')).toBe(false)
   })
 })

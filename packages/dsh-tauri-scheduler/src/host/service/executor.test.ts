@@ -153,4 +153,24 @@ describe('executor.run', () => {
       vi.useRealTimers()
     }
   })
+
+  it('插件卸载抛 INACTIVE_EFFECT 时记为 cancelled，不当作执行失败', async () => {
+    vi.mocked(runs.load).mockResolvedValue({ id: 'run-3' } as never)
+    installHost()
+    vi.mocked(loadSchedulerRuntimeModules).mockRejectedValueOnce(
+      Object.assign(new Error('inactive effect'), { code: 'INACTIVE_EFFECT' }),
+    )
+
+    const outcome = await executor.run(taskFixture, 'schedule')
+
+    expect(outcome).toEqual({
+      ok: false,
+      sessionId: expect.any(String),
+      error: '定时任务因插件卸载被取消。',
+    })
+    expect(runs.save).toHaveBeenLastCalledWith(expect.objectContaining({
+      status: 'cancelled',
+      error: '定时任务因插件卸载被取消。',
+    }))
+  })
 })

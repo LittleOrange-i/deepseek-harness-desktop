@@ -5,6 +5,7 @@ import type { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import type { HostContext, RunStatus, RunTrigger, SchedulerTask } from '../types'
 import type { PlatformModuleLoader, SetupAgentLike } from '../utils/agent-runtime.types'
 import type { PermissionPresetService } from '../utils/permission.types'
+import type { SessionEventWatch } from './executor.utils'
 import { randomUUID } from 'node:crypto'
 import { mkdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
@@ -15,7 +16,7 @@ import { getCurrentHostInstance } from '../config/runtime'
 import { loadSchedulerRuntimeModules, resolveSetupAgent } from '../utils/agent-runtime'
 import { applyUnattendedPermission } from '../utils/permission'
 import { schedulerSessionTitle } from '../utils/session-title'
-import { decideRunOutcome, summarizeRun, waitForTurnStart } from './executor.utils'
+import { decideRunOutcome, isPluginUnloadError, summarizeCollectedRun, waitForTurnStart, watchSessionEvents } from './executor.utils'
 import { runs } from './runs'
 
 const SCHEDULER_RUN_TIMEOUT_MS = 30 * 60 * 1000
@@ -51,6 +52,7 @@ export const executor = defineService({
       sessionId,
     })
 
+    let watched: SessionEventWatch | undefined
     try {
       const runtime = await loadSchedulerRuntimeModules(
         (ctx as HostContext & { loader: PlatformModuleLoader }).loader,
@@ -87,6 +89,7 @@ export const executor = defineService({
         await pinTitle(ctx, handle.agent.session, task.name)
 
         const firstSeq = handle.agent.session.seq
+        watched = watchSessionEvents(ctx, handle.agent.session, firstSeq)
         handle.agent.followup(runtime.createUserMessage({
           content: [{ type: 'text', text: task.prompt }],
           source: { kind: 'scheduler', taskId: task.id, runId, scheduledFor },
@@ -111,7 +114,7 @@ export const executor = defineService({
         }
         else {
           await (ctx.sessions as { flush: (session: unknown) => Promise<unknown> }).flush(handle.agent.session)
-          const outcome = summarizeRun(handle.agent.session, firstSeq)
+          const outcome = summarizeCollectedRun(watched?.events ?? [], handle.agent.session, firstSeq)
 
           const decision = decideRunOutcome({ started, timedOut, reason: outcome.reason })
           result = decision.error ? { status: 'failed', error: decision.error } : { status: 'succeeded' }
@@ -133,9 +136,17 @@ export const executor = defineService({
       return outcome
     }
     catch (error) {
-      const outcome: ExecuteOutcome = { ok: false, sessionId, error: error instanceof Error ? error.message : String(error) }
-      await settle(runId, 'failed', outcome)
+      const unloaded = isPluginUnloadError(error)
+      const outcome: ExecuteOutcome = {
+        ok: false,
+        sessionId,
+        error: unloaded ? '定时任务因插件卸载被取消。' : error instanceof Error ? error.message : String(error),
+      }
+      await settle(runId, unloaded ? 'cancelled' : 'failed', outcome)
       return outcome
+    }
+    finally {
+      watched?.stop()
     }
   },
 })
