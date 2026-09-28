@@ -158,8 +158,8 @@ export function SettingsSidebar(_props: SettingsSidebarProps): ReactElement | nu
         )}
         onPointerDown={onHandlePointerDown}
       />
-      <div className={cn(`${SETTINGS_SIDEBAR_CLASS}__content-outer`, 'flex-1 min-w-0 h-full box-border overflow-y-auto flex bg-[var(--dsw-alias-bg-base)] rounded-tl-[16px] [corner-shape:round]')}>
-        <div className={cn(`${SETTINGS_SIDEBAR_CLASS}__content-inner`, 'w-[min(calc(var(--dsh-composer-card-max-width)_+_2_*_var(--dsh-composer-side-clearance)),100%)] mx-auto box-border px-[36px] py-[28px]')}>
+      <div className="flex-1 min-w-0 h-full box-border overflow-y-auto flex bg-[var(--dsw-alias-bg-base)] rounded-tl-[16px] [corner-shape:round]">
+        <div className="w-[min(calc(var(--dsh-composer-card-max-width)_+_2_*_var(--dsh-composer-side-clearance)),100%)] mx-auto box-border px-[36px] py-[28px]">
           {activeId !== undefined && (
             <SlotOutlet
               slotKey={SETTINGS_SECTION_SLOT}
