@@ -84,7 +84,7 @@ export function ModelConfigToolbar({
               }}
             />
           )}
-      <Action className='text-[13px] text-secondary rounded-[14px]' variant="link" disabled={disabled} onClick={openConfig}>
+      <Action className="text-[13px] text-secondary rounded-[14px]" variant="link" disabled={disabled} onClick={openConfig}>
         {t('openConfigFile')}
       </Action>
     </div>
