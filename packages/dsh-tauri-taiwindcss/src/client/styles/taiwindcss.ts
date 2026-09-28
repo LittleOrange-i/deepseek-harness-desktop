@@ -7,6 +7,7 @@ const TAIWINDCSS_GENERATED = `
 @layer theme {
   :root, :host {
     --spacing: 0.25rem;
+    --font-weight-normal: 400;
     --font-weight-medium: 500;
     --default-transition-duration: 150ms;
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -34,8 +35,17 @@ const TAIWINDCSS_GENERATED = `
   .sticky {
     position: sticky;
   }
+  .inset-0 {
+    inset: calc(var(--spacing) * 0);
+  }
   .isolate {
     isolation: isolate;
+  }
+  .z-\\[2\\] {
+    z-index: 2;
+  }
+  .z-\\[1000\\] {
+    z-index: 1000;
   }
   .container {
     width: 100%;
@@ -58,8 +68,26 @@ const TAIWINDCSS_GENERATED = `
   .m-0 {
     margin: calc(var(--spacing) * 0);
   }
+  .-mx-\\[2px\\] {
+    margin-inline: calc(2px * -1);
+  }
+  .mx-0 {
+    margin-inline: calc(var(--spacing) * 0);
+  }
   .mx-auto {
     margin-inline: auto;
+  }
+  .my-\\[4px\\] {
+    margin-block: 4px;
+  }
+  .mt-\\[8px\\] {
+    margin-top: 8px;
+  }
+  .mb-\\[10px\\] {
+    margin-bottom: 10px;
+  }
+  .-ml-1 {
+    margin-left: calc(var(--spacing) * -1);
   }
   .ml-auto {
     margin-left: auto;
@@ -69,6 +97,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .block {
     display: block;
+  }
+  .block\\! {
+    display: block !important;
   }
   .contents {
     display: contents;
@@ -115,11 +146,26 @@ const TAIWINDCSS_GENERATED = `
   .h-\\[38px\\] {
     height: 38px;
   }
+  .h-\\[40px\\] {
+    height: 40px;
+  }
+  .h-\\[42px\\] {
+    height: 42px;
+  }
   .h-\\[calc\\(28px\\+var\\(--dsh-content-font-delta\\,0px\\)\\)\\] {
     height: calc(28px + var(--dsh-content-font-delta,0px));
   }
+  .h-full {
+    height: 100%;
+  }
+  .min-h-0 {
+    min-height: calc(var(--spacing) * 0);
+  }
   .min-h-\\[28px\\] {
     min-height: 28px;
+  }
+  .w-\\[8px\\] {
+    width: 8px;
   }
   .w-\\[16px\\] {
     width: 16px;
@@ -130,11 +176,26 @@ const TAIWINDCSS_GENERATED = `
   .w-\\[28px\\] {
     width: 28px;
   }
+  .w-\\[36px\\] {
+    width: 36px;
+  }
   .w-\\[calc\\(28px\\+var\\(--dsh-content-font-delta\\,0px\\)\\)\\] {
     width: calc(28px + var(--dsh-content-font-delta,0px));
   }
+  .w-\\[calc\\(100\\%\\+4px\\)\\] {
+    width: calc(100% + 4px);
+  }
+  .w-\\[min\\(calc\\(var\\(--dsh-composer-card-max-width\\)_\\+_2_\\*_var\\(--dsh-composer-side-clearance\\)\\)\\,100\\%\\)\\] {
+    width: min(calc(var(--dsh-composer-card-max-width) + 2 * var(--dsh-composer-side-clearance)), 100%);
+  }
+  .w-\\[var\\(--dsh-settings-rail-width\\)\\] {
+    width: var(--dsh-settings-rail-width);
+  }
   .w-full {
     width: 100%;
+  }
+  .w-full\\! {
+    width: 100% !important;
   }
   .max-w-\\[220px\\] {
     max-width: 220px;
@@ -151,6 +212,9 @@ const TAIWINDCSS_GENERATED = `
   .flex-1 {
     flex: 1;
   }
+  .flex-none {
+    flex: none;
+  }
   .shrink-0 {
     flex-shrink: 0;
   }
@@ -160,11 +224,20 @@ const TAIWINDCSS_GENERATED = `
   .cursor-\\[inherit\\] {
     cursor: inherit;
   }
+  .cursor-col-resize {
+    cursor: col-resize;
+  }
   .cursor-pointer {
     cursor: pointer;
   }
+  .touch-none {
+    touch-action: none;
+  }
   .resize {
     resize: both;
+  }
+  .flex-col {
+    flex-direction: column;
   }
   .flex-wrap {
     flex-wrap: wrap;
@@ -175,6 +248,12 @@ const TAIWINDCSS_GENERATED = `
   .justify-center {
     justify-content: center;
   }
+  .gap-0 {
+    gap: calc(var(--spacing) * 0);
+  }
+  .gap-8 {
+    gap: calc(var(--spacing) * 8);
+  }
   .gap-\\[2px\\] {
     gap: 2px;
   }
@@ -184,22 +263,43 @@ const TAIWINDCSS_GENERATED = `
   .gap-\\[6px\\] {
     gap: 6px;
   }
+  .gap-\\[8px\\] {
+    gap: 8px;
+  }
   .gap-\\[10px\\] {
     gap: 10px;
   }
   .gap-\\[12px\\] {
     gap: 12px;
   }
+  .gap-\\[14px\\] {
+    gap: 14px;
+  }
+  .self-start {
+    align-self: flex-start;
+  }
+  .self-stretch {
+    align-self: stretch;
+  }
   .truncate {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .overflow-auto {
+    overflow: auto;
+  }
   .overflow-hidden {
     overflow: hidden;
   }
+  .overflow-y-auto {
+    overflow-y: auto;
+  }
   .rounded {
     border-radius: 0.25rem;
+  }
+  .rounded-\\[4px\\] {
+    border-radius: 4px;
   }
   .rounded-\\[6px\\] {
     border-radius: 6px;
@@ -224,6 +324,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .rounded-xs {
     border-radius: var(--dsw-radius-xs);
+  }
+  .rounded-tl-\\[16px\\] {
+    border-top-left-radius: 16px;
   }
   .border {
     border-style: var(--tw-border-style);
@@ -250,8 +353,23 @@ const TAIWINDCSS_GENERATED = `
   .border-border-l3 {
     border-color: var(--dsw-alias-border-l3);
   }
+  .border-border-l4 {
+    border-color: var(--dsw-alias-border-l4);
+  }
+  .bg-\\[var\\(--dsw-alias-bg-base\\)\\] {
+    background-color: var(--dsw-alias-bg-base);
+  }
   .bg-\\[var\\(--dsw-alias-button-elevated-fill\\)\\] {
     background-color: var(--dsw-alias-button-elevated-fill);
+  }
+  .bg-\\[var\\(--dsw-specific-sidebar-fill\\)\\] {
+    background-color: var(--dsw-specific-sidebar-fill);
+  }
+  .bg-\\[var\\(--dsw-specific-sidebar-nav-item-active\\)\\] {
+    background-color: var(--dsw-specific-sidebar-nav-item-active);
+  }
+  .bg-border-l2 {
+    background-color: var(--dsw-alias-border-l2);
   }
   .bg-layer-1 {
     background-color: var(--dsw-alias-bg-layer-1);
@@ -292,14 +410,35 @@ const TAIWINDCSS_GENERATED = `
   .px-\\[16px\\] {
     padding-inline: 16px;
   }
+  .px-\\[36px\\] {
+    padding-inline: 36px;
+  }
+  .px-\\[clamp\\(24px\\,4vw\\,48px\\)\\] {
+    padding-inline: clamp(24px, 4vw, 48px);
+  }
   .py-\\[1px\\] {
     padding-block: 1px;
   }
   .py-\\[4px\\] {
     padding-block: 4px;
   }
+  .py-\\[6px\\] {
+    padding-block: 6px;
+  }
   .py-\\[8px\\] {
     padding-block: 8px;
+  }
+  .py-\\[9px\\] {
+    padding-block: 9px;
+  }
+  .py-\\[12px\\] {
+    padding-block: 12px;
+  }
+  .py-\\[28px\\] {
+    padding-block: 28px;
+  }
+  .pt-\\[28px\\] {
+    padding-top: 28px;
   }
   .pr-\\[4px\\] {
     padding-right: 4px;
@@ -307,11 +446,23 @@ const TAIWINDCSS_GENERATED = `
   .pr-\\[5px\\] {
     padding-right: 5px;
   }
+  .pr-\\[10px\\] {
+    padding-right: 10px;
+  }
+  .pb-\\[48px\\] {
+    padding-bottom: 48px;
+  }
   .pl-\\[8px\\] {
     padding-left: 8px;
   }
   .pl-\\[12px\\] {
     padding-left: 12px;
+  }
+  .text-left {
+    text-align: left;
+  }
+  .\\[font-family\\:inherit\\] {
+    font-family: inherit;
   }
   .text-\\[10px\\] {
     font-size: 10px;
@@ -356,6 +507,10 @@ const TAIWINDCSS_GENERATED = `
     --tw-font-weight: var(--font-weight-medium);
     font-weight: var(--font-weight-medium);
   }
+  .font-normal {
+    --tw-font-weight: var(--font-weight-normal);
+    font-weight: var(--font-weight-normal);
+  }
   .break-all {
     word-break: break-all;
   }
@@ -365,8 +520,14 @@ const TAIWINDCSS_GENERATED = `
   .text-\\[var\\(--dsw-alias-label-caption\\)\\] {
     color: var(--dsw-alias-label-caption);
   }
+  .text-\\[var\\(--dsw-alias-label-primary\\)\\] {
+    color: var(--dsw-alias-label-primary);
+  }
   .text-\\[var\\(--dsw-alias-label-primary-dimmed\\,var\\(--dsw-alias-label-dimmed\\)\\)\\] {
     color: var(--dsw-alias-label-primary-dimmed,var(--dsw-alias-label-dimmed));
+  }
+  .text-\\[var\\(--dsw-alias-label-secondary\\,var\\(--dsw-alias-label-primary\\)\\)\\] {
+    color: var(--dsw-alias-label-secondary,var(--dsw-alias-label-primary));
   }
   .text-error {
     color: var(--dsw-alias-state-error-primary);
@@ -471,6 +632,15 @@ const TAIWINDCSS_GENERATED = `
     --tw-outline-style: none;
     outline-style: none;
   }
+  .\\[--dsh-chat-content-width\\:748px\\] {
+    --dsh-chat-content-width: 748px;
+  }
+  .\\[--dsh-composer-card-max-width\\:calc\\(var\\(--dsh-chat-content-width\\)_\\+_32px\\)\\] {
+    --dsh-composer-card-max-width: calc(var(--dsh-chat-content-width) + 32px);
+  }
+  .\\[--dsh-composer-side-clearance\\:16px\\] {
+    --dsh-composer-side-clearance: 16px;
+  }
   .\\[--dsw-alias-interactive-bg-hover\\:color-mix\\(in_srgb\\,var\\(--dsw-alias-state-error-primary\\)_8\\%\\,transparent\\)\\] {
     --dsw-alias-interactive-bg-hover: var(--dsw-alias-state-error-primary);
     @supports (color: color-mix(in lab, red, red)) {
@@ -485,6 +655,11 @@ const TAIWINDCSS_GENERATED = `
   }
   .\\[font\\:inherit\\] {
     font: inherit;
+  }
+  .placeholder\\:text-dimmed {
+    &::placeholder {
+      color: var(--dsw-alias-label-dimmed);
+    }
   }
   .before\\:pointer-events-none {
     &::before {
@@ -656,6 +831,11 @@ const TAIWINDCSS_GENERATED = `
       }
     }
   }
+  .focus\\:border-brand {
+    &:focus {
+      border-color: var(--dsw-alias-brand-primary);
+    }
+  }
   .focus-visible\\:bg-\\[var\\(--dsw-alias-bg-layer-4\\)\\] {
     &:focus-visible {
       background-color: var(--dsw-alias-bg-layer-4);
@@ -728,6 +908,11 @@ const TAIWINDCSS_GENERATED = `
   .disabled\\:opacity-50 {
     &:disabled {
       opacity: 50%;
+    }
+  }
+  .disabled\\:opacity-60 {
+    &:disabled {
+      opacity: 60%;
     }
   }
   .has-\\[\\>input\\:disabled\\]\\:cursor-not-allowed {
@@ -835,6 +1020,16 @@ const TAIWINDCSS_GENERATED = `
   .\\[\\&_svg\\]\\:w-\\[14px\\] {
     & svg {
       width: 14px;
+    }
+  }
+  .\\[\\&\\>\\*\\]\\:w-full {
+    &>* {
+      width: 100%;
+    }
+  }
+  .\\[\\&\\>\\*\\]\\:max-w-\\[960px\\] {
+    &>* {
+      max-width: 960px;
     }
   }
 }

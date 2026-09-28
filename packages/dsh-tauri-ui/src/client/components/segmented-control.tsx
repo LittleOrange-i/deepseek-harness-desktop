@@ -1,12 +1,27 @@
 import type { ReactElement } from 'react'
-import type { SegmentedControlProps } from './segmented-control.types'
 import { tv } from 'dsh-tauri/client'
 import { useRef } from 'react'
+
+export interface SegmentedControlOption {
+  value: string
+  label: string
+  disabled?: boolean
+  title?: string
+}
+
+export interface SegmentedControlProps {
+  id?: string
+  label?: string
+  value: string
+  disabled?: boolean
+  options: readonly SegmentedControlOption[]
+  onChange: (next: string) => void
+}
 
 const segmentedControl = tv({
   slots: {
     base: 'box-border inline-flex items-center gap-[2px] p-[2px] border-none rounded-[10px] bg-module-platform',
-    option: 'box-border inline-flex items-center justify-center gap-[6px] min-h-[28px] px-[12px] border-none rounded-[8px] bg-transparent text-secondary cursor-pointer [font:inherit] text-[13px] leading-[20px] whitespace-nowrap hover:not-disabled:bg-hover hover:not-disabled:text-primary focus-visible:shadow-focus-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+    option: 'box-border inline-flex items-center justify-center gap-[6px] min-h-[28px] px-[12px] border-none rounded-[8px] bg-transparent text-secondary cursor-pointer [font-family:inherit] text-[13px] leading-[20px] whitespace-nowrap hover:not-disabled:bg-hover hover:not-disabled:text-primary focus-visible:shadow-focus-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
   },
   variants: {
     selected: {

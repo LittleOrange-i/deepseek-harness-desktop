@@ -13,7 +13,7 @@ export interface CheckboxProps {
 
 const checkbox = tv({
   slots: {
-    base: 'inline-flex items-center gap-[6px] text-primary cursor-pointer [font:inherit] text-[14px] leading-[20px] has-[>input:disabled]:cursor-not-allowed has-[>input:disabled]:opacity-50',
+    base: 'inline-flex items-center gap-[6px] text-primary cursor-pointer [font-family:inherit] text-[14px] leading-[20px] has-[>input:disabled]:cursor-not-allowed has-[>input:disabled]:opacity-50',
     input: 'box-border shrink-0 w-[16px] h-[16px] m-0 cursor-[inherit] accent-[var(--dsw-alias-button-primary-fill)] focus-visible:[outline:var(--dsw-focus-ring-width,2px)_solid_var(--dsw-focus-ring-color,var(--dsw-alias-state-business-primary))] focus-visible:[outline-offset:1px]',
     label: 'min-w-0 text-secondary',
   },

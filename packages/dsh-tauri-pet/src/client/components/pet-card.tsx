@@ -1,6 +1,17 @@
 import type { ReactElement } from 'react'
-import type { PetCardProps } from './pet-card.types'
 import { Button } from 'dsh-tauri-ui/client'
+
+/** 桌宠卡片（预设 / Chat / Codex 三类共用的展示单元）属性。 */
+export interface PetCardProps {
+  actionLabel: string
+  active: boolean
+  desc: string
+  disabled: boolean
+  name: string
+  onAction: () => void
+  thumbnail?: string
+  thumbnailType?: 'gif' | 'spritesheet'
+}
 
 /** 桌宠卡片：缩略图 + 名称/描述 + 单个动作按钮（启用 / 选择 / 取消选择）。 */
 export function PetCard(props: PetCardProps): ReactElement {

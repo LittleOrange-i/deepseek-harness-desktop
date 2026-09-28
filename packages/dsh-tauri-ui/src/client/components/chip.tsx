@@ -35,7 +35,7 @@ const chip = tv({
       },
       // 官方 .selector 是设置行、不旋转；本仓把它当下拉触发器用，故与 composerTrigger 一样带展开态。
       selector: {
-        base: 'gap-[12px] h-[36px] px-[14px] rounded-md bg-module-platform [font:inherit] text-[14px] leading-[22px] text-primary hover:not-disabled:bg-hover',
+        base: 'gap-[12px] h-[36px] px-[14px] rounded-md bg-module-platform [font-family:inherit] text-[14px] leading-[22px] text-primary hover:not-disabled:bg-hover',
         chevron: 'transition-transform duration-[120ms] ease-[ease] data-[open=true]:rotate-180',
       },
     },

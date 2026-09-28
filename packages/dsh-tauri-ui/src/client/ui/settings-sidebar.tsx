@@ -1,10 +1,10 @@
 import type { CSSProperties, ReactElement, PointerEvent as ReactPointerEvent } from 'react'
-import type { SettingsSidebarProps } from './sidebar.types'
+import type { IconComponent } from '../components/icon'
 import { SlotOutlet } from '@deepseek-ai/dsh-client-ui-renderer'
-import { clamp, isEmpty, useEventListener, useStore } from 'dsh-tauri/client'
+import { clamp, cn, isEmpty, useEventListener, useStore } from 'dsh-tauri/client'
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../components/icon'
-import { ArrowLeft } from '../components/icons'
+import { ArrowLeft, Cubes3Overlap, Database, Gear, Ghost, PersonPencil, Puzzle, Server, Tray } from '../components/icons'
 import {
   RAIL_WIDTH_DEFAULT,
   RAIL_WIDTH_MAX,
@@ -12,19 +12,32 @@ import {
   SETTINGS_SECTION_SLOT,
   SETTINGS_SIDEBAR_CLASS,
 } from '../constants'
-import { useMountStyle } from '../hooks/use-mount-style'
 import { locale } from '../locales'
 import { store } from '../store'
-import { SettingsNavIcon } from './nav-icon'
-import settingsSidebarStyle from './sidebar.cssr'
 
-const SETTINGS_STYLE_ID = 'dsh-tauri-ui-settings-sidebar-styles'
+import type { SessionListState } from 'dsh-tauri/client'
+import type { SelectorHook } from '../types/selector'
+
+export interface SettingsSidebarProps {
+  useSessions: SelectorHook<SessionListState>
+  useWorkspaces?: unknown
+}
+
+const Icons: Record<string, IconComponent | undefined> = {
+  'account': PersonPencil,
+  'general': Gear,
+  'models': Database,
+  'agent-presets': Cubes3Overlap,
+  'dsh-tauri-archive': Tray,
+  'plugins': Puzzle,
+  'dsh-tauri-ssh': Server,
+  'dsh-tauri-pet-settings': Ghost,
+}
 
 export function SettingsSidebar(_props: SettingsSidebarProps): ReactElement | null {
   const ui = useStore(store.settings, { sync: true })
   const { rows } = useStore(store.sections)
   locale.useLocale()
-  useMountStyle(settingsSidebarStyle, SETTINGS_STYLE_ID)
   const searchRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const draggingRef = useRef(false)
@@ -90,14 +103,17 @@ export function SettingsSidebar(_props: SettingsSidebarProps): ReactElement | nu
     : visible[0]?.id
 
   return (
-    <div className={SETTINGS_SIDEBAR_CLASS} data-slot-sidebar="dsh-tauri-ui">
+    <div
+      className={`${SETTINGS_SIDEBAR_CLASS} fixed inset-0 z-[1000] flex bg-[var(--dsw-specific-sidebar-fill)] text-primary [--dsh-chat-content-width:748px] [--dsh-composer-card-max-width:calc(var(--dsh-chat-content-width)_+_32px)] [--dsh-composer-side-clearance:16px]`}
+      data-slot-sidebar="dsh-tauri-ui"
+    >
       <div
-        className={`${SETTINGS_SIDEBAR_CLASS}__rail`}
+        className="flex-none box-border flex flex-col gap-[14px] w-[var(--dsh-settings-rail-width)] px-[12px] py-[6px] bg-[var(--dsw-specific-sidebar-fill)] overflow-hidden"
         style={{ '--dsh-settings-rail-width': `${railWidth}px` } as CSSProperties}
       >
         <button
           type="button"
-          className={`${SETTINGS_SIDEBAR_CLASS}__back`}
+          className="flex items-center gap-[8px] self-start w-full px-[10px] py-[6px] border-none rounded-[10px] bg-transparent cursor-pointer [font-family:inherit] text-[14px] leading-[22px] text-primary hover:bg-hover"
           onClick={() => store.settings.close()}
         >
           <Icon as={ArrowLeft} />
@@ -105,37 +121,43 @@ export function SettingsSidebar(_props: SettingsSidebarProps): ReactElement | nu
         </button>
         <input
           ref={searchRef}
-          className={`${SETTINGS_SIDEBAR_CLASS}__search`}
+          className="box-border w-full h-[32px] px-[10px] border-[0.5px] border-border-l4 rounded-[8px] [font-family:inherit] bg-layer-1 text-primary text-[14px] leading-[22px] outline-none focus:border-brand placeholder:text-dimmed disabled:opacity-60 disabled:cursor-default"
           value={ui.query}
           placeholder={locale.text('search')}
           aria-label={locale.text('search')}
           onChange={event => store.settings.setQuery(event.target.value)}
         />
-        <nav className={`${SETTINGS_SIDEBAR_CLASS}__nav`} aria-label={locale.text('settings')}>
+        <nav className="flex flex-col gap-[4px] flex-1 overflow-y-auto min-h-0" aria-label={locale.text('settings')}>
           {visible.map(row => (
             <button
               key={row.id}
               type="button"
-              className={`${SETTINGS_SIDEBAR_CLASS}__nav-item${row.id === activeId ? ` ${SETTINGS_SIDEBAR_CLASS}__nav-item--active` : ''}`}
+              className={cn(
+                'box-border h-[40px] px-[12px] py-[9px] border-none rounded-[12px] bg-transparent text-left cursor-pointer [font-family:inherit] text-[14px] leading-[22px] font-normal text-primary flex items-center gap-[8px]',
+                row.id === activeId && 'bg-[var(--dsw-specific-sidebar-nav-item-active)] font-medium',
+              )}
               aria-current={row.id === activeId ? 'true' : undefined}
               onClick={() => store.settings.select(row.id)}
             >
-              <SettingsNavIcon id={row.id} />
-              <span className={`${SETTINGS_SIDEBAR_CLASS}__nav-label`}>{row.label}</span>
+              <Icon as={Icons[row.id] ?? Gear} size={16} className="flex-none" />
+              <span className="flex-1 min-w-0 truncate">{row.label}</span>
             </button>
           ))}
-          {isEmpty(visible) && <div className={`${SETTINGS_SIDEBAR_CLASS}__empty`}>{locale.text('noResults')}</div>}
+          {isEmpty(visible) && <div className="px-[10px] py-[12px] text-[13px] leading-[20px] text-[var(--dsw-alias-label-secondary,var(--dsw-alias-label-primary))]">{locale.text('noResults')}</div>}
         </nav>
       </div>
       <div
         role="separator"
         aria-orientation="vertical"
         aria-label={locale.text('settings')}
-        className={`${SETTINGS_SIDEBAR_CLASS}__handle${dragging ? ` ${SETTINGS_SIDEBAR_CLASS}__handle--dragging` : ''}`}
+        className={cn(
+          'flex-none self-stretch w-[8px] -ml-1 z-[2] cursor-col-resize touch-none bg-transparent rounded-[4px]',
+          dragging && 'bg-border-l2',
+        )}
         onPointerDown={onHandlePointerDown}
       />
-      <div className={`${SETTINGS_SIDEBAR_CLASS}__content-outer`}>
-        <div className={`${SETTINGS_SIDEBAR_CLASS}__content-inner`}>
+      <div className="flex-1 min-w-0 h-full box-border overflow-y-auto flex bg-[var(--dsw-alias-bg-base)] rounded-tl-[16px] [corner-shape:round]">
+        <div className="w-[min(calc(var(--dsh-composer-card-max-width)_+_2_*_var(--dsh-composer-side-clearance)),100%)] mx-auto box-border px-[36px] py-[28px]">
           {activeId !== undefined && (
             <SlotOutlet
               slotKey={SETTINGS_SECTION_SLOT}

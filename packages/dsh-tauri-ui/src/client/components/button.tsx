@@ -7,7 +7,7 @@ import { tv } from 'dsh-tauri/client'
 
 // elevated / add / addGhost 是上游固定几何，size 对其无效；danger 沿用官方 outline 的 md / sm 两档。
 const localVariants = {
-  elevated: 'flex w-full shrink-0 gap-[6px] h-[38px] px-[16px] py-[8px] [font:inherit] text-[14px] font-medium leading-[22px] text-primary bg-[var(--dsw-alias-button-elevated-fill)] border-[0.5px] border-border-l3 rounded-md overflow-hidden hover:not-disabled:bg-[var(--dsw-alias-button-floating-hover)] disabled:opacity-50',
+  elevated: 'flex w-full shrink-0 gap-[6px] h-[38px] px-[16px] py-[8px] [font-family:inherit] text-[14px] font-medium leading-[22px] text-primary bg-[var(--dsw-alias-button-elevated-fill)] border-[0.5px] border-border-l3 rounded-md overflow-hidden hover:not-disabled:bg-[var(--dsw-alias-button-floating-hover)] disabled:opacity-50',
   add: 'inline-flex border-none gap-[4px] h-[32px] px-[12px] text-[13px] leading-[20px] bg-primary-fill text-primary-fg rounded-md hover:not-disabled:bg-primary-hover disabled:opacity-40',
   addGhost: 'inline-flex border-none gap-[4px] h-[32px] px-[12px] text-[13px] leading-[20px] bg-transparent text-primary rounded-md hover:not-disabled:bg-hover active:not-disabled:bg-active disabled:opacity-40',
   // 上游 `.danger` 是 token 重绑：本地覆盖 --dsw-alias-interactive-bg-hover，让 hover 洗色变红。

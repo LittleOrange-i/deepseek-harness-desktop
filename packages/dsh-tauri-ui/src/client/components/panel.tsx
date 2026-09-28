@@ -1,8 +1,5 @@
 import type { ReactElement, ReactNode } from 'react'
-import { useMountStyle } from '../hooks/use-mount-style'
-import panelPageStyle from './panel-page.cssr'
 
-const PANEL_PAGE_STYLE_ID = 'dsh-tauri-ui-panel-page-styles'
 
 /**
  * 面板页容器：复刻官方插件页（`@deepseek-ai/dsh-client-ui-plugin-manager` 的
@@ -13,7 +10,6 @@ const PANEL_PAGE_STYLE_ID = 'dsh-tauri-ui-panel-page-styles'
  * 中心列不滚动），居中与间距由 `align-items:center` + `gap` 承担；面板自身根节点
  * 作为直接子项被 `>*` 规则夹到 960px。
  */
-export function PanelPage({ children }: { children: ReactNode }): ReactElement {
-  useMountStyle(panelPageStyle, PANEL_PAGE_STYLE_ID)
-  return <div className="dshp-panel-page">{children}</div>
+export function Panel({ children }: { children: ReactNode }): ReactElement {
+  return <div className="box-border flex flex-col items-center gap-8 h-full px-[clamp(24px,4vw,48px)] pt-[28px] pb-[48px] overflow-auto text-[var(--dsw-alias-label-primary)] [&>*]:w-full [&>*]:max-w-[960px]">{children}</div>
 }

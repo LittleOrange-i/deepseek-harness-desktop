@@ -105,10 +105,8 @@ export default c([
     padding: '12px 14px',
     borderRadius: '12px',
     border: '1px solid var(--dsw-alias-border-weak)',
-    background: 'var(--dsw-alias-bg-base)',
-  }, [
-    c('&:hover', { background: 'var(--dsw-alias-interactive-bg-hover)' }),
-  ]),
+    background: 'var(--dsw-alias-interactive-bg-hover)'
+  }),
   c('.dshp-pet__card-thumb', {
     flex: 'none',
     width: '56px',

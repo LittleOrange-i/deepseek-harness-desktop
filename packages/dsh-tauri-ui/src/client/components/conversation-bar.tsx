@@ -28,7 +28,7 @@ const conversationBar = tv({
 })
 
 const conversationBarAction = tv({
-  base: 'inline-flex items-center justify-center gap-[4px] p-0 border-0 bg-transparent rounded-[6px] text-primary [font:inherit] text-[13px] leading-[20px] underline decoration-transparent underline-offset-[2px] transition-[text-decoration-color] duration-[120ms] ease-[ease] cursor-pointer disabled:cursor-default hover:not-disabled:decoration-current focus-visible:shadow-focus-ring focus-visible:outline-none disabled:text-dimmed disabled:opacity-40',
+  base: 'inline-flex items-center justify-center gap-[4px] p-0 border-0 bg-transparent rounded-[6px] text-primary [font-family:inherit] text-[13px] leading-[20px] underline decoration-transparent underline-offset-[2px] transition-[text-decoration-color] duration-[120ms] ease-[ease] cursor-pointer disabled:cursor-default hover:not-disabled:decoration-current focus-visible:shadow-focus-ring focus-visible:outline-none disabled:text-dimmed disabled:opacity-40',
   variants: {
     iconOnly: {
       true: 'w-[28px] h-[28px] rounded-full [corner-shape:round] no-underline text-tertiary hover:not-disabled:bg-hover hover:not-disabled:text-secondary disabled:text-tertiary',

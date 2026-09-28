@@ -1,6 +1,5 @@
 import type { ReactElement } from 'react'
 import type { SkillRowView } from '../types'
-import type { OpenTarget, SkillEditorState, SkillsTabProps } from './skills-tab.types'
 import { Action, ArrowRotateRight, Button, Checkbox, GraduationCap, Icon, Input, LogoGithub, Modal, Pill, SegmentedControl, StateDot, Switch, Tag } from 'dsh-tauri-ui/client'
 import { orderBy, uniq } from 'dsh-tauri/client'
 import { useEffect, useMemo, useState } from 'react'
@@ -9,6 +8,25 @@ import { MarkdownPreview } from '../components/markdown'
 import { IMPORT_REFRESH_DELAYS_MS, SKILL_REFRESH_INTERVAL_MS, SKILL_REFRESH_TIMEOUT_MS, SOURCE_LOCALE_KEYS } from '../constants'
 import { useTimers } from '../hooks/use-timers'
 import { normalizeRepository, policyTag } from './skills-tab.utils'
+
+import type { Translate } from '../locales/index.types'
+
+export interface SkillEditorState {
+  mode: 'edit' | 'view'
+  name: string
+  description: string
+  whenToUse: string
+  modelInvocable: boolean
+  userInvocable: boolean
+  content: string
+}
+
+export type OpenTarget = { target: 'user-skills' } | { target: 'skill', name: string }
+
+export interface SkillsTabProps {
+  t: Translate
+  createSkill: () => Promise<void>
+}
 
 export function SkillsTab({ t, createSkill }: SkillsTabProps): ReactElement {
   const [skills, setSkills] = useState<SkillRowView[] | null>(null)

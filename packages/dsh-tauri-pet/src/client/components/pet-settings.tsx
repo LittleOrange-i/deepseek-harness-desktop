@@ -1,5 +1,4 @@
 import type { ChangeEvent, ReactElement } from 'react'
-import type { PetSettingsProps } from './pet-settings.types'
 import { ArrowRightFromSquare, Button, Icon, Plus, SegmentedControl } from 'dsh-tauri-ui/client'
 import { useStore, useWatchImmediate } from 'dsh-tauri/client'
 import { useEffect, useId, useRef, useState } from 'react'
@@ -24,6 +23,13 @@ const TAB_OPTIONS = [
   { value: 'pets', label: 'Pets' },
   { value: 'codex', label: 'Codex' },
 ] as const
+import type { PetActionResult } from '../service/pet.types'
+
+/** settings.section 槽位注入给设置分区的属性。 */
+export interface PetSettingsProps {
+  close?: () => void
+  onCreate: (close?: () => void) => Promise<PetActionResult>
+}
 
 /** 读取 .zip 归档为 base64（桌面端命令按字符串收包）。 */
 function readAsBase64(file: File): Promise<string> {

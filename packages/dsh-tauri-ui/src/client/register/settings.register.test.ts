@@ -15,8 +15,8 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock('../store', () => ({ store: { settings: mocks.settings } }))
-vi.mock('../ui/sidebar', () => ({ SettingsSidebar: () => null }))
-vi.mock('../ui/trigger', () => ({ SettingsTrigger: () => null }))
+vi.mock('../ui/settings-sidebar', () => ({ SettingsSidebar: () => null }))
+vi.mock('../ui/settings-trigger', () => ({ SettingsTrigger: () => null }))
 vi.mock('@deepseek-ai/dsh-client-ui-renderer', () => ({ SlotOutlet: () => null }))
 vi.mock('dsh-tauri/client', () => ({
   defineRegister: (setup: (controller: unknown, ctx: unknown) => void) =>

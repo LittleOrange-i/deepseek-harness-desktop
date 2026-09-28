@@ -72,7 +72,7 @@ async function regenerate(reason: string): Promise<void> {
     const css = await compile()
     const changed = write(css)
     console.log(
-      `[build:taiwindcss] ${reason}: ${changed ? 'generated' : 'unchanged'} taiwindcss.ts (${(Buffer.byteLength(css) / 1024).toFixed(1)} KiB, ${Date.now() - started} ms)`,
+      `[taiwindcss] ${reason}: ${changed ? 'generated' : 'unchanged'} taiwindcss.ts (${(Buffer.byteLength(css) / 1024).toFixed(1)} KiB, ${Date.now() - started} ms)`,
     )
   }
   finally {
@@ -100,7 +100,7 @@ function schedule(reason: string): void {
     timer = undefined
     const current = pendingReason
     void regenerate(current).catch((error: unknown) => {
-      console.error(`[build:taiwindcss] ${current} failed: ${report(error)}`)
+      console.error(`[taiwindcss] ${current} failed: ${report(error)}`)
     })
   }, DEBOUNCE_MS)
 }
@@ -121,7 +121,7 @@ async function main(): Promise<void> {
     }
     if (!existsSync(resolve(PACKAGES_ROOT, filename))) {
       console.warn(
-        `[build:taiwindcss] removed ${filename}: Tailwind 的扫描清单不会剔除已删除文件，产物要等下次全新生成（重启 dev 或 build）才收缩`,
+        `[taiwindcss] removed ${filename}: Tailwind 的扫描清单不会剔除已删除文件，产物要等下次全新生成（重启 dev 或 build）才收缩`,
       )
     }
     schedule(filename)
@@ -133,13 +133,13 @@ async function main(): Promise<void> {
       schedule(filename)
     }
   })
-  console.log(`[build:taiwindcss] watching packages/*/src and ${CONFIG_FILES.length} tailwind configs`)
+  console.log(`[taiwindcss] watching packages/*/src and ${CONFIG_FILES.length} tailwind configs`)
 }
 
 try {
   await main()
 }
 catch (error) {
-  console.error(`[build:taiwindcss] ${report(error)}`)
+  console.error(`[taiwindcss] ${report(error)}`)
   process.exitCode = 1
 }

@@ -1,9 +1,10 @@
 import type { MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ReactElement } from 'react'
-import type { SettingsTriggerProps } from './trigger.types'
+import type { SessionId, SessionListState } from 'dsh-tauri/client'
+import type { SelectorHook } from '../types/selector'
 import { Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import { SlotOutlet } from '@deepseek-ai/dsh-client-ui-renderer'
-import { uniq, useStore } from 'dsh-tauri/client'
+import { cn, uniq, useStore } from 'dsh-tauri/client'
 import { useCallback, useEffect, useState } from 'react'
 import { Gear } from '../components/icons'
 import {
@@ -11,15 +12,29 @@ import {
   SETTINGS_ONBOARDING_SLOT,
   SETTINGS_TRIGGER_SLOT,
 } from '../constants'
-import { useMountStyle } from '../hooks/use-mount-style'
 import { locale } from '../locales'
 import { store } from '../store'
-import settingsTriggerStyle from './trigger.cssr'
-
-const SETTINGS_TRIGGER_STYLE_ID = 'dsh-tauri-ui-settings-trigger-styles'
 
 interface RetainedSessionLike {
   retainedBy?: Readonly<Record<string, number | undefined>>
+}
+
+/**
+ * `useSessions` 快照的读取面：0.1.7 起核心不再把选中态放进列表快照（改由 `uiSession` 持有），
+ * 适配层会把 `current` 投影补回，因此按可选成员声明。
+ *
+ * `byId` 放宽为裸字符串索引：核心按 branded `SessionId` 建索引，而 `current` 经投影回落后
+ * 是裸字符串，二者在读取处需能互相寻址。
+ */
+export type SessionListStateLike = Omit<SessionListState, 'byId'> & {
+  current?: string
+  byId: Record<string, SessionListState['byId'][SessionId]>
+}
+
+export interface SettingsTriggerProps {
+  wide: boolean
+  useSessions: SelectorHook<SessionListStateLike>
+  useWorkspaces?: unknown
 }
 
 // 0.1.7 起列表快照不再带 current，「当前会话」改由主视图持有的 reference 表达。
@@ -30,7 +45,6 @@ function isMainViewRetained(session: RetainedSessionLike): boolean {
 export function SettingsTrigger({ wide, useSessions }: SettingsTriggerProps): ReactElement {
   const { open, launcherAvailable, launcherShortcut } = useStore(store.settings)
   const { onboarding } = useStore(store.sections)
-  useMountStyle(settingsTriggerStyle, SETTINGS_TRIGGER_STYLE_ID)
   const [completed, setCompleted] = useState<string[]>([])
 
   const onboardingActive = useSessions((state) => {
@@ -79,7 +93,10 @@ export function SettingsTrigger({ wide, useSessions }: SettingsTriggerProps): Re
         }
         setMenuOpen(value => !value)
       }}
-      className={`dshp-settings-trigger${wide ? '' : ' dshp-settings-trigger--rail'}`}
+      className={cn(
+        'dshp-settings-trigger box-border flex flex-none items-center gap-[8px] w-[calc(100%+4px)] h-[42px] my-[4px] -mx-[2px] pr-[10px] pl-[8px] border-none rounded-[12px] bg-transparent [font-family:inherit] text-[14px] leading-[22px] text-primary overflow-hidden cursor-pointer hover:bg-hover',
+        !wide && 'justify-center gap-0 w-[36px] h-[36px] mt-[8px] mb-[10px] mx-0 p-0 rounded-full',
+      )}
     >
       <SlotOutlet slotKey={SETTINGS_TRIGGER_SLOT} ownerProps={{ wide }} />
     </button>
@@ -110,7 +127,9 @@ export function SettingsTrigger({ wide, useSessions }: SettingsTriggerProps): Re
               align="start"
               portal
               autoFocus
-              className="dshp-settings-trigger-host"
+              // 官方 primitives 的 Menu anchor 包裹层（`.root`）是收缩盒，且其样式不在 layer 里；
+              // 我们的工具类在 `@layer utilities`，不加 `!` 压不过它，触发器就不再占满整行。
+              className="block! w-full!"
               items={menuItems}
               anchor={trigger}
               onSelect={(id: string) => {

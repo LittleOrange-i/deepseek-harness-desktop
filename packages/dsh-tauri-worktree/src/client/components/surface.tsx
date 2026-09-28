@@ -1,10 +1,13 @@
 import type { ReactElement } from 'react'
-import type { SurfaceBarProps } from './surface.types'
 import { ArrowRightFromSquare, CircleTree, ConversationBar, ConversationBarAction, Icon, TerminalLine, TrashBin, Xmark } from 'dsh-tauri-ui/client'
 import { useState } from 'react'
 import { useWorktreeSession } from '../hooks/use-worktree-session'
 import { locale } from '../locales'
 import { store } from '../store'
+
+export interface SurfaceBarProps {
+  sessionId: string
+}
 
 export function WorktreeSurface({ sessionId }: SurfaceBarProps): ReactElement | null {
   locale.useLocale()

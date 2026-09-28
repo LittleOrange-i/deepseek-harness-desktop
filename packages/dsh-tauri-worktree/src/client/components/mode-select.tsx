@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react'
 import type { DraftAttachmentDescriptor } from '../service/attachments.types'
 import type { InputActions } from '../service/session-switch.types'
-import type { ModeSelectProps } from './mode-select.types'
 import { ChevronDown, Chip, CircleTree, Icon, Menu } from 'dsh-tauri-ui/client'
 import { forEach, get } from 'dsh-tauri/client'
 import { useEffect, useRef, useState } from 'react'
@@ -21,6 +20,18 @@ import { waitForInputActions, waitForSessionListed } from '../service/session-sw
 import { attach, create } from '../service/worktree'
 import { store } from '../store'
 import { addDraftAttachments, canAddDraftAttachments, draftAttachmentIds, hasSendableContent, interceptsSubmit, removeDraftAttachment, resolveAccessModeGroup, showsModeSelect } from './mode-select.utils'
+
+import type { ConversationAttachments } from '../service/attachments.types'
+import type {  InputState, SessionsRuntime, WorkspacesRuntime } from '../service/session-switch.types'
+
+export interface ModeSelectProps {
+  sessionId: string
+  useInput: <S>(selector: (state: InputState) => S) => S
+  inputActions: InputActions
+  sessionsRuntime: SessionsRuntime
+  workspacesRuntime: WorkspacesRuntime
+  resolveAttachments: () => ConversationAttachments | undefined
+}
 
 export function WorktreeModeSelect(props: ModeSelectProps): ReactElement {
   const { sessionId } = props

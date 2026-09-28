@@ -120,6 +120,8 @@ $$\text{client/index.ts} \longrightarrow \begin{bmatrix} \text{register/} \\ \te
   * **业务组件直接写 `className`**：一次性布局与配色不建 variant 层、不抽象 `tv`。
   * 颜色优先用 `tailwind.plugins.config.js` 已登记的语义 token（`text-primary`、`bg-layer-1`、`border-border-l3`、`shadow-focus-ring`）；未登记的官方变量才回退任意值 `bg-[var(--dsw-*)]`。新增主题键必须同步该配置文件。
   * 新写的工具类只有在插件 Tailwind 产物里存在才生效——dev 下 watcher 自动扫描 `packages/*/src`，提交前跑 `pnpm build:taiwindcss`；漏生成不会报错，只是静默无样式。
+  * **叠加同类工具类必须消歧**：Tailwind 里同属性谁生效由**产物顺序**决定，不由 className 里的先后决定。`bg-transparent font-normal` 这类「基础态」不要与条件类同列叠加（`bg-transparent` 在产物里更靠后，会盖掉条件分支的 `bg-[…]`）；手写 `className` 用 `cn()`（`dsh-tauri/client` 转出的 tailwind-merge）合并，或三元整段互换；`tv` 内部已走 merge，无需额外处理。
+  * **禁止用 `font` 简写**：`[font:inherit]` 是 shorthand，会把同列 `text-[13px]` 的 `font-size` 一起重置（产物里 arbitrary property 排在字号工具类之后 → 字号变大）。要继承字体只写 `[font-family:inherit]`。
 * **`.cssr.ts` 仅用于全局样式**（`styles/` 下的公共样式树，如 `global.cssr.ts`、`index.cssr.ts`）：组件级样式一律不进 cssr；只导出 `CNode`，挂载统一通过 `mountStyle` / `register/styles.ts`[cite: 1]。
 * Hook 命名为 `use-<thing>.ts`，优先复用 `@reause/core` 原语（如 `useIntervalFn`）[cite: 1]。
 

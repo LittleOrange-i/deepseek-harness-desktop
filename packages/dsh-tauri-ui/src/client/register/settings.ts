@@ -10,8 +10,8 @@ import {
   SETTINGS_TRIGGER_PRIORITY,
 } from '../constants'
 import { store } from '../store'
-import { SettingsSidebar } from '../ui/sidebar'
-import { SettingsTrigger } from '../ui/trigger'
+import { SettingsSidebar } from '../ui/settings-sidebar'
+import { SettingsTrigger } from '../ui/settings-trigger'
 
 const SETTINGS_SHORTCUT_EFFECT = 'dsh-tauri-ui: settings launcher shortcut (Ctrl+, hint)'
 
