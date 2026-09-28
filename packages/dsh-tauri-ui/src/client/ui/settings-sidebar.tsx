@@ -13,7 +13,6 @@ import {
   RAIL_WIDTH_MAX,
   RAIL_WIDTH_MIN,
   SETTINGS_SECTION_SLOT,
-  SETTINGS_SIDEBAR_CLASS,
 } from '../constants'
 
 import { locale } from '../locales'
@@ -107,7 +106,7 @@ export function SettingsSidebar(_props: SettingsSidebarProps): ReactElement | nu
 
   return (
     <div
-      className={`${SETTINGS_SIDEBAR_CLASS} fixed inset-0 z-[1000] flex bg-[var(--dsw-specific-sidebar-fill)] text-primary [--dsh-chat-content-width:748px] [--dsh-composer-card-max-width:calc(var(--dsh-chat-content-width)_+_32px)] [--dsh-composer-side-clearance:16px]`}
+      className="fixed inset-0 z-[1000] flex bg-[var(--dsw-specific-sidebar-fill)] text-primary [--dsh-chat-content-width:748px] [--dsh-composer-card-max-width:calc(var(--dsh-chat-content-width)_+_32px)] [--dsh-composer-side-clearance:16px]"
       data-slot-sidebar="dsh-tauri-ui"
     >
       <div
@@ -158,7 +157,10 @@ export function SettingsSidebar(_props: SettingsSidebarProps): ReactElement | nu
         )}
         onPointerDown={onHandlePointerDown}
       />
-      <div className="flex-1 min-w-0 h-full box-border overflow-y-auto flex bg-[var(--dsw-alias-bg-base)] rounded-tl-[16px] [corner-shape:round]">
+      <div
+        data-slot="settings.content"
+        className="flex-1 min-w-0 h-full box-border overflow-y-auto flex bg-[var(--dsw-alias-bg-base)] rounded-tl-[16px] [corner-shape:round]"
+      >
         <div className="w-[min(calc(var(--dsh-composer-card-max-width)_+_2_*_var(--dsh-composer-side-clearance)),100%)] mx-auto box-border px-[36px] py-[28px]">
           {activeId !== undefined && (
             <SlotOutlet

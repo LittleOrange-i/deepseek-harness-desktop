@@ -54,7 +54,7 @@ export const SETTINGS_NAV_ITEM = 'nav[aria-label] button'
 /** 壳层自有设置菜单（浏览器态）的条目：官方 primitives 的 portal Menu 条目。 */
 export const SETTINGS_MENU_ITEM = '[role="menuitem"]'
 export const SETTINGS_MENU_LABEL = /^(设置|Settings)$/
-export const SETTINGS_CONTENT = '[class*="content-inner"]'
+export const SETTINGS_CONTENT = '[data-slot="settings.content"]'
 export const SETTINGS_ONBOARDING = '[data-slot="settings.onboarding"]'
 export const COMPOSER_CARD = '[data-composer-card]'
 export const COMPOSER_INPUT_DOCK = '[data-slot="conversation.input.dock"]'

@@ -1,4 +1,3 @@
-import { HERO_WORKSPACE_CHIP_CLASS } from '../constants'
 import { cssr } from '../utils/cssr'
 
 const { c } = cssr
@@ -10,7 +9,7 @@ const HERO_ROW = '[class$="heroWorkspaceRow"]'
  * `:not()` 是两者的唯一区分；`:has()` 保证只在接管 chip 真的挂载后才隐藏官方入口。
  */
 const OFFICIAL_CHIP = ['选择工作区', 'Choose workspace']
-  .map(label => `${HERO_ROW}:has(.${HERO_WORKSPACE_CHIP_CLASS}) button[aria-label="${label}"]:not(.${HERO_WORKSPACE_CHIP_CLASS})`)
+  .map(label => `${HERO_ROW}:has([data-hero-workspace]) button[aria-label="${label}"]:not([data-hero-workspace])`)
   .join(',')
 
 export const HERO_WORKSPACE_STYLE_ID = 'dsh-tauri-ui-hero-workspace-styles'

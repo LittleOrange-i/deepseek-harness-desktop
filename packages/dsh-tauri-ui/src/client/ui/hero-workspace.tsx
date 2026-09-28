@@ -12,13 +12,11 @@ import {
   Modal,
 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { SlotOutlet } from '@deepseek-ai/dsh-client-ui-renderer'
-import { cn } from 'dsh-tauri/client'
 import { useCallback, useRef, useState } from 'react'
 import { Chip } from '../components/chip'
 import { ChevronDown, Folder as FolderClose, FolderOpen, Plus } from '../components/icons'
 import { Text } from '../components/text'
 import {
-  HERO_WORKSPACE_CHIP_CLASS,
   HERO_WORKSPACE_FLOW_SLOT,
 } from '../constants'
 import { locale } from '../locales'
@@ -133,7 +131,8 @@ export function HeroWorkspace(props: HeroWorkspaceProps): ReactElement {
       <Chip
         ref={chipRef}
         variant="seat"
-        className={cn(HERO_WORKSPACE_CHIP_CLASS, 'max-w-[min(100%,360px)]')}
+        data-hero-workspace="1"
+        className="max-w-[min(100%,360px)]"
         aria-label={locale.text('chooseWorkspace')}
         aria-haspopup="menu"
         aria-expanded={visible}

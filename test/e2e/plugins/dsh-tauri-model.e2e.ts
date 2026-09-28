@@ -27,6 +27,7 @@ import {
   newDshPage,
   openSettings,
   selectSettingsSection,
+  SETTINGS_CONTENT,
   waitForCredentialModal,
 } from '../support/browser'
 
@@ -203,13 +204,13 @@ describe('L2 客户端', () => {
 
       await selectSettingsSection(app.page, app.frame, '模型', app.syntheticFallbacks)
 
-      const panel = await app.frame.evaluate(() => {
-        const content = document.querySelector('[class*="content-inner"]')
+      const panel = await app.frame.evaluate((contentSelector: string) => {
+        const content = document.querySelector(contentSelector)
         return {
           text: content?.textContent?.trim().slice(0, 200) ?? '',
           alerts: Array.from(content?.querySelectorAll('[role="alert"]') ?? []).map(alert => alert.textContent?.trim()),
         }
-      })
+      }, SETTINGS_CONTENT)
       expect(panel.text, '模型分区必须真的渲染出内容').not.toBe('')
       expect(panel.text, '模型分区必须落到本插件的模型页（含提供商/模型字样）').toMatch(/提供商|模型/)
       expectNoSyntheticFallbacks(app)
@@ -256,8 +257,8 @@ describe('L2 客户端', () => {
       await openSettings(app.page, app.frame, app.syntheticFallbacks)
       await selectSettingsSection(app.page, app.frame, '模型', app.syntheticFallbacks)
 
-      const state = await app.frame.evaluate(({ title, providerCard, addActions }) => {
-        const content = document.querySelector('[class*="content-inner"]')
+      const state = await app.frame.evaluate(({ title, providerCard, addActions, contentSelector }) => {
+        const content = document.querySelector(contentSelector)
         const footer = content?.querySelector(addActions)
         return {
           titles: content?.querySelectorAll(title).length ?? 0,
@@ -267,7 +268,7 @@ describe('L2 客户端', () => {
           alerts: Array.from(content?.querySelectorAll('[role="alert"]') ?? []).map(alert => alert.textContent?.trim()),
           navLabels: Array.from(document.querySelectorAll('nav[aria-label] button')).map(button => button.textContent?.trim()),
         }
-      }, { title: MODELS_TITLE, providerCard: MODELS_PROVIDER_CARD, addActions: MODELS_ADD_ACTIONS })
+      }, { title: MODELS_TITLE, providerCard: MODELS_PROVIDER_CARD, addActions: MODELS_ADD_ACTIONS, contentSelector: SETTINGS_CONTENT })
 
       expect(state.titles, '模型页必须渲染标题行（证明走的是正常分支而非加载失败分支）').toBeGreaterThan(0)
       expect(
@@ -303,15 +304,15 @@ describe('L2 客户端', () => {
       await selectSettingsSection(app.page, app.frame, '模型', app.syntheticFallbacks)
       await new Promise(resolve => setTimeout(resolve, 2_000))
 
-      const state = await app.frame.evaluate(() => {
-        const content = document.querySelector('[class*="content-inner"]')
+      const state = await app.frame.evaluate((contentSelector: string) => {
+        const content = document.querySelector(contentSelector)
         return {
           text: content?.textContent?.trim().slice(0, 240) ?? '',
           buttons: content?.querySelectorAll('button').length ?? 0,
           inputs: content?.querySelectorAll('input,textarea').length ?? 0,
           errorLines: Array.from(content?.querySelectorAll('[role="alert"]') ?? []).map(alert => alert.textContent?.trim() ?? ''),
         }
-      })
+      }, SETTINGS_CONTENT)
 
       expect(stubbedCalls, '模型页不得在加载时拉取预设上游：预设只由「自动配置所有模型」显式触发（该能力由本插件承载）').toBe(0)
       expect(state.text, '预设上游不可用时页面其余部分仍必须渲染（不是整页崩溃）').not.toBe('')
