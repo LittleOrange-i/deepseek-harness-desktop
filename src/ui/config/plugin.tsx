@@ -101,6 +101,12 @@ export function ConfigPlugin() {
     onError: (err, id) => {
       const name = plugins.find(p => p.id === id)?.name ?? id
       console.error('[ConfigPlugin] upgrade failed:', err)
+      // 「命令成功但版本没动」不是插件故障（档案钉死或 pnpm 的 release-age 策略，
+      // 见后端 PLUGIN_UPDATE_NO_CHANGE）：报「升级失败」会把用户引去排查插件本身。
+      if (String(err).startsWith('PLUGIN_UPDATE_NO_CHANGE:')) {
+        toast(t('plugins.upgrade_held', { name }), { variant: 'warning' })
+        return
+      }
       toast(t('plugins.upgrade_failed', { name }), {})
     },
   })

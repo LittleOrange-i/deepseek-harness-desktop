@@ -263,6 +263,7 @@
   "plugins.remove_confirm_desc": "确定卸载插件 {{name}} 吗？卸载后其功能将不可用。",
   "plugins.remove_failed": "卸载插件 {{name}} 失败",
   "plugins.upgrade_failed": "升级插件 {{name}} 失败",
+  "plugins.upgrade_held": "{{name}} 没有升级：档案已钉死该依赖，或新版本尚未通过供应链保护期（默认 24 小时内不安装）",
   "plugins.updated_toast": "插件 {{name}} 已更新",
   "plugins.removed_toast": "插件 {{name}} 已卸载",
   "plugins.disable": "禁用",

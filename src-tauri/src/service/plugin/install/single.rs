@@ -391,21 +391,25 @@ async fn run_single_plugin_command(
     // 清单依赖 basename），解析不到时跳过核验（警告即可，不误杀成功更新）。
     if action == "update" {
         // 假成功核验：pnpm 以 0 退出、但该依赖的解析结果与升级前完全一致，说明这次
-        // 升级没有落地（典型：档案 spec 是 `catalog:`，范围被 catalog 条目钉死）。
-        // 必须如实报错——报成功会让用户以为已在新版本上、实际仍在旧版本，比报失败
-        // 更难发现（与 [`remove`] 的「卸载后核验」同理）。
+        // 升级没有落地。两种已知成因都属于「按当前策略不该动」，而不是插件损坏：
+        // 1. 档案 spec 把版本钉死（`catalog:` 条目 / git 提交 / `link:` 本地目录），
+        //    `--latest` 也越不过声明范围；
+        // 2. pnpm 的 release-age 策略：新版本发布不足 `minimumReleaseAge`（pnpm 11
+        //    默认 1440 分钟 = 24 小时）时解析会回落到仍达标的最新版本，命令照旧以 0
+        //    退出且**不打印任何说明**——实测 bundled pnpm 11.7.0 在 `^2.10.15` 上
+        //    `update --latest` 静默停在 2.10.15，把 `minimumReleaseAge: 0` 写进档案
+        //    才取到 2.11.2。因此这条消息不能只归因于 catalog 钉死（会把人引偏）。
+        // 必须如实报「没升级」——报成功会让用户以为已在新版本上（与 [`remove`] 的
+        // 「卸载后核验」同理）；但**不**记进插件错误：插件没坏，记了会让列表挂上
+        // 「可能已损坏或与当前环境不兼容」的误导标记（安装/升级真失败各有记录点）。
         if let Some(before) = before_fingerprint.as_deref() {
             if dependency_fingerprint(&profile_dir(app_handle), id).as_deref() == Some(before) {
                 let detail = installed_package_version(&profile_dir(app_handle), id)
                     .unwrap_or_else(|| before.to_string());
-                let message = format!(
-                    "PLUGIN_UPDATE_NO_CHANGE: pnpm exited successfully but {id} is still at {detail}; the profile pins this dependency (for example a `catalog:` entry in pnpm-workspace.yaml), so the upgrade did not take effect"
-                );
-                log::error!("dsh plugin update made no change for {id}: {detail}");
-                if let Err(e) = errors::record(app_handle, id, action, &message) {
-                    log::warn!("failed to record plugin error for {id}: {e}");
-                }
-                return Err(message);
+                log::warn!("dsh plugin update made no change for {id}, still at {detail}");
+                return Err(format!(
+                    "PLUGIN_UPDATE_NO_CHANGE: pnpm exited successfully but {id} is still at {detail}; no newer version was installed — either the profile pins this dependency (a `catalog:` entry in pnpm-workspace.yaml, a git spec, or a `link:` directory), or the newest release is still inside pnpm's `minimumReleaseAge` window (releases younger than the configured age are not resolved; bundled pnpm defaults to 24 hours), so the upgrade did not take effect"
+                ));
             }
         }
         let Some(name) = installed_package_name(app_handle, id) else {
