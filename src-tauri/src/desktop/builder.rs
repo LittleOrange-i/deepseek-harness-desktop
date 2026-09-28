@@ -3,10 +3,18 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::{AtomicU64, Ordering};
 #[cfg(windows)]
 use std::sync::Arc;
+#[cfg(windows)]
+use std::sync::OnceLock;
 #[cfg(target_os = "macos")]
 use std::sync::{Mutex, OnceLock};
 
 use tauri::{ipc::Invoke, Emitter, Manager, Runtime, WebviewUrl, WebviewWindowBuilder, Wry};
+
+#[cfg(windows)]
+use windows_sys::Win32::UI::{
+    Shell::ExtractIconExW,
+    WindowsAndMessaging::{SendMessageW, HICON, ICON_BIG, ICON_SMALL, WM_GETICON, WM_SETICON},
+};
 
 // 托盘相关的 tauri 类型只在非 Linux 路径使用：Linux 走 desktop::linux_tray 的
 // KSNI 托盘（见该文件的背景说明），届时这些导入会变成未使用。
@@ -476,6 +484,99 @@ fn sync_macos_fullscreen_menu(window: &tauri::Window<Wry>) {
     }
 }
 
+/// 从 PE 文件的内嵌图标资源里取「大 + 小」两枚 HICON（`ExtractIconExW` 按系统 DPI
+/// 选帧，且保留 32 位 alpha）。
+///
+/// 句柄所有权随返回值交给调用方；提取失败时（包括只取到一半）本函数负责把已经拿到
+/// 的句柄销毁，不把半份结果漏出去。
+#[cfg(windows)]
+fn load_exe_icons(exe: &std::path::Path) -> Option<(HICON, HICON)> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::UI::WindowsAndMessaging::DestroyIcon;
+
+    let wide: Vec<u16> = exe
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect();
+    let (mut large, mut small): (HICON, HICON) = (std::ptr::null_mut(), std::ptr::null_mut());
+    let extracted = unsafe { ExtractIconExW(wide.as_ptr(), 0, &mut large, &mut small, 1) };
+    if extracted > 0 && !large.is_null() && !small.is_null() {
+        return Some((large, small));
+    }
+    unsafe {
+        if !large.is_null() {
+            DestroyIcon(large);
+        }
+        if !small.is_null() {
+            DestroyIcon(small);
+        }
+    }
+    None
+}
+
+/// 进程级共享的 exe 图标句柄（大 + 小）。
+///
+/// `ExtractIconExW` 出来的 HICON 所有权在调用方，但「有主」不等于「用完就销毁」：
+/// 只要还有窗口或任务栏缓存引用它，它就必须活着。这里缓存成进程级单例，所有窗口共用
+/// 同一对句柄——总数恒为 2，既不随窗口开关累积（review：原实现每个壳层窗口各留两枚），
+/// 也不存在「窗口销毁时把还在用的句柄删掉」的悬垂窗口。
+#[cfg(windows)]
+fn shared_exe_icons() -> Option<(HICON, HICON)> {
+    struct Icons(HICON, HICON);
+    // SAFETY: HICON 是 GDI 句柄，只读共享；进程存活期间永不销毁，因此跨线程安全。
+    unsafe impl Send for Icons {}
+    unsafe impl Sync for Icons {}
+
+    static ICONS: OnceLock<Option<Icons>> = OnceLock::new();
+    ICONS
+        .get_or_init(|| {
+            std::env::current_exe()
+                .ok()
+                .as_deref()
+                .and_then(load_exe_icons)
+                .map(|(large, small)| Icons(large, small))
+        })
+        .as_ref()
+        .map(|icons| (icons.0, icons.1))
+}
+
+/// 填上 Windows 任务栏 / Alt+Tab 用的**大图标**槽位（issue #744）。
+///
+/// 任务栏与 Alt+Tab 取的是 ICON_BIG，而 tao 的 `set_window_icon` 只写 ICON_SMALL
+/// （`IconType::Small`），大图标槽位始终为 0；`.icon()` 递下去的那份也救不了场：
+/// tauri-codegen 只取 icon.ico 的第一帧（32×32）转 RGBA（`CachedIcon::new_ico` 的
+/// `entries()[0]`），tao 再用 `CreateIcon` 重建 HICON——`CreateIcon` 的色位图是 DDB，
+/// 不带 alpha，只能得到 1 位掩码的硬边剪影。任务栏于是画出一块拉伸过的模糊色块。
+///
+/// 绕开 RGBA 通道：直接从 exe 内嵌的图标资源取多帧 HICON（资源由 tauri-build 在
+/// 打包时嵌入），大小两个槽位一并覆盖。
+///
+/// 图标按系统 DPI 尺寸取一次（96 DPI 下 32/16），非 100% 缩放下由系统等比拉伸；
+/// 要做到逐 DPI 锐利，需要改用 `PrivateExtractIconsW` + `GetSystemMetricsForDpi`
+/// 按窗口 DPI 取帧，并在 `ScaleFactorChanged` 时重设。
+#[cfg(windows)]
+fn apply_windows_window_icon(window: &tauri::WebviewWindow<Wry>) {
+    let Some((large, small)) = shared_exe_icons() else {
+        log::warn!("[icon] exe icon resource unavailable, taskbar keeps the degraded small icon");
+        return;
+    };
+    let hwnd = match window.hwnd() {
+        Ok(hwnd) => hwnd.0,
+        Err(error) => {
+            log::warn!("[icon] window handle unavailable: {error}");
+            return;
+        }
+    };
+    unsafe {
+        SendMessageW(hwnd, WM_SETICON, ICON_BIG as usize, large as isize);
+        SendMessageW(hwnd, WM_SETICON, ICON_SMALL as usize, small as isize);
+        if SendMessageW(hwnd, WM_GETICON, ICON_BIG as usize, 0) == 0 {
+            log::warn!("[icon] ICON_BIG still unset after registration");
+        }
+    }
+}
+
 /// 构建主窗口。
 ///
 /// 主窗口在这里手动创建（不再从 tauri.conf.json 声明）：
@@ -516,6 +617,9 @@ pub fn build_main_window(app: &tauri::AppHandle<Wry>) -> tauri::Result<tauri::We
         // Windows 任务栏图标来源：窗口 .icon() > 可执行文件嵌入资源 > 系统默认。
         // 未调用 .icon() 时任务栏显示系统默认图标；显式设置 default_window_icon
         // 以在任务栏呈现与应用品牌一致的图标（macOS 用 TitleBar 无需此设置）。
+        // 这里只填 ICON_SMALL 槽位，且是 tauri 用 `CreateIcon` 从 32×32 首帧重建的
+        // 无 alpha 版本；任务栏要的 ICON_BIG 由建窗后的 `apply_windows_window_icon`
+        // 补上（issue #744）。本行保留作提取失败时的兜底。
         .icon(app.default_window_icon().unwrap().clone())?;
 
     // macOS 保留原生交通灯：绿色按钮由 AppKit 进入独立 Space 的原生全屏，
@@ -590,6 +694,8 @@ pub fn build_main_window(app: &tauri::AppHandle<Wry>) -> tauri::Result<tauri::We
         .initialization_script_for_all_frames(crate::desktop::plugin_boot::PLUGIN_BOOT_RELOAD_JS);
 
     let webview_window = webview_builder.build()?;
+    #[cfg(windows)]
+    apply_windows_window_icon(&webview_window);
     // 首帧前把窗口底色设成主题画布色（见 `config::window_background`），否则
     // 「窗口可见 → 前端取回偏好」之间会闪一次错色。
     apply_window_background(app, &webview_window);
@@ -721,6 +827,8 @@ pub fn build_shell_window(
     };
 
     let window = webview_builder.build()?;
+    #[cfg(windows)]
+    apply_windows_window_icon(&window);
     apply_window_background(app, &window);
 
     // 启动/真值变化时由主窗口应用缩放；新窗口需要自己应用一次当前真值。
@@ -743,7 +851,8 @@ pub fn build_extra_window(app: &tauri::AppHandle<Wry>) -> tauri::Result<tauri::W
 
 #[cfg(all(test, windows))]
 mod tests {
-    use super::windows_drag_browser_args;
+    use super::{load_exe_icons, windows_drag_browser_args};
+    use windows_sys::Win32::UI::WindowsAndMessaging::DestroyIcon;
 
     #[test]
     fn windows_drag_args_enable_touch_drag_and_disable_overscroll() {
@@ -753,6 +862,26 @@ mod tests {
         assert!(args.contains("msWebOOUI,msPdfOOUI"));
         let smart_screen = ["ms", "SmartScreen", "Protection"].concat();
         assert!(!args.contains(smart_screen.as_str()));
+    }
+
+    /// 任务栏大图标依赖 `ExtractIconExW`（issue #744）。测试二进制自己带不带图标资源
+    /// 不确定，换一个必然有图标组的系统 DLL 验证提取路径，并确认大/小两枚句柄都在。
+    #[test]
+    fn exe_icon_group_yields_large_and_small_handles() {
+        let root = std::env::var("SystemRoot").expect("SystemRoot must be set on Windows");
+        let shell32 = std::path::Path::new(&root)
+            .join("System32")
+            .join("shell32.dll");
+        let (large, small) =
+            load_exe_icons(&shell32).unwrap_or_else(|| panic!("no icon group in shell32.dll"));
+        assert!(!large.is_null() && !small.is_null());
+        assert_ne!(large, small, "大/小图标不应是同一个句柄");
+        unsafe {
+            DestroyIcon(large);
+            DestroyIcon(small);
+        }
+
+        assert!(load_exe_icons(std::path::Path::new("C:/dsh-missing-icon.exe")).is_none());
     }
 }
 
