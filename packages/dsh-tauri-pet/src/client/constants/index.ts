@@ -33,16 +33,17 @@ export const CMD_LIST_PRESET_PETS = 'list_preset_pets'
  * 设置菜单补丁的选择器与守卫属性。
  *
  * 官方账号菜单（桌面载体）与壳层自有菜单（浏览器直开）都是官方 primitives 的 portal `Menu`，
- * 条目为 `button[role=menuitem]` 且由 `itemWrap` 包裹；「设置」条目是唯一锚点，其它菜单
- * （工作区、模型选择等）不含该文案。克隆官方条目以继承样式，因此不依赖动态类名哈希。
+ * 条目为 `button[role=menuitem]`，结构为 `itemIcon` + `itemLabel`（+ 可选 `shortcut` 键帽）；
+ * 「设置」条目是唯一锚点，其它菜单（工作区、模型选择等）不含该文案。克隆官方条目以继承样式，
+ * 因此不依赖动态类名哈希。
  *
  * 桌宠的开关只存在于这个菜单里：侧栏爪按钮已删除（设置入口两种形态都是菜单）。
  */
 export const SETTINGS_MENU_LABELS: readonly string[] = ['设置', 'Settings']
 export const MENU_ITEM_SELECTOR = 'button[role="menuitem"]'
-export const MENU_ITEM_WRAP_SELECTOR = '[class*="itemWrap"]'
 export const MENU_ITEM_LABEL_SELECTOR = '[class*="itemLabel"]'
 export const MENU_ITEM_ICON_SELECTOR = '[class*="itemIcon"]'
+export const MENU_ITEM_SHORTCUT_SELECTOR = '[class*="shortcut"]'
 export const PET_MENU_ITEM_ATTRIBUTE = 'data-dsh-tauri-pet-menu-item'
 export const PET_MENU_PATCH_ATTRIBUTE = 'data-dsh-tauri-pet-menu-patched'
 
