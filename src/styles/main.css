@@ -33,8 +33,8 @@
 
 /* 主题变量：默认深色，html[data-theme="light"] 切换到浅色。
    取值与官方 dsw alias token（design-platform.css）逐项一致。
-   HeroUI 语义变量同步改写为 dsw 取值——壳层所有 HeroUI 组件（对话框 / 菜单 /
-   输入 / 通知 / 状态标签）都走这套变量，不得落回 HeroUI 默认调色板。 */
+   HeroUI 只改写品牌主色 --accent，其余语义变量保持官方默认（官方 variables.css
+   已按 data-theme 提供明暗两套取值）。 */
 :root {
   /* === 壳层自有 token === */
   --color-canvas: #151517;             /* bg-base (bluish-950) */
@@ -70,34 +70,9 @@
   --color-nav-hover: rgba(255, 255, 255, 0.08);
   --color-nav-active: rgba(255, 255, 255, 0.14);
 
-  /* === HeroUI 语义变量 → dsw alias === */
-  --background: var(--color-canvas);   /* bg-base */
-  --foreground: var(--color-ink);      /* label-primary */
-  --surface: #232324;                  /* bg-layer-1 (bluish-875) */
-  --surface-secondary: #2c2c2e;        /* bg-layer-2 (bluish-850) */
-  --surface-tertiary: #353638;         /* bg-layer-3 (bluish-800) */
-  --overlay: #2c2c2e;                  /* bg-layer-2（官方 Modal.module.css） */
-  --muted: #adb2b8;                    /* label-tertiary (bluish-400) */
-  --default: #353638;                  /* interactive-bg-hover-solid (bluish-800) */
-  --default-foreground: var(--color-ink);
+  /* === HeroUI 品牌主色 → dsw brand-primary（中性反色） === */
   --accent: #f9fafb;                   /* brand-primary (bluish-50) */
   --accent-foreground: #0f1115;        /* label-primary-foreground (bluish-1000) */
-  --field-background: #232324;         /* bg-layer-1（官方 Input.module.css） */
-  --field-border: var(--color-line-strong); /* border-l4 */
-  --field-border-width: 0.5px;         /* 官方 Input.module.css 描边 0.5px */
-  --success: var(--color-ok);          /* state-success-primary */
-  --success-foreground: #0f1115;
-  --warning: #f59e0b;                  /* state-warn-primary (amber-500) */
-  --warning-foreground: #0f1115;
-  --danger: #f25a5a;                   /* state-error-primary (red-400) */
-  --danger-foreground: #ffffff;
-  --segment: #353638;                  /* specific-selector (bluish-800) */
-  --segment-foreground: var(--color-ink);
-  --border: var(--color-line);         /* border-l2 */
-  --separator: rgba(255, 255, 255, 0.06); /* border-l1 #ffffff0f */
-  --link: var(--color-info);           /* alias-link (deepseek-400) */
-  --scrollbar-thumb: var(--color-scroll-thumb);
-  --backdrop: rgba(0, 0, 0, 0.5);      /* bg-mask-1 #00000080 */
 }
 
 html[data-theme="light"] {
@@ -132,33 +107,9 @@ html[data-theme="light"] {
   --color-nav-hover: rgba(38, 49, 72, 0.06);
   --color-nav-active: rgba(38, 49, 72, 0.1);
 
-  /* === HeroUI 语义变量 → dsw alias（浅色下官方无层级色阶，取 bluish-00/50/75） === */
-  --background: var(--color-canvas);
-  --foreground: var(--color-ink);
-  --surface: #ffffff;                  /* bg-layer-1 (bluish-00) */
-  --surface-secondary: #f9fafb;        /* bluish-50 */
-  --surface-tertiary: #f1f3f5;         /* bluish-75 */
-  --overlay: #ffffff;                  /* bg-layer-2 (bluish-00) */
-  --muted: #81858c;                    /* label-tertiary (bluish-600) */
-  --default: #f1f3f5;                  /* interactive-bg-hover-solid (bluish-75) */
-  --default-foreground: var(--color-ink);
+  /* === HeroUI 品牌主色 → dsw brand-primary（浅色中性反色） === */
   --accent: #0f1115;                   /* brand-primary (bluish-1000) */
   --accent-foreground: #ffffff;        /* label-primary-foreground (bluish-00) */
-  --field-background: #ffffff;         /* bg-layer-1（官方 Input.module.css） */
-  --field-border: var(--color-line-strong); /* border-l4 */
-  --success: var(--color-ok);
-  --success-foreground: #0f1115;
-  --warning: #f59e0b;                  /* state-warn-primary (amber-500) */
-  --warning-foreground: #0f1115;
-  --danger: #ec1313;                   /* state-error-primary (red-600) */
-  --danger-foreground: #ffffff;
-  --segment: #f5f6f7;                  /* specific-selector (bluish-60) */
-  --segment-foreground: var(--color-ink);
-  --border: var(--color-line);
-  --separator: rgba(0, 0, 0, 0.04);    /* border-l1 #0000000a */
-  --link: var(--color-info);           /* alias-link (deepseek-500) */
-  --scrollbar-thumb: var(--color-scroll-thumb);
-  --backdrop: rgba(0, 0, 0, 0.24);     /* bg-mask-1 #0000003d */
 }
 
 /* spinner 动画：与官方 web shell boot 页（AppRoot.module.css）逐字一致。
