@@ -168,6 +168,78 @@ describe('petSessionReducer (host)', () => {
     expect(last.payload.status).toBeUndefined()
   })
 
+  it('goal 续跑轮（source.round>0）未声明收尾时 turn/end(completed) 只到 result，不播雀跃庆祝', () => {
+    const { reducer, pushes } = collect()
+    reducer.create(peer())
+    reducer.apply(peer(), ev('turn/start', { turn: 2 }, 1))
+    reducer.apply(peer(), ev('user/message', { source: { kind: 'goal', goalId: 'g1', revision: 1, round: 1 } }, 2))
+    reducer.apply(peer(), ev('turn/end', { turn: 2, reason: { kind: 'completed' } }, 3))
+    expect(pushes.at(-1)!.payload).toMatchObject({ running: false, workStatus: 'result' })
+  })
+
+  it('goal 续跑轮以 update_goal complete 收尾 → workStatus=success', () => {
+    const { reducer, pushes } = collect()
+    reducer.create(peer())
+    reducer.apply(peer(), ev('turn/start', { turn: 2 }, 1))
+    reducer.apply(peer(), ev('user/message', { source: { kind: 'goal', goalId: 'g1', revision: 1, round: 1 } }, 2))
+    reducer.apply(peer(), ev('tool/call', { turn: 2, step: 1, callId: 'c1', name: 'update_goal', arguments: '{"action":"complete"}' }, 3))
+    reducer.apply(peer(), ev('turn/end', { turn: 2, reason: { kind: 'completed' } }, 4))
+    expect(pushes.at(-1)!.payload).toMatchObject({ workStatus: 'success' })
+  })
+
+  it('goal 续跑轮以 update_goal blocked 收尾 → workStatus=error，但不写 lastAgentError（阻塞非崩溃）', () => {
+    const { reducer, pushes } = collect()
+    reducer.create(peer())
+    reducer.apply(peer(), ev('turn/start', { turn: 2 }, 1))
+    reducer.apply(peer(), ev('user/message', { source: { kind: 'goal', goalId: 'g1', revision: 1, round: 1 } }, 2))
+    reducer.apply(peer(), ev('tool/call', { turn: 2, step: 1, callId: 'c1', name: 'update_goal', arguments: '{"action":"blocked","blocked_reason":"x"}' }, 3))
+    reducer.apply(peer(), ev('turn/end', { turn: 2, reason: { kind: 'completed' } }, 4))
+    const last = pushes.at(-1)!
+    expect(last.payload).toMatchObject({ workStatus: 'error' })
+    expect(last.payload.lastAgentError).toBeUndefined()
+    expect(last.payload.status).toBeUndefined()
+  })
+
+  it('goal 激活轮（round=0）不是续跑轮 → turn/end(completed) 仍为 success', () => {
+    const { reducer, pushes } = collect()
+    reducer.create(peer())
+    reducer.apply(peer(), ev('turn/start', { turn: 1 }, 1))
+    reducer.apply(peer(), ev('user/message', { source: { kind: 'goal', goalId: 'g1', revision: 1, round: 0 } }, 2))
+    reducer.apply(peer(), ev('turn/end', { turn: 1, reason: { kind: 'completed' } }, 3))
+    expect(pushes.at(-1)!.payload).toMatchObject({ workStatus: 'success' })
+  })
+
+  it('非 goal 轮的 update_goal 不影响终局档位（普通回合仍 success）', () => {
+    const { reducer, pushes } = collect()
+    reducer.create(peer())
+    reducer.apply(peer(), ev('turn/start', { turn: 1 }, 1))
+    reducer.apply(peer(), ev('tool/call', { turn: 1, step: 1, callId: 'c1', name: 'update_goal', arguments: '{"action":"blocked"}' }, 2))
+    reducer.apply(peer(), ev('turn/end', { turn: 1, reason: { kind: 'completed' } }, 3))
+    expect(pushes.at(-1)!.payload).toMatchObject({ workStatus: 'success' })
+  })
+
+  it('goal 标志随回合失效：续跑轮 result 后，下一普通轮 completed 回到 success', () => {
+    const { reducer, pushes } = collect()
+    reducer.create(peer())
+    reducer.apply(peer(), ev('turn/start', { turn: 2 }, 1))
+    reducer.apply(peer(), ev('user/message', { source: { kind: 'goal', goalId: 'g1', revision: 1, round: 1 } }, 2))
+    reducer.apply(peer(), ev('turn/end', { turn: 2, reason: { kind: 'completed' } }, 3))
+    expect(pushes.at(-1)!.payload).toMatchObject({ workStatus: 'result' })
+    reducer.apply(peer(), ev('turn/start', { turn: 3 }, 4))
+    reducer.apply(peer(), ev('turn/end', { turn: 3, reason: { kind: 'completed' } }, 5))
+    expect(pushes.at(-1)!.payload).toMatchObject({ workStatus: 'success' })
+  })
+
+  it('update_goal 参数不可解析时不当作收尾（续跑轮仍只到 result）', () => {
+    const { reducer, pushes } = collect()
+    reducer.create(peer())
+    reducer.apply(peer(), ev('turn/start', { turn: 2 }, 1))
+    reducer.apply(peer(), ev('user/message', { source: { kind: 'goal', goalId: 'g1', revision: 1, round: 2 } }, 2))
+    reducer.apply(peer(), ev('tool/call', { turn: 2, step: 1, callId: 'c1', name: 'update_goal', arguments: '{oops' }, 3))
+    reducer.apply(peer(), ev('turn/end', { turn: 2, reason: { kind: 'completed' } }, 4))
+    expect(pushes.at(-1)!.payload).toMatchObject({ workStatus: 'result' })
+  })
+
   it('tool/result 的工具级错误不写入 lastAgentError（回合仍在跑时不得判 failed 收起气泡）', () => {
     const { reducer, pushes } = collect()
     reducer.create(peer())

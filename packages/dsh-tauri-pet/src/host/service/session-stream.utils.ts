@@ -1,5 +1,10 @@
-import type { PetSessionPayload, PetToolActivity } from '../types'
-import type { PetSessionEvent, PetSessionPeer, PetSessionState } from './session-stream.types'
+import type { PetSessionPayload, PetToolActivity, PetWorkStatus } from '../types'
+import type {
+  PetGoalClosing,
+  PetSessionEvent,
+  PetSessionPeer,
+  PetSessionState,
+} from './session-stream.types'
 
 /** 推理文本滚动尾部窗口字符数：超出后丢弃最早内容，供气泡「思考 · text」实时滚动展示。 */
 export const PET_REASONING_TAIL_WINDOW = 120
@@ -210,6 +215,42 @@ function toolActivityOf(name?: string): PetToolActivity {
   return 'using-tool'
 }
 
+/**
+ * 本回合是否为 goal **自动续跑轮**：`user/message` 的 source 标记 `kind === 'goal'` 且 `round > 0`。
+ *
+ * `round === 0` 是用户 `/goal` 触发的激活轮（内核 `isGoalRound` 同样只把 `round > 0` 计入续跑轮），
+ * 其终局语义按普通回合处理。
+ */
+function isGoalRoundEvent(data: Record<string, unknown>): boolean {
+  const source = data.source as { kind?: string, round?: number } | undefined
+  return source?.kind === 'goal' && typeof source.round === 'number' && source.round > 0
+}
+
+/** `update_goal` 调用声明的收尾动作；`edit`/`pause`/`resume` 不算收尾，参数不可解析时忽略。 */
+function goalClosingOf(name: string | undefined, args: string | undefined): PetGoalClosing | undefined {
+  if (name !== 'update_goal')
+    return undefined
+  try {
+    const action = (JSON.parse(args ?? '') as { action?: string }).action
+    return action === 'complete' || action === 'blocked' ? action : undefined
+  }
+  catch {
+    return undefined
+  }
+}
+
+/**
+ * 回合终局档位：goal 续跑轮的**中间轮**只到 `result`（目标仍在推进，不得播雀跃庆祝）。
+ * 非 goal 轮维持 `success`；续跑轮以 `update_goal` 收尾时按收尾动作定档。
+ */
+function completedStatus(state: PetSessionState): PetWorkStatus {
+  if (!state.goalRound)
+    return 'success'
+  if (state.goalClosing === 'blocked')
+    return 'error'
+  return state.goalClosing === 'complete' ? 'success' : 'result'
+}
+
 /** 从 todo/write 提取当前任务文本（in_progress 优先、其次 pending）。 */
 function currentTaskFromTodo(data: Record<string, unknown>): string | undefined {
   const todos = Array.isArray(data.todos) ? (data.todos as Array<{ status?: string, content?: string }>) : []
@@ -294,6 +335,9 @@ function reduceSessionEvent(
     case 'tool/call': {
       const call = data as { callId?: string, name?: string, arguments?: string }
       const name = call.name
+      const closing = goalClosingOf(name, call.arguments)
+      if (closing)
+        state.goalClosing = closing
       // 携带原始 arguments JSON 字符串，供气泡解析 command/path。
       if (name)
         state.openTools.set(call.callId ?? name, { name, args: call.arguments })
@@ -355,6 +399,8 @@ function reduceSessionEvent(
     }
     case 'user/message': {
       // 用户消息只标记会话活跃，不写入展示 message（避免把用户提示当成助手描述）。
+      if (isGoalRoundEvent(data))
+        state.goalRound = true
       state.running = true
       state.turnActive = true
       if (state.waitingCallId !== undefined) {
@@ -397,7 +443,7 @@ function reduceSessionEvent(
       else {
         state.waitingKind = undefined
         if (reason?.kind === 'completed') {
-          state.workStatus = 'success'
+          state.workStatus = completedStatus(state)
           state.lastAgentError = undefined
         }
         else if (reason?.kind === 'error' || reason?.kind === 'max-tokens' || reason?.kind === 'timeout') {
@@ -410,6 +456,9 @@ function reduceSessionEvent(
           settleIdle(state)
         }
       }
+      // 回合级 goal 标志随回合结束失效：新一轮的 source/update_goal 各自重新声明。
+      state.goalRound = false
+      state.goalClosing = undefined
       break
     }
     default:
@@ -442,6 +491,8 @@ function settleIdle(state: PetSessionState): void {
   state.waitingCallId = undefined
   state.workStatus = undefined
   state.lastAgentError = undefined
+  state.goalRound = false
+  state.goalClosing = undefined
 }
 
 /** 会话是否仍处于「回合内」（只有这种状态才允许被 idle 兜底改写）。 */
