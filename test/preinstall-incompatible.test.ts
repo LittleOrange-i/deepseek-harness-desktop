@@ -34,7 +34,7 @@ vi.mock('../src/store/modules/harness-updater', () => ({
   harnessUpdater: { checkForUpdate: vi.fn() },
 }))
 
-const { preinstall } = await import('../src/store/modules/preinstall')
+const { preinstall, parseBlockedRefusal } = await import('../src/store/modules/preinstall')
 
 beforeEach(() => {
   eventListeners.clear()
@@ -178,5 +178,31 @@ describe('preinstall release-age policy refusal', () => {
     await preinstall.open()
 
     expect(preinstall.policyBlocked).toEqual([])
+  })
+})
+
+describe('blocked-refusal parsing', () => {
+  it('reads a held upgrade as an authorizable target version', () => {
+    const refusal = parseBlockedRefusal(`PLUGIN_UPDATE_NO_CHANGE: ${JSON.stringify({ name: 'dshmarket', version: '1.66.2', latest: '1.66.5', retryable: true })}`)
+
+    expect(refusal).toEqual({
+      kind: 'update-hold',
+      versions: [{ name: 'dshmarket', version: '1.66.5' }],
+      retryable: true,
+    })
+  })
+
+  it('keeps a pinned-or-unknown hold without an authorizable version', () => {
+    // 已经授权过还是不动（或没探测到新版本）：不能给出可授权项，否则用户只能空点
+    const punished = parseBlockedRefusal(`PLUGIN_UPDATE_NO_CHANGE: ${JSON.stringify({ name: 'dshmarket', version: '1.66.2', latest: '1.66.5', retryable: false })}`)
+    expect(punished).toEqual({ kind: 'update-hold', versions: [{ name: 'dshmarket', version: '1.66.5' }], retryable: false })
+
+    const unknown = parseBlockedRefusal(`PLUGIN_UPDATE_NO_CHANGE: ${JSON.stringify({ name: 'dshmarket', version: '1.66.2', latest: null, retryable: false })}`)
+    expect(unknown).toEqual({ kind: 'update-hold', versions: [], retryable: false })
+  })
+
+  it('degrades a malformed hold payload to a plain failure', () => {
+    expect(parseBlockedRefusal('PLUGIN_UPDATE_NO_CHANGE: not-json')).toBeNull()
+    expect(parseBlockedRefusal(`PLUGIN_UPDATE_NO_CHANGE: ${JSON.stringify({ version: '1.66.2' })}`)).toBeNull()
   })
 })

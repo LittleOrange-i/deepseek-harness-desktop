@@ -20,11 +20,13 @@ const LOG_LIMIT = 200
  */
 const INCOMPATIBLE_PREFIX = 'PLUGIN_VERSION_INCOMPATIBLE:'
 const POLICY_BLOCKED_PREFIX = 'PLUGIN_POLICY_BLOCKED:'
+const NO_CHANGE_PREFIX = 'PLUGIN_UPDATE_NO_CHANGE:'
 
-/** 被拦下的清单：核心版本兼容性拒绝，或 pnpm 发布时长策略拒绝。 */
+/** 被拦下的清单：核心版本兼容性拒绝、pnpm 发布时长策略拒绝，或「升级没落地」。 */
 export type BlockedRefusal
   = | { kind: 'incompatible', versions: IncompatibleVersion[] }
     | { kind: 'policy', versions: PolicyBlockedVersion[] }
+    | { kind: 'update-hold', versions: PolicyBlockedVersion[], retryable: boolean }
 
 /**
  * 解析后端拦截清单的错误载荷；识别不出来返回 null。
@@ -39,7 +41,36 @@ export function parseBlockedRefusal(error: string): BlockedRefusal | null {
   const policy = parseVersions<PolicyBlockedVersion>(error, POLICY_BLOCKED_PREFIX)
   if (policy)
     return { kind: 'policy', versions: policy }
-  return null
+  return parseUpdateHold(error)
+}
+
+/**
+ * 「升级以 0 退出但版本没动」：只有「新版本还在发布保护期内」这一种成因有出路，后端因此
+ * 连同目标版本（更新探测缓存里的 registry latest）与 `retryable` 一起给出。已经授权过还
+ * 不动时 `retryable` 为 false——那是档案把来源钉死，界面就不要再给按钮。
+ */
+function parseUpdateHold(error: string): BlockedRefusal | null {
+  if (!error.startsWith(NO_CHANGE_PREFIX))
+    return null
+  try {
+    const payload = JSON.parse(error.slice(NO_CHANGE_PREFIX.length)) as {
+      name?: unknown
+      latest?: unknown
+      retryable?: unknown
+    }
+    if (typeof payload.name !== 'string')
+      return null
+    const latest = typeof payload.latest === 'string' && payload.latest !== '' ? payload.latest : null
+    return {
+      kind: 'update-hold',
+      versions: latest ? [{ name: payload.name, version: latest }] : [],
+      retryable: payload.retryable === true && latest !== null,
+    }
+  }
+  catch (err) {
+    console.error(`[Harness] failed to parse ${NO_CHANGE_PREFIX} payload:`, err)
+    return null
+  }
 }
 
 function parseVersions<T>(error: string, prefix: string): T[] | null {

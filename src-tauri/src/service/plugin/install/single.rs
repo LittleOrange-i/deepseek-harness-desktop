@@ -33,6 +33,8 @@ use super::run_plugin_with_allow_build_retry;
 use super::uninstall_recovery;
 use super::PreinstallPluginInfo;
 use super::{PreinstallLogPayload, PREINSTALL_LOG_EVENT};
+use crate::service::plugin::update::known_latest;
+use crate::service::profile::profile_release_age_excluded;
 
 pub async fn update(app_handle: &AppHandle, id: &str) -> Result<(), String> {
     run_single_plugin_command(app_handle, id, "update", &update_pnpm_args(id)).await
@@ -435,9 +437,30 @@ async fn run_single_plugin_command(
             if dependency_fingerprint(&profile_dir(app_handle), id).as_deref() == Some(before) {
                 let detail = installed_package_version(&profile_dir(app_handle), id)
                     .unwrap_or_else(|| before.to_string());
-                log::warn!("dsh plugin update made no change for {id}, still at {detail}");
+                // 只有「新版本太新」这一种成因有出路（授权那个精确版本即可过闸），因此把
+                // 目标版本与「是否已在豁免清单里」一并带出去：已经授权过还是不动，说明成因
+                // 是档案把来源钉死，界面就别再给按钮——否则用户只会反复点一个没用的动作。
+                // 目标版本取自更新探测缓存（不新发网络请求）；git 托管插件的「最新」是提交
+                // SHA、不是 registry 版本，不能进发布时长豁免清单，按形状挡掉。
+                let latest = known_latest(id).filter(|latest| {
+                    latest != &detail
+                        && latest.contains('.')
+                        && latest.starts_with(|c: char| c.is_ascii_digit())
+                });
+                let retryable = latest.as_deref().is_some_and(|latest| {
+                    !profile_release_age_excluded(app_handle, &format!("{id}@{latest}"))
+                });
+                log::warn!(
+                    "dsh plugin update made no change for {id}, still at {detail}, newest {latest:?}, actionable {retryable}"
+                );
                 return Err(format!(
-                    "PLUGIN_UPDATE_NO_CHANGE: pnpm exited successfully but {id} is still at {detail}; no newer version was installed — either the profile pins this dependency (a `catalog:` entry in pnpm-workspace.yaml, a git spec, or a `link:` directory), or the newest release is still inside pnpm's `minimumReleaseAge` window (releases younger than the configured age are not resolved; bundled pnpm defaults to 24 hours), so the upgrade did not take effect"
+                    "PLUGIN_UPDATE_NO_CHANGE: {}",
+                    serde_json::json!({
+                        "name": id,
+                        "version": detail,
+                        "latest": latest,
+                        "retryable": retryable,
+                    })
                 ));
             }
         }

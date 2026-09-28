@@ -108,28 +108,43 @@ export function ConfigPlugin() {
    * 插件操作被拦下时的出路：标题 + 说明 + 被拦下的精确版本，动作按钮「授权」点一次补齐
    * 所需豁免并重跑原操作（不想要就关掉气泡，不另设取消按钮）。
    *
-   * 标题是**这次操作的插件名**，清单是**档案里真正挡住它的条目**——两者可以不同：插件
-   * 操作要过整份 lockfile 校验，档案里任何一个太新的条目都会拦下别人的升级；兼容性拒绝
-   * 同理扫的是档案里声明的插件。所以文案把角色分开写（标题=操作对象，说明=被挡住的版本），
-   * 不写成「{{name}} 的版本…」那种看起来自相矛盾的句子。
+   * 三种情况共用这条通道：核心版本不兼容、发布保护期挡下、以及「升级以 0 退出但版本没动」
+   * （最后一种只是同一种发布保护期的静默形态：`--latest` 盯着最新版本，而最新版本还在窗口
+   * 内时 pnpm 直接不动、也不打印原因）。标题是**这次操作的插件**，清单是**档案里真正挡住
+   * 它的条目**——两者可以不同：插件操作要过整份 lockfile 校验，档案里任何一条太新的版本
+   * 都会拦下别人的升级。
    *
    * 常驻（`timeout: 0`）：这是需要用户决定的岔口，超时消失等于把人晾在原地。授权后重跑
    * 原操作——豁免写进档案后仍要由 pnpm 真正改一遍依赖，不能假定写入即生效。
    */
   function onBlocked(refusal: BlockedRefusal, name: string, retry: () => Promise<void>) {
     const core = refusal.kind === 'incompatible'
+    const hold = refusal.kind === 'update-hold'
+    // 「升级没落地」只有发布保护期这一种成因有出路；后端判定为档案钉死（或没探测到新版
+    // 本）时不给按钮，否则用户只会反复点一个没用的动作。
+    const actionable = !hold || refusal.retryable
+    const titleKey = core
+      ? 'plugins.blocked_incompatible_title'
+      : hold ? 'plugins.hold_title' : 'plugins.blocked_policy_title'
+    const descKey = core
+      ? 'plugins.blocked_incompatible_desc'
+      : hold
+        ? (actionable ? 'plugins.hold_desc' : 'plugins.hold_pinned_desc')
+        : 'plugins.blocked_policy_desc'
     const blocked = refusal.versions.map(item => `${item.name}@${item.version}`).join('、')
-    const key = toast(t(core ? 'plugins.blocked_incompatible_title' : 'plugins.blocked_policy_title', { name }), {
+    const key = toast(t(titleKey, { name }), {
       variant: core ? 'danger' : 'warning',
       timeout: 0,
-      description: t(core ? 'plugins.blocked_incompatible_desc' : 'plugins.blocked_policy_desc', { blocked }),
-      actionProps: {
-        children: t('buttons.authorize'),
-        onPress: () => {
-          toast.close(key)
-          void authorise(refusal, retry)
-        },
-      },
+      description: t(descKey, { blocked }),
+      actionProps: actionable
+        ? {
+            children: t('buttons.authorize'),
+            onPress: () => {
+              toast.close(key)
+              void authorise(refusal, retry)
+            },
+          }
+        : undefined,
     })
   }
 
