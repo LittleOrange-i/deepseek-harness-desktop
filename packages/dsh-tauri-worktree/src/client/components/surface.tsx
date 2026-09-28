@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react'
 import { ArrowRightFromSquare, CircleTree, ConversationBar, ConversationBarAction, Icon, TerminalLine, TrashBin, Xmark } from 'dsh-tauri-ui/client'
+import { cn } from 'dsh-tauri/client'
 import { useState } from 'react'
 import { useWorktreeSession } from '../hooks/use-worktree-session'
 import { locale } from '../locales'
@@ -30,8 +31,8 @@ export function WorktreeSurface({ sessionId }: SurfaceBarProps): ReactElement | 
         : locale.text('surfaceWorktree')
 
   return (
-    <div className="dshp-worktree">
-      <div className="dshp-worktree__surface">
+    <div className="box-border">
+      <div className="box-border mx-auto self-center w-[calc(100%_-_2_*_var(--dsh-composer-side-clearance)_-_4_*_var(--dsh-composer-dock-inset))] max-w-[calc(var(--dsh-composer-card-max-width)_-_4_*_var(--dsh-composer-dock-inset))]">
         <ConversationBar
           actions={(
             <>
@@ -93,11 +94,14 @@ export function Logs({ log, open }: { log: readonly string[], open: boolean }): 
   return (
     <div
       aria-hidden={!open}
-      className={`${'dshp-worktree__logs'} ${open ? 'dshp-worktree__logs--open' : ''}`}
+      className={cn(
+        'grid grid-rows-[0fr] opacity-0 [transition:grid-template-rows_180ms_cubic-bezier(.16,1,.3,1),opacity_140ms_ease]',
+        open && 'grid-rows-[1fr] opacity-100',
+      )}
     >
-      <div className="dshp-worktree__logs-inner">
-        <div className="dshp-worktree__logs-panel">
-          {log.map((line, index) => <div key={`${index}:${line}`} className="dshp-worktree__log-line">{line}</div>)}
+      <div className="min-h-0 overflow-hidden mt-[6px]">
+        <div className="max-h-[180px] overflow-y-auto p-[10px] rounded-[10px] border border-border-l2 bg-[var(--dsw-alias-bg-base)] z-30">
+          {log.map((line, index) => <div key={`${index}:${line}`} className="text-[12px] leading-[16px] [font-family:cursive]">{line}</div>)}
         </div>
       </div>
     </div>

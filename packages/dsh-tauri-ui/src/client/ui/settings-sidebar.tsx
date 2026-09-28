@@ -1,5 +1,7 @@
+import type { SessionListState } from 'dsh-tauri/client'
 import type { CSSProperties, ReactElement, PointerEvent as ReactPointerEvent } from 'react'
 import type { IconComponent } from '../components/icon'
+import type { SelectorHook } from '../types/selector'
 import { SlotOutlet } from '@deepseek-ai/dsh-client-ui-renderer'
 import { clamp, cn, isEmpty, useEventListener, useStore } from 'dsh-tauri/client'
 import { useEffect, useRef, useState } from 'react'
@@ -12,11 +14,9 @@ import {
   SETTINGS_SECTION_SLOT,
   SETTINGS_SIDEBAR_CLASS,
 } from '../constants'
+
 import { locale } from '../locales'
 import { store } from '../store'
-
-import type { SessionListState } from 'dsh-tauri/client'
-import type { SelectorHook } from '../types/selector'
 
 export interface SettingsSidebarProps {
   useSessions: SelectorHook<SessionListState>

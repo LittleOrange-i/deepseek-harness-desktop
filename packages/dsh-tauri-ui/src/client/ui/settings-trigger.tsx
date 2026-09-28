@@ -1,6 +1,6 @@
 import type { MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { ReactElement } from 'react'
 import type { SessionId, SessionListState } from 'dsh-tauri/client'
+import type { ReactElement } from 'react'
 import type { SelectorHook } from '../types/selector'
 import { Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import { SlotOutlet } from '@deepseek-ai/dsh-client-ui-renderer'

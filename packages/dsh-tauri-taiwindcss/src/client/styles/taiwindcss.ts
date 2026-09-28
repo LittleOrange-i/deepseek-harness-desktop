@@ -41,6 +41,9 @@ const TAIWINDCSS_GENERATED = `
   .isolate {
     isolation: isolate;
   }
+  .z-30 {
+    z-index: 30;
+  }
   .z-\\[2\\] {
     z-index: 2;
   }
@@ -79,6 +82,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .my-\\[4px\\] {
     margin-block: 4px;
+  }
+  .mt-\\[6px\\] {
+    margin-top: 6px;
   }
   .mt-\\[8px\\] {
     margin-top: 8px;
@@ -158,6 +164,9 @@ const TAIWINDCSS_GENERATED = `
   .h-full {
     height: 100%;
   }
+  .max-h-\\[180px\\] {
+    max-height: 180px;
+  }
   .min-h-0 {
     min-height: calc(var(--spacing) * 0);
   }
@@ -184,6 +193,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .w-\\[calc\\(100\\%\\+4px\\)\\] {
     width: calc(100% + 4px);
+  }
+  .w-\\[calc\\(100\\%_-_2_\\*_var\\(--dsh-composer-side-clearance\\)_-_4_\\*_var\\(--dsh-composer-dock-inset\\)\\)\\] {
+    width: calc(100% - 2 * var(--dsh-composer-side-clearance) - 4 * var(--dsh-composer-dock-inset));
   }
   .w-\\[min\\(calc\\(var\\(--dsh-composer-card-max-width\\)_\\+_2_\\*_var\\(--dsh-composer-side-clearance\\)\\)\\,100\\%\\)\\] {
     width: min(calc(var(--dsh-composer-card-max-width) + 2 * var(--dsh-composer-side-clearance)), 100%);
@@ -236,6 +248,12 @@ const TAIWINDCSS_GENERATED = `
   .resize {
     resize: both;
   }
+  .grid-rows-\\[0fr\\] {
+    grid-template-rows: 0fr;
+  }
+  .grid-rows-\\[1fr\\] {
+    grid-template-rows: 1fr;
+  }
   .flex-col {
     flex-direction: column;
   }
@@ -244,6 +262,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .items-center {
     align-items: center;
+  }
+  .justify-between {
+    justify-content: space-between;
   }
   .justify-center {
     justify-content: center;
@@ -274,6 +295,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .gap-\\[14px\\] {
     gap: 14px;
+  }
+  .self-center {
+    align-self: center;
   }
   .self-start {
     align-self: flex-start;
@@ -350,6 +374,9 @@ const TAIWINDCSS_GENERATED = `
       border-color: color-mix(in srgb,var(--dsw-alias-state-error-primary) 30%,transparent);
     }
   }
+  .border-border-l2 {
+    border-color: var(--dsw-alias-border-l2);
+  }
   .border-border-l3 {
     border-color: var(--dsw-alias-border-l3);
   }
@@ -391,6 +418,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .p-\\[6px\\] {
     padding: 6px;
+  }
+  .p-\\[10px\\] {
+    padding: 10px;
   }
   .px-\\[7px\\] {
     padding-inline: 7px;
@@ -461,8 +491,14 @@ const TAIWINDCSS_GENERATED = `
   .text-left {
     text-align: left;
   }
+  .\\[font-family\\:cursive\\] {
+    font-family: cursive;
+  }
   .\\[font-family\\:inherit\\] {
     font-family: inherit;
+  }
+  .\\[font-family\\:monospace\\] {
+    font-family: monospace;
   }
   .text-\\[10px\\] {
     font-size: 10px;
@@ -478,6 +514,10 @@ const TAIWINDCSS_GENERATED = `
   }
   .text-\\[14px\\] {
     font-size: 14px;
+  }
+  .leading-\\[16px\\] {
+    --tw-leading: 16px;
+    line-height: 16px;
   }
   .leading-\\[17px\\] {
     --tw-leading: 17px;
@@ -578,6 +618,12 @@ const TAIWINDCSS_GENERATED = `
   .accent-\\[var\\(--dsw-alias-button-primary-fill\\)\\] {
     accent-color: var(--dsw-alias-button-primary-fill);
   }
+  .opacity-0 {
+    opacity: 0%;
+  }
+  .opacity-100 {
+    opacity: 100%;
+  }
   .shadow {
     --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
@@ -655,6 +701,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .\\[font\\:inherit\\] {
     font: inherit;
+  }
+  .\\[transition\\:grid-template-rows_180ms_cubic-bezier\\(\\.16\\,1\\,\\.3\\,1\\)\\,opacity_140ms_ease\\] {
+    transition: grid-template-rows 180ms cubic-bezier(.16,1,.3,1),opacity 140ms ease;
   }
   .placeholder\\:text-dimmed {
     &::placeholder {

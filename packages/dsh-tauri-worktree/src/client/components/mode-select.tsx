@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
-import type { DraftAttachmentDescriptor } from '../service/attachments.types'
-import type { InputActions } from '../service/session-switch.types'
+import type { ConversationAttachments, DraftAttachmentDescriptor } from '../service/attachments.types'
+import type { InputActions, InputState, SessionsRuntime, WorkspacesRuntime } from '../service/session-switch.types'
 import { ChevronDown, Chip, CircleTree, Icon, Menu } from 'dsh-tauri-ui/client'
 import { forEach, get } from 'dsh-tauri/client'
 import { useEffect, useRef, useState } from 'react'
@@ -20,9 +20,6 @@ import { waitForInputActions, waitForSessionListed } from '../service/session-sw
 import { attach, create } from '../service/worktree'
 import { store } from '../store'
 import { addDraftAttachments, canAddDraftAttachments, draftAttachmentIds, hasSendableContent, interceptsSubmit, removeDraftAttachment, resolveAccessModeGroup, showsModeSelect } from './mode-select.utils'
-
-import type { ConversationAttachments } from '../service/attachments.types'
-import type {  InputState, SessionsRuntime, WorkspacesRuntime } from '../service/session-switch.types'
 
 export interface ModeSelectProps {
   sessionId: string
@@ -63,7 +60,7 @@ export function WorktreeModeSelect(props: ModeSelectProps): ReactElement {
       if (!host) {
         host = document.createElement('span')
         host.dataset.dshTauriWorktreeMode = sessionId
-        host.className = 'dshp-mode-select__host'
+        host.className = 'inline-flex items-center flex-none'
       }
       if (target.nextElementSibling !== host)
         target.after(host)
@@ -81,7 +78,7 @@ export function WorktreeModeSelect(props: ModeSelectProps): ReactElement {
 
   return (
     <>
-      <span ref={anchorRef} className="dshp-mode-select__anchor" {...{ [MODE_ANCHOR_ATTRIBUTE]: sessionId }} />
+      <span ref={anchorRef} className="hidden" {...{ [MODE_ANCHOR_ATTRIBUTE]: sessionId }} />
       {portalHost && createPortal(<WorktreeModeControl {...props} />, portalHost)}
     </>
   )
@@ -290,7 +287,7 @@ function WorktreeModeControl({ sessionId, useInput, inputActions, sessionsRuntim
       chevron={<Icon as={ChevronDown} />}
       onClick={() => setOpen(value => !value)}
     >
-      <span className="dshp-mode-select__label">{activeLabel}</span>
+      <span className="min-w-0 truncate">{activeLabel}</span>
     </Chip>
   )
 
