@@ -44,7 +44,7 @@ interface FakeShortcut {
 function fakeItem(text: string, structure = true, buttonText = text): HTMLButtonElement {
   const label: FakeLabel | null = structure ? { textContent: text } : null
   const icon: FakeIcon | null = structure ? { innerHTML: '<svg data-official="1"></svg>' } : null
-  const shortcut: FakeShortcut | null = structure ? { removed: false, remove: () => { node.shortcut!.removed = true } } : null
+  const shortcut: FakeShortcut | null = structure ? { removed: false, remove: () => {} } : null
   const node = {
     textContent: buttonText,
     label,
@@ -66,6 +66,11 @@ function fakeItem(text: string, structure = true, buttonText = text): HTMLButton
     setAttribute(name: string, value: string): void {
       node.attributes[name] = value
     },
+  }
+  if (shortcut !== null) {
+    shortcut.remove = () => {
+      shortcut.removed = true
+    }
   }
   return node as unknown as HTMLButtonElement
 }
