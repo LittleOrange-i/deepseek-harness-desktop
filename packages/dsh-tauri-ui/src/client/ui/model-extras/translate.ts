@@ -3,17 +3,6 @@ import { locale } from '../../locales'
 
 export const MODEL_EXTRAS_KEYS = [
   'apply',
-  'textEditor',
-  'textEditorHint',
-  'editorSystem',
-  'editorVSCode',
-  'editorCursor',
-  'editorCustom',
-  'editorCommand',
-  'editorCommandPlaceholder',
-  'editorCommandHint',
-  'editorLoadFailed',
-  'editorSaveFailed',
   'openConfigFile',
   'openConfigFileHint',
   'openConfigFileLanded',

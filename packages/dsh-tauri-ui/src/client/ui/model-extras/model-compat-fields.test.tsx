@@ -71,11 +71,11 @@ function switches(html: string): SwitchState[] {
 }
 
 function fieldLabels(html: string): string[] {
-  return [...html.matchAll(/<span class="dshp-model-compat__label"([^>]*)>([^<]*)<\/span>/g)].map(match => match[2] ?? '')
+  return [...html.matchAll(/<span data-slot="model-compat-label"[^>]*>([^<]*)<\/span>/g)].map(match => match[1] ?? '')
 }
 
 function chips(html: string): { checked: boolean, disabled: boolean, level: string }[] {
-  return [...html.matchAll(/<label class="dshp-model-compat__chip"><input type="checkbox"([^>]*)>([a-z]+)<\/label>/g)]
+  return [...html.matchAll(/<label data-slot="model-compat-chip"[^>]*><input type="checkbox"([^>]*)>([a-z]+)<\/label>/g)]
     .map(match => ({
       checked: (match[1] ?? '').includes('checked'),
       disabled: (match[1] ?? '').includes('disabled'),

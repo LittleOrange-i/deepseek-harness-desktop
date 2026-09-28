@@ -1,184 +1,52 @@
-import type { MenuEntry } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ReactElement } from 'react'
-import type { ModelConfigToolbarProps } from './model-config-toolbar.types'
-import { Button, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useState } from 'react'
-import { ChevronDown } from '../../components/icons'
-import { useMountStyle } from '../../hooks/use-mount-style'
-import { loadEditor, saveEditor } from '../../service/editor'
-import { withDetail } from '../../service/model-config.utils'
-import { configEditorStyle, MODEL_CONFIG_TOOLBAR_STYLE_ID } from './config-editor.cssr'
-import modelExtrasStyle, { MODEL_EXTRAS_STYLE_ID } from './model-extras.cssr'
+import type { Translate } from './types'
+import { Action } from '../../components/action'
 
-const SEPARATOR: MenuEntry = { id: 'separator', type: 'separator' }
+export type ModelDraft = Record<string, unknown>
 
+export interface ModelProbeTarget {
+  settingsNs: string
+  profilePath: readonly string[]
+  provider?: string
+  baseURL?: string
+  api?: string
+  apiKey?: string
+}
+
+export interface ModelConfigToolbarProps {
+  t: Translate
+  onOpenConfig?: () => void
+  openConfigLabel?: string
+  openConfigHint?: string
+  disabled?: boolean
+}
+
+/**
+ * 模型页工具条：只保留「打开配置文件」。
+ * 文本编辑器选择器已删除——官方 `dsh-client-ui-open-in-app` 已独占「用哪个应用打开」这件事
+ * （自带应用目录与记忆选择，且不对外 provide 客户端服务），本包不再重复实现。
+ */
 export function ModelConfigToolbar({
   t,
-  editor,
-  onEditorChange,
   onOpenConfig,
   openConfigLabel,
   openConfigHint,
   disabled,
 }: ModelConfigToolbarProps): ReactElement {
-  useMountStyle(modelExtrasStyle, MODEL_EXTRAS_STYLE_ID)
-  useMountStyle(configEditorStyle, MODEL_CONFIG_TOOLBAR_STYLE_ID)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [customOpen, setCustomOpen] = useState(false)
-  const [loaded, setLoaded] = useState(editor)
-  const [command, setCommand] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [failure, setFailure] = useState<string>()
-  const current = editor ?? loaded
-  const locked = disabled === true || busy
-
-  const items: MenuEntry[] = [
-    { id: 'system', label: t('editorSystem'), icon: <span className="dshp-model-config-toolbar__icon dshp-model-config-toolbar__icon--system" aria-hidden="true" /> },
-    { id: 'vscode', label: t('editorVSCode'), icon: <span className="dshp-model-config-toolbar__icon dshp-model-config-toolbar__icon--vscode" aria-hidden="true" /> },
-    { id: 'cursor', label: t('editorCursor'), icon: <span className="dshp-model-config-toolbar__icon dshp-model-config-toolbar__icon--cursor" aria-hidden="true" /> },
-    SEPARATOR,
-    { id: 'custom', label: t('editorCustom'), icon: <span className="dshp-model-config-toolbar__icon dshp-model-config-toolbar__icon--custom" aria-hidden="true" /> },
-  ]
-
-  async function openMenu(): Promise<void> {
-    if (locked)
-      return
-    if (menuOpen) {
-      setMenuOpen(false)
-      return
-    }
-    if (current !== undefined) {
-      setMenuOpen(true)
-      return
-    }
-    setBusy(true)
-    setFailure(undefined)
-    try {
-      setLoaded(await loadEditor())
-      setMenuOpen(true)
-    }
-    catch (error) {
-      setFailure(withDetail(t('editorLoadFailed'), String(error)))
-    }
-    finally {
-      setBusy(false)
-    }
-  }
-
-  function closeDialog(): void {
-    if (busy)
-      return
-    setCustomOpen(false)
-    setFailure(undefined)
-  }
-
-  async function save(next: NonNullable<typeof current>): Promise<void> {
-    if (busy)
-      return
-    setBusy(true)
-    setFailure(undefined)
-    const result = await saveEditor(next)
-    setBusy(false)
-    if (result.ok) {
-      if (editor === undefined)
-        setLoaded(next)
-      onEditorChange?.(next)
-      setCustomOpen(false)
-    }
-    else {
-      setFailure(withDetail(t('editorSaveFailed'), result.error ?? ''))
-    }
-  }
-
-  function selectEditor(id: string): void {
-    if (current === undefined || busy)
-      return
-    setMenuOpen(false)
-    if (id === 'custom') {
-      setCommand(current.command)
-      setCustomOpen(true)
-      return
-    }
-    if (id === 'vscode' || id === 'cursor' || id === 'system')
-      void save({ ...current, editor: id })
-  }
-
   return (
-    <div className="dshp-model-extras__row">
-      <Menu
-        open={menuOpen}
-        align="end"
-        autoFocus
-        items={items}
-        selectedId={current?.editor}
-        onSelect={selectEditor}
-        onClose={() => setMenuOpen(false)}
-        anchor={(
-          <button
-            type="button"
-            className="dshp-model-extras__link dshp-model-config-toolbar__trigger"
-            onClick={() => { void openMenu() }}
-            disabled={locked}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            aria-busy={busy}
-          >
-            {t('textEditor')}
-            <ChevronDown aria-hidden="true" />
-          </button>
-        )}
-      />
+    <div className="flex items-center flex-wrap gap-[8px] min-w-0">
       {onOpenConfig === undefined
         ? null
         : (
-            <button
-              type="button"
-              className="dshp-model-extras__link"
-              disabled={locked}
+            <Action
+              variant="link"
+              disabled={disabled}
               title={openConfigHint}
               onClick={onOpenConfig}
             >
               {openConfigLabel ?? t('openConfigFile')}
-            </button>
+            </Action>
           )}
-      <Modal
-        open={customOpen || failure !== undefined}
-        onClose={closeDialog}
-        title={customOpen ? t('editorCustom') : t('textEditor')}
-        closeLabel={t('close')}
-        description={t('textEditorHint')}
-        footer={(
-          <>
-            <Button variant="outline" disabled={busy} onClick={closeDialog}>{customOpen ? t('cancel') : t('close')}</Button>
-            {customOpen
-              ? (
-                  <Button disabled={busy || !command.trim()} onClick={() => { void save({ editor: 'custom', command: command.trim() }) }}>
-                    {t('apply')}
-                  </Button>
-                )
-              : null}
-          </>
-        )}
-      >
-        <div className="dshp-model-extras__dialog-field">
-          {customOpen
-            ? (
-                <label className="dshp-model-extras__dialog-field">
-                  <span className="dshp-model-extras__dialog-label">{t('editorCommand')}</span>
-                  <input
-                    className="dshp-model-extras__input"
-                    value={command}
-                    disabled={busy}
-                    placeholder={t('editorCommandPlaceholder')}
-                    onChange={event => setCommand(event.target.value)}
-                  />
-                  <span className="dshp-model-extras__dialog-hint">{t('editorCommandHint')}</span>
-                </label>
-              )
-            : null}
-          {failure === undefined ? null : <p className="dshp-model-extras__dialog-error" role="alert">{failure}</p>}
-        </div>
-      </Modal>
     </div>
   )
 }

@@ -12,7 +12,8 @@ const mocks = vi.hoisted(() => ({
   ofetch: vi.fn(),
 }))
 
-vi.mock('dsh-tauri/client', () => ({
+vi.mock('dsh-tauri/client', async () => ({
+  ...await import('tailwind-variants'),
   ofetch: mocks.ofetch,
   defineLocale: (_namespace: string, dicts: { zh: Record<string, string>, en: Record<string, string> }) => {
     mocks.dicts = dicts
@@ -130,24 +131,18 @@ describe('autoConfigAllButton', () => {
     const html = renderToStaticMarkup(
       <AutoConfigAllButton t={t} models={[{ id: 'm' }]} probe={{ settingsNs: 'ns', profilePath: [] }} />,
     )
-    expect(html).not.toContain('disabled')
+    expect(html).not.toContain('disabled=""')
   })
 })
 
 describe('modelConfigToolbar', () => {
-  it('renders the editor trigger and the open-config action', () => {
-    const html = renderToStaticMarkup(
-      <ModelConfigToolbar t={t} onOpenConfig={vi.fn()} editor={{ editor: 'system', command: '' }} />,
-    )
-    expect(html).toContain('Text editor')
+  it('renders the open-config action', () => {
+    const html = renderToStaticMarkup(<ModelConfigToolbar t={t} onOpenConfig={vi.fn()} />)
     expect(html).toContain('Open config file')
-    expect(html).toContain('dshp-model-config-toolbar__trigger')
   })
 
   it('omits the open-config action when the caller owns it elsewhere', () => {
-    const html = renderToStaticMarkup(
-      <ModelConfigToolbar t={t} editor={{ editor: 'vscode', command: '' }} />,
-    )
+    const html = renderToStaticMarkup(<ModelConfigToolbar t={t} />)
     expect(html).not.toContain('Open config file')
   })
 })

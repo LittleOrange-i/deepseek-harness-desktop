@@ -1,5 +1,5 @@
 import type { ModelDiscoveryChannel } from '../../service/model-config'
-import type { ModelDraft, ModelProbeTarget } from './model-config-toolbar.types'
+import type { ModelDraft, ModelProbeTarget } from './model-config-toolbar'
 import type { Translate } from './types'
 import { useCallback, useState } from 'react'
 import { loadModelCapacities } from '../../service/model-config'

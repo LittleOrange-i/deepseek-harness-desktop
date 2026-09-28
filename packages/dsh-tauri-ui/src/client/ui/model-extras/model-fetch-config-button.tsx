@@ -1,8 +1,8 @@
 import type { ReactElement } from 'react'
 import type { ModelFetchConfigButtonProps } from './model-fetch-config-button.types'
-import { useMountStyle } from '../../hooks/use-mount-style'
+import { Action } from '../../components/action'
+import { Text } from '../../components/text'
 import { hasModelConfig } from '../../service/model-config.utils'
-import modelExtrasStyle, { MODEL_EXTRAS_STYLE_ID } from './model-extras.cssr'
 import { useModelConfigFetch } from './use-model-config-fetch'
 
 export function ModelFetchConfigButton({
@@ -14,25 +14,23 @@ export function ModelFetchConfigButton({
   disabled,
   onApply,
 }: ModelFetchConfigButtonProps): ReactElement | null {
-  useMountStyle(modelExtrasStyle, MODEL_EXTRAS_STYLE_ID)
   const { busy, failure, run } = useModelConfigFetch({ t, models, probe, operations, onApply })
   const row = models.find(model => model.id === modelId)
   if (row !== undefined && hasModelConfig(row))
     return null
 
   return (
-    <div className="dshp-model-extras__row">
-      <button
-        type="button"
-        className="dshp-model-extras__link"
+    <div className="flex items-center flex-wrap gap-[8px] min-w-0">
+      <Action
+        variant="link"
         disabled={disabled === true || busy}
         title={t('fetchModelConfigHint')}
         aria-busy={busy}
         onClick={() => run([modelId])}
       >
         {busy ? t('fetchingConfig') : t('fetchModelConfig')}
-      </button>
-      {failure === undefined ? null : <p className="dshp-model-extras__notice dshp-model-extras__notice--failed" role="alert">{failure}</p>}
+      </Action>
+      {failure === undefined ? null : <Text tone="error" className="flex-[1_1_100%] min-w-0 [overflow-wrap:anywhere]" role="alert">{failure}</Text>}
     </div>
   )
 }

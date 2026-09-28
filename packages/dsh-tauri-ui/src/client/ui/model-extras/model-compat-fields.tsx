@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react'
-import type { ModelCompatFieldsProps } from './model-compat-fields.types'
+import type { Translate } from './types'
 import { Switch } from '@deepseek-ai/dsh-client-ui-primitives'
-import { useMountStyle } from '../../hooks/use-mount-style'
 import {
   declaredThinkingLevels,
   enableThinking,
@@ -12,7 +11,22 @@ import {
   thinkingEffortsOf,
   toggleThinkingLevel,
 } from '../../service/model-compat'
-import modelCompatFieldsStyle, { MODEL_COMPAT_FIELDS_STYLE_ID } from './model-compat-fields.cssr'
+
+/** 字段名、开关位、思考等级胶囊三段的公共排版。 */
+const FIELD = 'flex flex-col gap-[4px] min-w-0'
+const LABEL = 'p-0 text-tertiary text-[12px] leading-[18px]'
+const SWITCH_ROW = 'flex items-center h-[32px]'
+const CHIP = 'inline-flex items-center gap-[4px] h-[24px] px-[8px] border-[0.5px] border-border-l3 rounded-[6px] text-[12px] leading-[18px] text-secondary cursor-pointer [&:has(input:disabled)]:opacity-60 [&:has(input:disabled)]:cursor-default [&_input]:w-[12px] [&_input]:h-[12px] [&_input]:m-0 [&_input]:accent-brand [&_input:focus-visible]:shadow-focus-ring'
+
+export interface ModelCompatFieldsProps {
+  t: Translate
+  model: Record<string, unknown>
+  index: number
+  /** 协议是 chat completions 时才渲染「关闭 Developer 角色」开关，由调用方按自己的路由判断。 */
+  templateCompat: boolean
+  onPatch: (patch: Record<string, unknown>) => void
+  disabled?: boolean | undefined
+}
 
 export function ModelCompatFields({
   t,
@@ -22,14 +36,13 @@ export function ModelCompatFields({
   onPatch,
   disabled,
 }: ModelCompatFieldsProps): ReactElement {
-  useMountStyle(modelCompatFieldsStyle, MODEL_COMPAT_FIELDS_STYLE_ID)
   const position = index + 1
   return (
     <>
-      <div className="dshp-model-compat">
-        <div className="dshp-model-compat__field">
-          <span className="dshp-model-compat__label" title={t('thinkingModeHint')}>{t('thinkingMode')}</span>
-          <div className="dshp-model-compat__switch">
+      <div className="order-[1] flex gap-[16px] min-w-0 m-0 p-0 border-none">
+        <div className={FIELD}>
+          <span data-slot="model-compat-label" className={LABEL} title={t('thinkingModeHint')}>{t('thinkingMode')}</span>
+          <div className={SWITCH_ROW}>
             <Switch
               checked={supportsThinking(model)}
               disabled={disabled}
@@ -41,9 +54,9 @@ export function ModelCompatFields({
         </div>
         {templateCompat
           ? (
-              <div className="dshp-model-compat__field">
-                <span className="dshp-model-compat__label" title={t('developerRoleHint')}>{t('developerRole')}</span>
-                <div className="dshp-model-compat__switch">
+              <div className={FIELD}>
+                <span data-slot="model-compat-label" className={LABEL} title={t('developerRoleHint')}>{t('developerRole')}</span>
+                <div className={SWITCH_ROW}>
                   <Switch
                     checked={supportsTemplateThinking(model)}
                     disabled={disabled}
@@ -58,11 +71,11 @@ export function ModelCompatFields({
       </div>
       {supportsThinking(model)
         ? (
-            <div className="dshp-model-compat__levels" role="group" aria-label={`${t('thinkingLevels')} ${String(position)}`}>
-              <span className="dshp-model-compat__label">{t('thinkingLevels')}</span>
-              <div className="dshp-model-compat__chips">
+            <div className="order-[3] col-span-full flex flex-col gap-[4px]" role="group" aria-label={`${t('thinkingLevels')} ${String(position)}`}>
+              <span data-slot="model-compat-label" className={LABEL}>{t('thinkingLevels')}</span>
+              <div className="flex flex-wrap gap-[6px]">
                 {THINKING_LEVELS.map(level => (
-                  <label key={level} className="dshp-model-compat__chip">
+                  <label key={level} data-slot="model-compat-chip" className={CHIP}>
                     <input
                       type="checkbox"
                       checked={declaredThinkingLevels(model).includes(level)}
