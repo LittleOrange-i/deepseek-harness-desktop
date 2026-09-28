@@ -69,6 +69,7 @@
     "date-fns": "catalog:utils",
     "dsh-tauri-tsdown": "workspace:*",
     "lodash-es": "catalog:utils",
+    "tailwind-variants": "catalog:runtime",
     "tsdown": "catalog:cli",
     "valtio": "catalog:",
     "valtio-define": "catalog:runtime"

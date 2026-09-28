@@ -91,7 +91,6 @@ export function Webview() {
         onToggleSidebar: () => post({ type: 'dsh://sidebar:toggle' }),
         onNewChat: () => post({ type: 'dsh://session:new' }),
         onOpenFolder: () => post({ type: 'dsh://workspace:add' }),
-        onEditAction: (action: string) => post({ type: 'dsh://edit', action }),
         onOpenShortcuts: () => post({ type: 'dsh://shortcuts:open' }),
       }
     : {}

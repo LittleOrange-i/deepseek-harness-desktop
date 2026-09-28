@@ -40,15 +40,6 @@ export const SESSION_ARCHIVE_ITEM = '[data-dsh-tauri-session-archive-item]'
 export const SESSION_ARCHIVE_MENU_PATCHED = '[data-dsh-tauri-session-archive-menu-patched="1"]'
 export const RUNNING_CHANGES = '[data-running-changes]'
 
-/**
- * `dsh-tauri-pet` 的就绪锚点：插件的样式元素。
- *
- * `stylesFeature` 把 `PET_STYLES_ID`（`packages/dsh-tauri-pet/src/client/constants/index.ts`）
- * 交给 `dsh-tauri-ui` 的 `mountStyle`，由 css-render 落成 `<style cssr-id="...">`——`cssr-id`
- * 是属性而非 id，`#dsh-tauri-pet-styles` 不存在。插件客户端一跑起来就挂上它。
- */
-export const PET_STYLES = 'style[cssr-id="dsh-tauri-pet-styles"]'
-
 /** 设置菜单里的桌宠条目与「该菜单已被补丁」标记（同上常量文件）。 */
 export const PET_MENU_ITEM = '[data-dsh-tauri-pet-menu-item="1"]'
 export const PET_MENU_PATCHED = '[data-dsh-tauri-pet-menu-patched="1"]'
@@ -56,14 +47,14 @@ export const PET_MENU_PATCHED = '[data-dsh-tauri-pet-menu-patched="1"]'
 /** dsh 内部结构（上游产物）：可用稳定结构性锚点。 */
 export const SIDEBAR = '[data-slot="sidebar"]'
 export const SIDEBAR_PANELLIST = '[data-slot="sidebar.panellist"]'
-export const SETTINGS_TRIGGER = '.dshp-settings-trigger'
+export const SETTINGS_TRIGGER = '[data-settings-trigger]'
 export const SETTINGS_SIDEBAR = '[data-slot-sidebar="dsh-tauri-ui"]'
 export const SETTINGS_SECTION_SLOT = '[data-slot="settings.section"]'
 export const SETTINGS_NAV_ITEM = 'nav[aria-label] button'
 /** 壳层自有设置菜单（浏览器态）的条目：官方 primitives 的 portal Menu 条目。 */
 export const SETTINGS_MENU_ITEM = '[role="menuitem"]'
 export const SETTINGS_MENU_LABEL = /^(设置|Settings)$/
-export const SETTINGS_CONTENT = '[class*="content-inner"]'
+export const SETTINGS_CONTENT = '[data-slot="settings.content"]'
 export const SETTINGS_ONBOARDING = '[data-slot="settings.onboarding"]'
 export const COMPOSER_CARD = '[data-composer-card]'
 export const COMPOSER_INPUT_DOCK = '[data-slot="conversation.input.dock"]'
@@ -233,7 +224,6 @@ interface FrameSnapshot {
   loaderKeys: string[]
   loaderMode: string
   loaderPending: number
-  petStyles: boolean
   settingsTrigger: boolean
   settingsSidebar: boolean
 }
@@ -286,8 +276,7 @@ async function captureFrameSnapshot(frame: Frame): Promise<FrameSnapshot | strin
       loaderKeys: loader === undefined ? [] : Object.keys(loader),
       loaderMode: String(loader?.mode ?? 'n/a'),
       loaderPending: Array.isArray(loader?.pendingQueue) ? loader.pendingQueue.length : -1,
-      petStyles: doc.querySelector('style[cssr-id="dsh-tauri-pet-styles"]') !== null,
-      settingsTrigger: doc.querySelector('.dshp-settings-trigger') !== null,
+      settingsTrigger: doc.querySelector('[data-settings-trigger]') !== null,
       settingsSidebar: doc.querySelector('[data-slot-sidebar="dsh-tauri-ui"]') !== null,
     }
   }, SNAPSHOT_ELEMENT_BUDGET)
@@ -330,7 +319,7 @@ export async function describePageState(page: Page, frame: Frame): Promise<strin
     lines.push(`[data-slot] count=${snapshot.slotCount} values=${snapshot.slots.join(',') || '(none)'}`)
     lines.push(`__DSH_BOOT__.modules=${snapshot.bootModules} ids=${snapshot.bootIds.join(',') || '(none)'}`)
     lines.push(`__ModuleLoader__ keys=${snapshot.loaderKeys.join(',') || '(none)'} mode=${snapshot.loaderMode} pendingQueue=${snapshot.loaderPending}`)
-    lines.push(`pluginAnchors petStyles=${snapshot.petStyles} settingsTrigger=${snapshot.settingsTrigger} settingsSidebar=${snapshot.settingsSidebar}`)
+    lines.push(`pluginAnchors settingsTrigger=${snapshot.settingsTrigger} settingsSidebar=${snapshot.settingsSidebar}`)
     pushList('pluginComboScripts', snapshot.pluginScripts, '(none: 启动 HTML 里没有任何 /plugins/ 脚本)')
     pushList('injectedDataDshAttrs', snapshot.dshAttrs, '(none: 没有任何插件注入的元素)')
   }
@@ -359,10 +348,9 @@ async function failWithDiagnostics(page: Page, frame: Frame, reason: string, cau
  * 在当前 browser 上新建一个内嵌 dsh 页面并等待界面可用。
  *
  * 默认就绪锚点取核心 dsh 的结构性槽位 `SIDEBAR`（`[data-slot="sidebar"]`），不取任何插件
- * 注入的元素：`SETTINGS_TRIGGER` 由 `dsh-tauri-ui` 渲染、`PET_STYLES` 由 `dsh-tauri-pet`
- * 挂载，在 Ubuntu CI 上都可能迟迟不出现，而它们缺席并不表示 dsh 未就绪——`SIDEBAR` 是
- * 上游产物，也是各插件自己判定「侧栏就绪」时读取的同一个锚点。需要断言插件产物的用例
- * 必须显式传 `{ ready: PET_STYLES }` / `{ ready: SETTINGS_TRIGGER }` 等，不依赖默认值。
+ * 注入的元素：`SETTINGS_TRIGGER` 由 `dsh-tauri-ui` 渲染，在 Ubuntu CI 上可能迟迟不出现，
+ * 而它缺席并不表示 dsh 未就绪——`SIDEBAR` 是上游产物，也是各插件自己判定「侧栏就绪」时
+ * 读取的同一个锚点。需要断言插件产物的用例必须显式传 `{ ready: SETTINGS_TRIGGER }` 等，不依赖默认值。
  */
 export async function newDshPage(
   browser: Browser,

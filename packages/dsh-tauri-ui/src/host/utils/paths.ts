@@ -1,9 +1,6 @@
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import process from 'node:process'
-import { PLUGIN_ID, SETTINGS_FILE_NAME } from '../../shared/constants'
-
-const PRESET_CACHE_FILE_NAME = 'model-presets.json'
 
 function expandHome(path: string): string {
   if (path === '~')
@@ -19,14 +16,6 @@ function resolveDshHome(env: NodeJS.ProcessEnv): string {
     ? expandHome(configured)
     : join(homedir(), '.dsh')
   return resolve(home)
-}
-
-export function resolveSettingsFilePath(env: NodeJS.ProcessEnv = process.env): string {
-  return join(resolveDshHome(env), SETTINGS_FILE_NAME)
-}
-
-export function resolvePresetCachePath(env: NodeJS.ProcessEnv = process.env): string {
-  return join(resolveDshHome(env), PLUGIN_ID, PRESET_CACHE_FILE_NAME)
 }
 
 export function resolveUngroupedSessionPath(env: NodeJS.ProcessEnv = process.env): string {

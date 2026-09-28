@@ -20,12 +20,11 @@ import {
   launchDshBrowser,
   newDshPage,
   openSettings,
-  PET_STYLES,
   SETTINGS_SIDEBAR,
   SETTINGS_TRIGGER,
 } from '../support/browser'
 
-/** 与 `packages/dsh-tauri-ui/src/host/routes/index.ts:5` 的唯一路由对齐。 */
+/** 与 `packages/dsh-tauri-ui/src/host/routes/index.ts:6` 的会话恢复路由对齐。 */
 const RESUME_PATH = '/api/desktop/dsh-tauri-ui/session/resume'
 
 /** 未分组目录解析路由（`packages/dsh-tauri-ui/src/host/routes/ungrouped/get.ts`）。 */
@@ -37,13 +36,13 @@ function headers(): Record<string, string> {
 }
 
 /** 插件接管后的英雄区工作区 chip（`ui/hero-workspace.tsx` 渲染）。 */
-const HERO_WORKSPACE_CHIP = '.dshp-hero-workspace'
+const HERO_WORKSPACE_CHIP = '[data-hero-workspace]'
 
 /**
  * 官方英雄区工作区 chip：与插件 chip 共用 aria-label（官方 conversation 词典 `hero.chooseWorkspace`），
- * 用 `:not(.dshp-hero-workspace)` 把两者分开。官方行类名取自官方 ConversationRoot 模块。
+ * 用 `:not([data-hero-workspace])` 把两者分开。官方行类名取自官方 ConversationRoot 模块。
  */
-const OFFICIAL_HERO_WORKSPACE_CHIP = '[class$="heroWorkspaceRow"] button[aria-label="选择工作区"]:not(.dshp-hero-workspace)'
+const OFFICIAL_HERO_WORKSPACE_CHIP = '[class$="heroWorkspaceRow"] button[aria-label="选择工作区"]:not([data-hero-workspace])'
 
 /**
  * 官方侧边栏「新建会话」按钮（官方 sidebar 词典 `session.new.label`）。
@@ -126,10 +125,10 @@ describe('L2 客户端', () => {
   })
 
   it('验证设置侧栏与触发器被注入 dsh 界面', async () => {
-    const app = await newDshPage(browser, { ready: PET_STYLES })
+    const app = await newDshPage(browser, { ready: SETTINGS_TRIGGER })
     try {
       const triggerHost = await app.frame.evaluate(() => {
-        const trigger = document.querySelector('.dshp-settings-trigger')
+        const trigger = document.querySelector('[data-settings-trigger]')
         const sidebar = document.querySelector('[data-slot="sidebar"]')
         return {
           triggerInsideSidebar: Boolean(trigger && sidebar?.contains(trigger)),
@@ -261,8 +260,8 @@ describe('L2 客户端', () => {
           rowExists: row !== null,
           officialInRow: official !== null,
           officialDisplay: official === null ? null : getComputedStyle(official).display,
-          oursInRow: row?.querySelector('.dshp-hero-workspace') !== null,
-          oursCount: document.querySelectorAll('.dshp-hero-workspace').length,
+          oursInRow: row?.querySelector('[data-hero-workspace]') !== null,
+          oursCount: document.querySelectorAll('[data-hero-workspace]').length,
         }
       }, OFFICIAL_HERO_WORKSPACE_CHIP)
 
@@ -280,7 +279,7 @@ describe('L2 客户端', () => {
       // 只认当前**可见**的菜单：文档里可能同时挂着别的已挂载菜单（portal 到 body），
       // 不限定范围会把别的菜单条目当成这条选择器的结果。
       const menu = await app.frame.evaluate(() => {
-        const chip = document.querySelector('.dshp-hero-workspace')
+        const chip = document.querySelector('[data-hero-workspace]')
         const menus = Array.from(document.querySelectorAll('[role="menu"]'))
           .filter(menu => menu.getClientRects().length > 0)
         const items = Array.from(menus[0]?.querySelectorAll('button[role="menuitem"]') ?? []) as HTMLButtonElement[]
@@ -333,7 +332,7 @@ describe('L2 客户端', () => {
       await app.frame.locator(SIDEBAR_NEW_SESSION).first().click()
 
       await expect.poll(
-        async () => await app.frame.evaluate(() => document.querySelector('.dshp-hero-workspace')?.textContent?.trim() ?? null),
+        async () => await app.frame.evaluate(() => document.querySelector('[data-hero-workspace]')?.textContent?.trim() ?? null),
         { timeout: 20_000, message: '新建会话后 chip 必须显示「未分组」' },
       ).toBe('未分组')
 
@@ -392,7 +391,7 @@ describe('L2 客户端', () => {
    * 症状就是用户报的「偶发 UI 整体混乱，刷新才好」。断言对象是真实页面里的 DOM。
    */
   it('验证插件 cssr 样式标签都自报 data-plugin 归属，不会被别人的重载连带删除', async () => {
-    const app = await newDshPage(browser, { ready: PET_STYLES })
+    const app = await newDshPage(browser, { ready: SETTINGS_TRIGGER })
     try {
       const ownership = await app.frame.evaluate(() => {
         const tags = Array.from(document.querySelectorAll('style[cssr-id]'))

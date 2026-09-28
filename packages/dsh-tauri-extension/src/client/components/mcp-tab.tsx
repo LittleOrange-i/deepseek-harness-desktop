@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import type { McpSaveBody } from '../apis/index.type'
 import type { McpRow } from '../types'
 import type { McpEditorMode, McpEditorState, McpImportItem, McpTabProps } from './mcp-tab.types'
-import { ArrowRotateRight, Button, ChevronDown, Chip, Icon, IconButton, Menu, Modal, PlugConnection, StateDot, Tag } from 'dsh-tauri-ui/client'
+import { Action, ArrowRotateRight, Button, Card, Icon, Modal, Notice, PlugConnection, Select, StateDot, Tag, Text } from 'dsh-tauri-ui/client'
 import { compact } from 'dsh-tauri/client'
 import { useEffect, useState } from 'react'
 import { deleteMcp, getImportScan, getMcp, postImportApply, postMcp, postMcpCheck, postMcpToggle } from '../apis'
@@ -31,7 +31,6 @@ export function McpTab({ t }: McpTabProps): ReactElement {
   const [pasteJson, setPasteJson] = useState('')
   const [pasteError, setPasteError] = useState<string | null>(null)
   const [scope, setScope] = useState<'all' | 'global' | 'profile'>('all')
-  const [scopeOpen, setScopeOpen] = useState(false)
   const [checking, setChecking] = useState<string | null>(null)
   const [globalError, setGlobalError] = useState('')
   const { later } = useTimers()
@@ -281,11 +280,11 @@ export function McpTab({ t }: McpTabProps): ReactElement {
   }
 
   const restartBanner = (
-    <div className="dshp-extension__banner" data-kind="info" role="status">
+    <Notice kind="info">
       <StateDot state="ongoing" size={10} />
-      <div className="dshp-extension__banner-body">
+      <div className="flex-1 min-w-0 flex flex-col gap-[4px]">
         <span>{restarting ? t('restarting') : t('restartNeeded')}</span>
-        <span className="dshp-extension__banner-hint">
+        <span className="flex items-center gap-[8px] flex-wrap text-secondary text-[12px] leading-[18px]">
           {restarting
             ? (!isDesktopHost() && t('restartPortHint'))
             : isDesktopHost()
@@ -299,94 +298,75 @@ export function McpTab({ t }: McpTabProps): ReactElement {
               : t('restartOtherHint')}
         </span>
       </div>
-    </div>
+    </Notice>
   )
 
   const scopeOptions = [
-    { id: 'all', label: t('scopeAll') },
-    { id: 'global', label: t('global') },
-    { id: 'profile', label: t('profile') },
+    { value: 'all', label: t('scopeAll') },
+    { value: 'global', label: t('global') },
+    { value: 'profile', label: t('profile') },
   ]
 
   return (
-    <div className="dshp-extension__section">
-      <div className="dshp-extension__head">
-        <span className="dshp-extension__head-icon"><Icon as={PlugConnection} size={16} /></span>
+    <div className="flex flex-col gap-[14px] text-primary">
+      <div className="flex items-center gap-[10px] flex-wrap [&_h3]:m-0 [&_h3]:text-[16px] [&_h3]:leading-[24px] [&_h3]:font-medium">
+        <span className="inline-flex items-center justify-center flex-none w-[22px] h-[22px]"><Icon as={PlugConnection} size={16} /></span>
         <h3>{t('mcpTitle')}</h3>
-        <span className="dshp-extension__spacer" />
+        <span className="flex-1" />
         <Button variant="ghost" size="sm" disabled={restarting} onClick={() => setRestartConfirm(true)}>{t('restart')}</Button>
         <Button variant="ghost" size="sm" onClick={() => void openImport()}>{t('importServers')}</Button>
         <Button variant="primary" size="sm" onClick={openCreate}>{t('addServer')}</Button>
       </div>
-      <p className="dshp-extension__intro">{t('mcpIntro')}</p>
+      <Text tone="tertiary">{t('mcpIntro')}</Text>
 
       {outcome !== null && (
-        <div className="dshp-extension__banner" data-kind={outcome.ok ? 'ok' : 'error'} role="status">
+        <Notice kind={outcome.ok ? 'ok' : 'error'}>
           <StateDot state={outcome.ok ? 'done' : 'error'} size={10} />
-          <div className="dshp-extension__banner-body"><span>{outcome.text}</span></div>
-        </div>
+          <div className="flex-1 min-w-0 flex flex-col gap-[4px]"><span>{outcome.text}</span></div>
+        </Notice>
       )}
       {(pending || restarting) && restartBanner}
 
-      <div className="dshp-extension__list-head">
+      <div className="flex items-center gap-[7px] px-[2px] mt-[2px] [&_h3]:m-0 [&_h3]:text-[13px] [&_h3]:leading-[20px] [&_h3]:font-semibold">
         <h3>{t('mcpTab')}</h3>
-        {servers !== null && <span className="dshp-extension__count">{servers.length}</span>}
-        <Menu
-          open={scopeOpen}
-          onClose={() => setScopeOpen(false)}
-          onSelect={(id) => {
-            setScope(id as typeof scope)
-            setScopeOpen(false)
-          }}
-          items={scopeOptions}
-          selectedId={scope}
-          portal
-          align="end"
-          anchor={(
-            <Chip
-              variant="selector"
-              aria-label={t('scope')}
-              aria-haspopup="menu"
-              open={scopeOpen}
-              aria-expanded={scopeOpen}
-              chevron={<Icon as={ChevronDown} />}
-              onClick={() => setScopeOpen(value => !value)}
-            >
-              {scopeOptions.find(option => option.id === scope)?.label}
-            </Chip>
-          )}
+        {servers !== null && <span className="text-[12px] leading-[18px] text-tertiary tabular-nums">{servers.length}</span>}
+        <Select
+          label={t('scope')}
+          options={scopeOptions}
+          value={scope}
+          onChange={next => setScope(next as typeof scope)}
         />
-        <span className="dshp-extension__spacer" />
-        <IconButton variant="toolbar" icon={<Icon as={ArrowRotateRight} />} aria-label={t('view')} title={t('view')} disabled={busy} onClick={() => setReload(value => value + 1)} />
+        <span className="flex-1" />
+        <Action variant="toolbar" icon={<Icon as={ArrowRotateRight} />} aria-label={t('view')} title={t('view')} disabled={busy} onClick={() => setReload(value => value + 1)} />
       </div>
 
-      {servers === null && <p className="dshp-extension__empty">{t('loading')}</p>}
-      {servers !== null && servers.length === 0 && <p className="dshp-extension__empty">{t('emptyMcp')}</p>}
+      {servers === null && <Text size="sm" tone="tertiary">{t('loading')}</Text>}
+      {servers !== null && servers.length === 0 && <Text size="sm" tone="tertiary">{t('emptyMcp')}</Text>}
       {servers !== null && servers.length > 0 && (
-        <ul className="dshp-extension__cards">
+        <Card.List className="grid grid-cols-[repeat(2,minmax(0,1fr))] items-stretch gap-[10px] max-[680px]:grid-cols-[minmax(0,1fr)]">
           {servers.filter(row => scope === 'all' || (row.layer ?? 'profile') === scope).map(row => (
-            <li className="dshp-extension__card" key={row.id}>
-              <div className="dshp-extension__card-top">
-                <strong className="dshp-extension__card-title" title={row.id}>{row.serverName}</strong>
+            <Card key={row.id} className="mx-0 flex flex-col gap-[8px] px-[14px] py-[12px]">
+              <div className="flex items-center gap-[6px] flex-wrap">
+                <Card.Title className="flex-1 min-w-0 font-semibold [font-family:var(--ds-font-family-code)]" title={row.id}>{row.serverName}</Card.Title>
                 <Tag tone={(row.scope ?? row.layer) === 'global' ? 'info' : 'neutral'}>{(row.scope ?? row.layer) === 'global' ? t('scopeGlobal') : t('scopeProfile')}</Tag>
                 <Tag tone="neutral">{row.transport}</Tag>
                 <Tag tone={row.disabled ? 'warning' : 'neutral'}>{row.disabled ? t('disabled') : t('enabled')}</Tag>
               </div>
-              <p className="dshp-extension__card-desc">
+              <Card.Description className="text-secondary line-clamp-2">
                 {row.transport === 'stdio' ? `${row.command ?? ''} ${(row.args ?? []).join(' ')}` : row.url ?? ''}
-              </p>
-              {row.shadowed === true && <p className="dshp-extension__form-error">{t('shadowedByGlobal')}</p>}
-              {globalError !== '' && <p className="dshp-extension__form-error">{globalError}</p>}
-              <div className="dshp-extension__card-row">
-                <span className="dshp-extension__spacer" />
+              </Card.Description>
+              {row.shadowed === true && <Text tone="error">{t('shadowedByGlobal')}</Text>}
+              {globalError !== '' && <Text tone="error">{globalError}</Text>}
+              <div className="flex items-center gap-[6px] flex-wrap">
+                <span className="flex-1" />
                 <Button variant="ghost" size="sm" disabled={busy || checking === row.id} onClick={() => void checkConnectivity(row)}>{checking === row.id ? t('checkRunning') : t('checkLabel')}</Button>
                 <Button variant="ghost" size="sm" disabled={busy} onClick={() => void doToggle(row)}>{t('toggle')}</Button>
                 <Button variant="ghost" size="sm" disabled={busy} onClick={() => openEdit(row)}>{t('edit')}</Button>
                 <Button variant="ghost" size="sm" disabled={busy} onClick={() => setConfirmId(row.id)}>{t('delete')}</Button>
               </div>
-            </li>
+            </Card>
           ))}
-        </ul>
+        </Card.List>
       )}
 
       <Modal
@@ -394,8 +374,8 @@ export function McpTab({ t }: McpTabProps): ReactElement {
         onClose={() => setEditor(null)}
         closeLabel={t('close')}
         title={editor !== null && editor.id !== '' ? t('editServer') : t('addServer')}
-        className="dshp-extension dshp-extension__modal-form"
-        contentClassName="dshp-extension__modal-scroll"
+        className="w-[min(760px,100%)]!"
+        contentClassName="max-h-[calc(100vh-160px)]! overflow-y-auto"
       >
         {editor !== null && (
           <McpEditorForm

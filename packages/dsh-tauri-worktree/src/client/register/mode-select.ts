@@ -1,5 +1,5 @@
 import type { ClientContext } from 'dsh-tauri/client'
-import type { ModeSelectProps } from '../components/mode-select.types'
+import type { ModeSelectProps } from '../components/mode-select'
 import type { SessionsRuntime, WorkspacesRuntime } from '../service/session-switch.types'
 import { defineRegister } from 'dsh-tauri/client'
 import { WorktreeModeSelect } from '../components/mode-select'

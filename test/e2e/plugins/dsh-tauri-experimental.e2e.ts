@@ -122,7 +122,7 @@ const PASTE_CHIP = '[data-composer-chip="dsh-tauri-experimental-paste"]'
 const SIDEBAR_NEW_SESSION = 'button[aria-label="新建会话"]:visible'
 
 /** `dsh-tauri-ui` 接管后的英雄区工作区 chip：本批的就绪锚点。 */
-const HERO_WORKSPACE_CHIP = '.dshp-hero-workspace'
+const HERO_WORKSPACE_CHIP = '[data-hero-workspace]'
 
 /** 长粘贴夹具：首行是 chip 标题来源，整体远超 500 字阈值（`register/paste-collapse.utils.ts`）。 */
 const LONG_PASTE = `### 环境信息 app:版本 1.0\n${'日志行'.repeat(200)}`

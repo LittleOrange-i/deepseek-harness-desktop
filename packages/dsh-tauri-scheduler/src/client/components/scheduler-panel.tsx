@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react'
 import type { Translate } from '../locales/index.types'
 import type { RunView, TaskFormState, TaskView } from '../types'
-import { Button, Check, CommentPlus, Icon, Input, Magnifier, Plus, SegmentedControl } from 'dsh-tauri-ui/client'
+import { Button, Card, Check, CommentPlus, Icon, Input, Magnifier, Plus, SegmentedControl, Text } from 'dsh-tauri-ui/client'
 import { filter, includes, isEmpty, lowerCase, omit, useEventListener } from 'dsh-tauri/client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { REFRESH_INTERVAL_MS } from '../constants'
@@ -93,13 +93,13 @@ export function SchedulerPanel({ t, onViaChat, onOpenSession }: SchedulerPanelPr
   }
 
   return (
-    <div className="dshp-scheduler__shell">
-      <header className="dshp-scheduler__top">
-        <div className="dshp-scheduler__heading">
-          <h1>{t('scheduler')}</h1>
-          <p>{t('subtitle')}</p>
+    <div className="box-border font-sans text-primary text-[13px] leading-[1.5]">
+      <header className="flex justify-between items-start gap-[16px] mb-[12px]">
+        <div className="min-w-0">
+          <h1 className="m-0 text-[20px] leading-[28px] font-medium">{t('scheduler')}</h1>
+          <p className="mt-[4px] mx-0 mb-0 text-secondary text-[13px] leading-[20px]">{t('subtitle')}</p>
         </div>
-        <div className="dshp-scheduler__toolbar">
+        <div className="flex justify-end items-center gap-[16px]">
           <Button style={{ flexShrink: 0 }} variant="addGhost" icon={<Icon as={CommentPlus} />} onClick={onViaChat}>
             {t('viaChat')}
           </Button>
@@ -109,9 +109,9 @@ export function SchedulerPanel({ t, onViaChat, onOpenSession }: SchedulerPanelPr
         </div>
       </header>
 
-      <div className="dshp-scheduler__search-bar">
+      <div className="flex justify-between items-center mb-[12px]">
         <Input
-          className="dshp-scheduler__search-wrap"
+          className="flex-[0_1_280px] min-w-0 max-w-[280px] max-[680px]:max-w-[160px]"
           type="search"
           icon={<Icon as={Magnifier} />}
           aria-label={t('searchPlaceholder')}
@@ -128,7 +128,7 @@ export function SchedulerPanel({ t, onViaChat, onOpenSession }: SchedulerPanelPr
           : null}
       </div>
 
-      <div className="dshp-scheduler__tabs">
+      <div className="flex mt-[4px] mb-[14px]">
         <SegmentedControl
           id="dshp-scheduler-tabs"
           label={t('scheduler')}
@@ -141,16 +141,16 @@ export function SchedulerPanel({ t, onViaChat, onOpenSession }: SchedulerPanelPr
         />
       </div>
 
-      {state.error ? <p className="dshp-scheduler__error" role="alert">{state.error}</p> : null}
-      {openError ? <p className="dshp-scheduler__error" role="alert">{openError}</p> : null}
+      {state.error ? <Text tone="error" role="alert">{state.error}</Text> : null}
+      {openError ? <Text tone="error" role="alert">{openError}</Text> : null}
 
       {tab === 'tasks'
         ? (
             <>
               {filtered.length === 0
-                ? <p className="dshp-scheduler__empty">{search ? t('noMatch') : t('emptyTasks')}</p>
+                ? <Text size="sm" tone="tertiary" className="py-[48px] text-center">{search ? t('noMatch') : t('emptyTasks')}</Text>
                 : (
-                    <ul className="dshp-scheduler__cards">
+                    <Card.List className="gap-[8px]">
                       {filtered.map(task => (
                         <TaskCard
                           key={task.id}
@@ -162,7 +162,7 @@ export function SchedulerPanel({ t, onViaChat, onOpenSession }: SchedulerPanelPr
                           onEdit={task => setDialog({ taskId: task.id, initial: taskToForm(task) })}
                         />
                       ))}
-                    </ul>
+                    </Card.List>
                   )}
               <Recommendations t={t} tasks={state.tasks} />
             </>

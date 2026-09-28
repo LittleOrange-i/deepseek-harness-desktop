@@ -73,6 +73,7 @@ const dshClientInline: Array<string | RegExp> = [
   /^@gravity-ui\/icons([/-].*)?$/,
   /^css-render([/-].*)?$/,
   /^@css-render\/plugin-bem([/-].*)?$/,
+  'tailwind-variants',
 ]
 
 export function defineDshConfig(options: DshConfigOptions = {}) {

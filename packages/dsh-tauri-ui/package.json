@@ -51,8 +51,9 @@
     }
   },
   "scripts": {
-    "build": "tsdown",
-    "dev": "tsdown --watch",
+    "build": "tsx scripts/taiwindcss.ts && tsdown",
+    "dev": "tsx scripts/taiwindcss.ts --watch --no-minify & tsdown --watch",
+    "generate": "tsx scripts/taiwindcss.ts",
     "prepublishOnly": "nr build",
     "start": "tsx src/index.ts",
     "typecheck": "tsc"
@@ -65,8 +66,10 @@
     "@deepseek-ai/dsh-client-ui-primitives": "catalog:dsh",
     "@deepseek-ai/dsh-client-ui-renderer": "catalog:dsh",
     "@gravity-ui/icons": "catalog:runtime",
+    "@tailwindcss/postcss": "catalog:build",
     "css-render": "catalog:ui",
     "dsh-tauri-tsdown": "workspace:*",
+    "postcss": "catalog:build",
     "tsdown": "catalog:cli"
   }
 }

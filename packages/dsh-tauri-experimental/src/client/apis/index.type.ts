@@ -40,6 +40,7 @@ export type TurnFileChange = {
   binary: boolean;
 };
 export type TurnFileStatus = "A" | "M" | "D";
+
 export interface GetLiveQuery {
   sessionId?: string;
 }

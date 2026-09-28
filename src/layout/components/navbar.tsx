@@ -84,18 +84,6 @@ const DOCS_URL = 'https://dshtauri.mintlify.site'
 /** 「文件」菜单的动作 id（宿主侧统一分发，避免菜单项内散落逻辑）。 */
 type FileAction = 'new-window' | 'new-chat' | 'open-folder' | 'close' | 'quit'
 
-/**
- * 「编辑」菜单项：`dsh://edit` 的 action 与平台加速键（macOS 用 ⌘，与官方桌面端一致）。
- */
-const EDIT_ITEMS = [
-  { id: 'undo', labelKey: 'menu.undo', key: 'Z', shift: false },
-  { id: 'redo', labelKey: 'menu.redo', key: 'Z', shift: true },
-  { id: 'cut', labelKey: 'menu.cut', key: 'X', shift: false },
-  { id: 'copy', labelKey: 'menu.copy', key: 'C', shift: false },
-  { id: 'paste', labelKey: 'menu.paste', key: 'V', shift: false },
-  { id: 'selectAll', labelKey: 'menu.select_all', key: 'A', shift: false },
-] as const
-
 /** 「帮助」菜单的动作 id。 */
 type HelpAction = 'keyboard-shortcuts' | 'copy-run-logs' | 'check-update' | 'about' | 'documentation'
 
@@ -222,13 +210,6 @@ function ShortcutLabel({ label, hint }: { label: string, hint?: string }) {
   )
 }
 
-/** 编辑菜单的加速键文本：macOS 用 ⌘，其余平台用 Ctrl（与官方桌面端同一组）。 */
-function editAccelerator(key: string, shift: boolean): string {
-  if (IS_MACOS)
-    return `⌘${shift ? '⇧' : ''}${key}`
-  return `Ctrl+${shift ? 'Shift+' : ''}${key}`
-}
-
 export interface NavbarProps { /** iframe 回报的 dsh 侧边栏折叠状态（导航桥逻辑在 `iframe.tsx`） */
   sidebarCollapsed?: boolean
   /** 切换 iframe 内 dsh 侧边栏（向 iframe 发 `dsh://sidebar:toggle`）；传入时启用左侧导航控制 */
@@ -241,13 +222,11 @@ export interface NavbarProps { /** iframe 回报的 dsh 侧边栏折叠状态（
   onOpenSyncToRemote?: () => void
   /** 打开文件夹：向 iframe 发 `dsh://workspace:add`（dsh 官方「添加工作区」）；传入时该项可用 */
   onOpenFolder?: () => void
-  /** 编辑菜单动作：向 iframe 发 `dsh://edit`（dsh-tauri 的 `client/register/shortcuts.ts` 执行） */
-  onEditAction?: (action: string) => void
   /** 显示键盘快捷键：向 iframe 发 `dsh://shortcuts:open`，弹官方 `shortcuts.open` 弹层（官方蒙版） */
   onOpenShortcuts?: () => void
 }
 
-export function Navbar({ sidebarCollapsed = false, onToggleSidebar, onNewChat, onOpenFolder, onEditAction, onOpenShortcuts, onOpenMachineManager, onOpenSyncToRemote }: NavbarProps) {
+export function Navbar({ sidebarCollapsed = false, onToggleSidebar, onNewChat, onOpenFolder, onOpenShortcuts, onOpenMachineManager, onOpenSyncToRemote }: NavbarProps) {
   const { t } = useTranslation()
   const isFullscreen = useMacOSFullscreen()
   const isMaximized = useMaximized()
@@ -539,38 +518,6 @@ export function Navbar({ sidebarCollapsed = false, onToggleSidebar, onNewChat, o
                 >
                   <Label>{t('menu.quit')}</Label>
                 </Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown.Popover>
-          </Dropdown>
-          {/* 「编辑」：与官方桌面端同一组编辑命令（撤销/重做/剪切/复制/粘贴/全选）。
-              动作经 `dsh://edit` 交给 iframe 内的 dsh-tauri 插件在文档上执行，
-              未安装插件（没有接收方）时整组禁用；加速键是系统/WebView 真实绑定，
-              只作为提示（粘贴仍走原生快捷键，脚本无权读剪贴板）。 */}
-          <Dropdown>
-            <Button
-              className="rounded-lg h-6 text-[12.5px] px-1.5"
-              size="sm"
-              variant="ghost"
-              aria-label={t('menu.edit')}
-              data-testid="dsh-navbar-menu-edit"
-            >
-              {t('menu.edit')}
-            </Button>
-            <Dropdown.Popover className="rounded-md min-w-55" data-testid="dsh-navbar-menu-popover">
-              <Dropdown.Menu>
-                {EDIT_ITEMS.map(item => (
-                  <Dropdown.Item
-                    key={item.id}
-                    className="rounded-md"
-                    id={item.id}
-                    data-testid={`dsh-navbar-item-edit-${item.id}`}
-                    isDisabled={onEditAction == null}
-                    textValue={t(item.labelKey)}
-                    onAction={() => onEditAction?.(item.id)}
-                  >
-                    <ShortcutLabel label={t(item.labelKey)} hint={editAccelerator(item.key, item.shift)} />
-                  </Dropdown.Item>
-                ))}
               </Dropdown.Menu>
             </Dropdown.Popover>
           </Dropdown>

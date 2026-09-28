@@ -10,18 +10,18 @@ type Pane = 'root' | 'model' | 'effort'
 
 function optionCopy(label: string, description?: string): ReactElement {
   return (
-    <span className="dshp-scheduler__model-option-copy">
-      <span className="dshp-scheduler__model-name">{label}</span>
-      {description !== undefined && <span className="dshp-scheduler__model-description">{description}</span>}
+    <span className="flex min-w-0 flex-1 flex-col">
+      <span className="truncate text-[14px] font-medium leading-[20px]">{label}</span>
+      {description !== undefined && <span className="truncate text-tertiary text-[12px] leading-[18px]">{description}</span>}
     </span>
   )
 }
 
 function paneRow(label: string, hint: string): ReactElement {
   return (
-    <span className="dshp-scheduler__model-row">
-      <span className="dshp-scheduler__model-row-label">{label}</span>
-      <span className="dshp-scheduler__model-row-hint">{hint}</span>
+    <span className="flex items-center justify-between gap-[12px] w-full">
+      <span className="flex-none">{label}</span>
+      <span className="flex-1 min-w-0 text-tertiary text-right truncate">{hint}</span>
     </span>
   )
 }
@@ -184,10 +184,10 @@ export function ModelPicker({
           }}
           badge={effortLabel === undefined
             ? undefined
-            : <span className="dshp-scheduler__model-trigger-effort">{effortLabel}</span>}
+            : <span className="flex-none text-tertiary whitespace-nowrap">{effortLabel}</span>}
           chevron={<Icon as={ChevronDown} />}
         >
-          <span className="dshp-scheduler__model-trigger-label">{trigger}</span>
+          <span className="min-w-0 truncate">{trigger}</span>
         </Chip>
       )}
     />

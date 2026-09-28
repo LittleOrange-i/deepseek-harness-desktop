@@ -2,7 +2,8 @@ import type { MenuEntry } from 'dsh-tauri-ui/client'
 import type { ReactElement } from 'react'
 import type { LocaleKey, Translate } from '../locales/index.types'
 import type { TaskView } from '../types'
-import { Button, CirclePause, CirclePlay, EllipsisVertical, Icon, IconButton, Menu, Modal, Tag, Toast, TrashBin, TriangleExclamation as Warning } from 'dsh-tauri-ui/client'
+import { Action, Button, Card, CirclePause, CirclePlay, EllipsisVertical, Icon, Menu, Modal, Tag, Text, Toast, TrashBin, TriangleExclamation as Warning } from 'dsh-tauri-ui/client'
+import { cn } from 'dsh-tauri/client'
 import { useRef, useState } from 'react'
 import { deleteTask, runTask, toggleTask } from '../service/scheduler'
 
@@ -72,9 +73,10 @@ export function TaskCard({ task, t, describe, nextRun, paused, onEdit }: TaskCar
   ]
 
   return (
-    <li
+    <Card
       ref={cardRef}
-      className={`${'dshp-scheduler__card'}${paused ? ` ${'dshp-scheduler__card--paused'}` : ''}`}
+      variant="link"
+      className={cn('box-border mx-0 flex justify-between items-center gap-[10px] w-full min-w-0 h-[60px] px-[12px] py-[10px] rounded-[10px] text-inherit [font-family:inherit] text-[13px] leading-[20px] text-left cursor-pointer overflow-hidden', paused && 'opacity-60')}
       onClick={(event) => {
         // 仅当点击落在卡片本体（title/meta 文本）时打开编辑；portaled 的菜单列表 /
         // Modal 不是 li 的 DOM 后代，contains() 为 false，不触发编辑（避免误开弹窗）。
@@ -83,7 +85,7 @@ export function TaskCard({ task, t, describe, nextRun, paused, onEdit }: TaskCar
       }}
     >
       <div style={{ height: 36 }}>
-        <IconButton
+        <Action
           variant="action"
           icon={paused ? <Icon as={CirclePlay} /> : <Icon as={CirclePause} />}
           aria-label={paused ? t('resume') : t('pause')}
@@ -94,11 +96,11 @@ export function TaskCard({ task, t, describe, nextRun, paused, onEdit }: TaskCar
         />
       </div>
       <div style={{ flex: 1 }}>
-        <span className="dshp-scheduler__card-title" title={task.name}>
+        <Card.Title className="flex items-center gap-[8px] text-[13px] leading-[18px]" title={task.name}>
           {task.name}
-        </span>
-        <div className="dshp-scheduler__card-meta">
-          <span className="dshp-scheduler__card-meta-text">
+        </Card.Title>
+        <div className="flex items-center gap-[10px] min-w-0">
+          <Card.Description className="flex-1 min-w-0 text-[12px] line-clamp-none truncate">
             {describe}
             {' · '}
             {nextRun !== undefined
@@ -112,7 +114,7 @@ export function TaskCard({ task, t, describe, nextRun, paused, onEdit }: TaskCar
                   </>
                 )
               : <strong>{t('paused')}</strong>}
-          </span>
+          </Card.Description>
           {task.waiting === true
             ? <Tag variant="status" tone="info">{t('waiting')}</Tag>
             : null}
@@ -136,7 +138,7 @@ export function TaskCard({ task, t, describe, nextRun, paused, onEdit }: TaskCar
         portal
         align="end"
         anchor={(
-          <IconButton
+          <Action
             variant="action"
             icon={<Icon as={EllipsisVertical} size={12} />}
             aria-label={task.name}
@@ -149,7 +151,7 @@ export function TaskCard({ task, t, describe, nextRun, paused, onEdit }: TaskCar
           />
         )}
       />
-      {actionError ? <p className="dshp-scheduler__error" role="alert">{actionError}</p> : null}
+      {actionError ? <Text tone="error" role="alert">{actionError}</Text> : null}
       {toast !== null
         ? (
             <Toast
@@ -175,6 +177,6 @@ export function TaskCard({ task, t, describe, nextRun, paused, onEdit }: TaskCar
           </>
         )}
       />
-    </li>
+    </Card>
   )
 }

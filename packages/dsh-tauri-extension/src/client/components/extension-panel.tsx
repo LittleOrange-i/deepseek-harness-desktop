@@ -40,8 +40,8 @@ export function ExtensionPanel({ createSkill, market }: ExtensionPanelProps): Re
   useEffect(() => setVisited(previous => previous.has(activeId) ? previous : new Set([...previous, activeId])), [activeId])
 
   return (
-    <div className="dshp-extension">
-      <div className="dshp-extension__section">
+    <div>
+      <div className="flex flex-col gap-[14px] text-primary">
         <div>
           <SegmentedControl
             id={tabsId}
@@ -53,7 +53,7 @@ export function ExtensionPanel({ createSkill, market }: ExtensionPanelProps): Re
         </div>
         {rows.filter(row => row.id === activeId || visited.has(row.id)).map((row) => {
           const selected = row.id === activeId
-          return <div key={row.id} id={`${tabsId}-${row.id}-panel`} className="dshp-extension__tab-panel" role="tabpanel" aria-labelledby={`${tabsId}-${row.id}`} hidden={!selected}>{row.render()}</div>
+          return <div key={row.id} id={`${tabsId}-${row.id}-panel`} className="min-w-0 pt-[2px]" role="tabpanel" aria-labelledby={`${tabsId}-${row.id}`} hidden={!selected}>{row.render()}</div>
         })}
       </div>
     </div>

@@ -4,10 +4,8 @@ import { PLUGIN_ID } from '../../shared/constants'
 export const PET_SECTION_ID = 'dsh-tauri-pet-settings'
 export const PET_SECTION_ORDER = 230
 
-/** 样式挂载 id 与 effect 标签。 */
-export const PET_STYLES_ID = 'dsh-tauri-pet-styles'
+/** effect 标签。 */
 export const PET_LOCALE_EFFECT = `${PLUGIN_ID}: locale`
-export const PET_STYLES_EFFECT = `${PLUGIN_ID}: styles`
 export const PET_SECTION_EFFECT = `${PLUGIN_ID}: settings section`
 export const PET_PREFILL_EFFECT = `${PLUGIN_ID}: conversation prefill`
 export const PET_MENU_EFFECT = `${PLUGIN_ID}: settings menu items`

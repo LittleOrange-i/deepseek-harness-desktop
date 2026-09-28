@@ -75,6 +75,7 @@ export type SchedulerTask = {
   updatedAt: string;
   lastRunAt?: string;
   nextRunAt?: string;
+  /** 派生视图字段：已到点但受并发上限压住未启动；不落盘，读取路径每次重算。 */
   waiting?: boolean;
 };
 export type SchedulerSchedule = OnceSchedule | HourlySchedule | DailySchedule | IntervalSchedule | WorkdaysSchedule | WeeklySchedule | MonthlySchedule | CustomSchedule;
