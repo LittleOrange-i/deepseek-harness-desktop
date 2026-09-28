@@ -4,8 +4,6 @@ import {
   Action,
   ArrowRightFromSquare,
   Button,
-  ChevronDown,
-  Chip,
   CircleTree,
   Comments,
   ConversationBar,
@@ -15,11 +13,11 @@ import {
   Icon,
   Input,
   Magnifier,
-  Menu,
   Person,
   Pill,
   Plus,
   Puzzle,
+  Select,
   Switch,
   Tag,
   TerminalLine,
@@ -37,59 +35,32 @@ const BUTTON_VARIANTS = ['primary', 'outline', 'ghost', 'toolbar'] as const
 const BUTTON_SIZES = ['md', 'sm'] as const
 const TAG_TONES = ['outline', 'solid', 'neutral', 'quiet', 'success', 'info', 'warning', 'danger'] as const
 
-interface SampleOption { id: string, label: string }
+interface SampleOption { value: string, label: string }
 
 const SEAT_OPTIONS: readonly SampleOption[] = [
-  { id: 'default', label: '默认' },
-  { id: 'plan', label: '计划模式' },
-  { id: 'review', label: '评审模式' },
+  { value: 'default', label: '默认' },
+  { value: 'plan', label: '计划模式' },
+  { value: 'review', label: '评审模式' },
 ]
 const PERMISSION_OPTIONS: readonly SampleOption[] = [
-  { id: 'default', label: '默认权限' },
-  { id: 'acceptEdits', label: '接受编辑' },
-  { id: 'bypass', label: '跳过确认' },
+  { value: 'default', label: '默认权限' },
+  { value: 'acceptEdits', label: '接受编辑' },
+  { value: 'bypass', label: '跳过确认' },
 ]
 const THEME_OPTIONS: readonly SampleOption[] = [
-  { id: 'system', label: '跟随系统' },
-  { id: 'light', label: '浅色' },
-  { id: 'dark', label: '深色' },
+  { value: 'system', label: '跟随系统' },
+  { value: 'light', label: '浅色' },
+  { value: 'dark', label: '深色' },
 ]
 
-/** 这三个 chip 在应用里是 select 触发按钮，接上官方 `Menu` 才能调试选中态、chevron 旋转与弹层位置。 */
+/** 通用的 `Select` 把三个 chip 变体都铺成触发器，这里逐档演示（选中态/chevron 旋转/弹层位置由它自管）。 */
 function SelectSample({ variant, icon, options }: {
   variant: ChipVariant
   icon?: ReactNode
   options: readonly SampleOption[]
 }): ReactElement {
-  const [open, setOpen] = useState(false)
-  const [value, setValue] = useState(options[0]?.id ?? '')
-  return (
-    <Menu
-      open={open}
-      onClose={() => setOpen(false)}
-      onSelect={(id) => {
-        setOpen(false)
-        setValue(id)
-      }}
-      items={options.map(option => ({ id: option.id, label: option.label }))}
-      selectedId={value}
-      portal
-      align="end"
-      anchor={(
-        <Chip
-          aria-expanded={open}
-          aria-haspopup="menu"
-          chevron={<Icon as={ChevronDown} size={14} />}
-          icon={icon}
-          open={open}
-          variant={variant}
-          onClick={() => setOpen(openState => !openState)}
-        >
-          {options.find(option => option.id === value)?.label ?? value}
-        </Chip>
-      )}
-    />
-  )
+  const [value, setValue] = useState(options[0]?.value ?? '')
+  return <Select icon={icon} options={options} value={value} variant={variant} onChange={setValue} />
 }
 
 function SourceCard({ entry }: { entry: UiComponentEntry }): ReactElement {

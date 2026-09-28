@@ -1,6 +1,5 @@
 import type { ReactElement, ReactNode } from 'react'
 
-
 /**
  * 面板页容器：复刻官方插件页（`@deepseek-ai/dsh-client-ui-plugin-manager` 的
  * `PluginManagerPage`）的页根几何，使第三方插件面板与官方左侧栏「插件」入口

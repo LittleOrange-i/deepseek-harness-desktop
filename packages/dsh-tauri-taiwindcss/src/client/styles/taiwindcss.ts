@@ -39,11 +39,20 @@ const TAIWINDCSS_GENERATED = `
   .inset-0 {
     inset: calc(var(--spacing) * 0);
   }
+  .top-1\\/2 {
+    top: calc(1/2 * 100%);
+  }
+  .right-\\[8px\\] {
+    right: 8px;
+  }
   .isolate {
     isolation: isolate;
   }
   .z-30 {
     z-index: 30;
+  }
+  .z-\\[1\\] {
+    z-index: 1;
   }
   .z-\\[2\\] {
     z-index: 2;
@@ -78,11 +87,20 @@ const TAIWINDCSS_GENERATED = `
   .mx-0 {
     margin-inline: calc(var(--spacing) * 0);
   }
+  .mx-\\[-8px\\] {
+    margin-inline: -8px;
+  }
   .mx-auto {
     margin-inline: auto;
   }
+  .my-0 {
+    margin-block: calc(var(--spacing) * 0);
+  }
   .my-\\[4px\\] {
     margin-block: 4px;
+  }
+  .mt-\\[2px\\] {
+    margin-top: 2px;
   }
   .mt-\\[4px\\] {
     margin-top: 4px;
@@ -93,8 +111,20 @@ const TAIWINDCSS_GENERATED = `
   .mt-\\[8px\\] {
     margin-top: 8px;
   }
+  .mt-\\[20px\\] {
+    margin-top: 20px;
+  }
+  .mb-0 {
+    margin-bottom: calc(var(--spacing) * 0);
+  }
   .mb-\\[10px\\] {
     margin-bottom: 10px;
+  }
+  .mb-\\[12px\\] {
+    margin-bottom: 12px;
+  }
+  .mb-\\[14px\\] {
+    margin-bottom: 14px;
   }
   .-ml-1 {
     margin-left: calc(var(--spacing) * -1);
@@ -104,6 +134,24 @@ const TAIWINDCSS_GENERATED = `
   }
   .box-border {
     box-sizing: border-box;
+  }
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .line-clamp-none {
+    overflow: visible;
+    display: block;
+    -webkit-box-orient: horizontal;
+    -webkit-line-clamp: unset;
   }
   .block {
     display: block;
@@ -141,6 +189,9 @@ const TAIWINDCSS_GENERATED = `
   .h-\\[18px\\] {
     height: 18px;
   }
+  .h-\\[22px\\] {
+    height: 22px;
+  }
   .h-\\[24px\\] {
     height: 24px;
   }
@@ -162,17 +213,35 @@ const TAIWINDCSS_GENERATED = `
   .h-\\[42px\\] {
     height: 42px;
   }
+  .h-\\[48px\\] {
+    height: 48px;
+  }
   .h-\\[56px\\] {
     height: 56px;
+  }
+  .h-\\[60px\\] {
+    height: 60px;
   }
   .h-\\[calc\\(28px\\+var\\(--dsh-content-font-delta\\,0px\\)\\)\\] {
     height: calc(28px + var(--dsh-content-font-delta,0px));
   }
+  .h-auto {
+    height: auto;
+  }
   .h-full {
     height: 100%;
   }
+  .max-h-\\[60vh\\] {
+    max-height: 60vh;
+  }
   .max-h-\\[180px\\] {
     max-height: 180px;
+  }
+  .max-h-\\[calc\\(100vh-160px\\)\\]\\! {
+    max-height: calc(100vh - 160px) !important;
+  }
+  .max-h-\\[min\\(400px\\,52vh\\)\\] {
+    max-height: min(400px, 52vh);
   }
   .min-h-0 {
     min-height: calc(var(--spacing) * 0);
@@ -180,11 +249,26 @@ const TAIWINDCSS_GENERATED = `
   .min-h-\\[28px\\] {
     min-height: 28px;
   }
+  .min-h-\\[96px\\] {
+    min-height: 96px;
+  }
+  .min-h-\\[240px\\] {
+    min-height: 240px;
+  }
+  .min-h-\\[260px\\] {
+    min-height: 260px;
+  }
+  .min-h-\\[320px\\] {
+    min-height: 320px;
+  }
   .w-\\[8px\\] {
     width: 8px;
   }
   .w-\\[16px\\] {
     width: 16px;
+  }
+  .w-\\[22px\\] {
+    width: 22px;
   }
   .w-\\[24px\\] {
     width: 24px;
@@ -195,8 +279,14 @@ const TAIWINDCSS_GENERATED = `
   .w-\\[36px\\] {
     width: 36px;
   }
+  .w-\\[48px\\] {
+    width: 48px;
+  }
   .w-\\[56px\\] {
     width: 56px;
+  }
+  .w-\\[200px\\] {
+    width: 200px;
   }
   .w-\\[calc\\(28px\\+var\\(--dsh-content-font-delta\\,0px\\)\\)\\] {
     width: calc(28px + var(--dsh-content-font-delta,0px));
@@ -206,6 +296,15 @@ const TAIWINDCSS_GENERATED = `
   }
   .w-\\[calc\\(100\\%_-_2_\\*_var\\(--dsh-composer-side-clearance\\)_-_4_\\*_var\\(--dsh-composer-dock-inset\\)\\)\\] {
     width: calc(100% - 2 * var(--dsh-composer-side-clearance) - 4 * var(--dsh-composer-dock-inset));
+  }
+  .w-\\[min\\(640px\\,100\\%\\)\\]\\! {
+    width: min(640px, 100%) !important;
+  }
+  .w-\\[min\\(680px\\,100\\%\\)\\]\\! {
+    width: min(680px, 100%) !important;
+  }
+  .w-\\[min\\(760px\\,100\\%\\)\\]\\! {
+    width: min(760px, 100%) !important;
   }
   .w-\\[min\\(calc\\(var\\(--dsh-composer-card-max-width\\)_\\+_2_\\*_var\\(--dsh-composer-side-clearance\\)\\)\\,100\\%\\)\\] {
     width: min(calc(var(--dsh-composer-card-max-width) + 2 * var(--dsh-composer-side-clearance)), 100%);
@@ -222,11 +321,17 @@ const TAIWINDCSS_GENERATED = `
   .max-w-\\[220px\\] {
     max-width: 220px;
   }
+  .max-w-\\[280px\\] {
+    max-width: 280px;
+  }
   .max-w-\\[calc\\(var\\(--dsh-composer-card-max-width\\)_-_4_\\*_var\\(--dsh-composer-dock-inset\\)\\)\\] {
     max-width: calc(var(--dsh-composer-card-max-width) - 4 * var(--dsh-composer-dock-inset));
   }
   .max-w-\\[min\\(100\\%\\,240px\\)\\] {
     max-width: min(100%, 240px);
+  }
+  .max-w-full {
+    max-width: 100%;
   }
   .min-w-0 {
     min-width: calc(var(--spacing) * 0);
@@ -234,11 +339,18 @@ const TAIWINDCSS_GENERATED = `
   .flex-1 {
     flex: 1;
   }
+  .flex-\\[0_1_280px\\] {
+    flex: 0 1 280px;
+  }
   .flex-none {
     flex: none;
   }
   .shrink-0 {
     flex-shrink: 0;
+  }
+  .-translate-y-1\\/2 {
+    --tw-translate-y: calc(calc(1/2 * 100%) * -1);
+    translate: var(--tw-translate-x) var(--tw-translate-y);
   }
   .transform {
     transform: var(--tw-rotate-x,) var(--tw-rotate-y,) var(--tw-rotate-z,) var(--tw-skew-x,) var(--tw-skew-y,);
@@ -258,6 +370,18 @@ const TAIWINDCSS_GENERATED = `
   .resize {
     resize: both;
   }
+  .resize-y {
+    resize: vertical;
+  }
+  .list-none {
+    list-style-type: none;
+  }
+  .grid-cols-\\[minmax\\(0\\,1fr\\)\\] {
+    grid-template-columns: minmax(0,1fr);
+  }
+  .grid-cols-\\[repeat\\(2\\,minmax\\(0\\,1fr\\)\\)\\] {
+    grid-template-columns: repeat(2,minmax(0,1fr));
+  }
   .grid-rows-\\[0fr\\] {
     grid-template-rows: 0fr;
   }
@@ -273,11 +397,23 @@ const TAIWINDCSS_GENERATED = `
   .items-center {
     align-items: center;
   }
+  .items-end {
+    align-items: flex-end;
+  }
+  .items-start {
+    align-items: flex-start;
+  }
+  .items-stretch {
+    align-items: stretch;
+  }
   .justify-between {
     justify-content: space-between;
   }
   .justify-center {
     justify-content: center;
+  }
+  .justify-end {
+    justify-content: flex-end;
   }
   .gap-0 {
     gap: calc(var(--spacing) * 0);
@@ -293,6 +429,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .gap-\\[6px\\] {
     gap: 6px;
+  }
+  .gap-\\[7px\\] {
+    gap: 7px;
   }
   .gap-\\[8px\\] {
     gap: 8px;
@@ -353,11 +492,17 @@ const TAIWINDCSS_GENERATED = `
   .rounded-full {
     border-radius: calc(infinity * 1px);
   }
+  .rounded-lg {
+    border-radius: var(--dsw-radius-lg);
+  }
   .rounded-md {
     border-radius: var(--dsw-radius-md);
   }
   .rounded-sm {
     border-radius: var(--dsw-radius-sm);
+  }
+  .rounded-xl {
+    border-radius: var(--dsw-radius-xl);
   }
   .rounded-xs {
     border-radius: var(--dsw-radius-xs);
@@ -409,6 +554,24 @@ const TAIWINDCSS_GENERATED = `
   .border-border-weak {
     border-color: var(--dsw-alias-border-weak);
   }
+  .border-business\\/35 {
+    border-color: var(--dsw-alias-state-business-primary);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--dsw-alias-state-business-primary) 35%, transparent);
+    }
+  }
+  .border-error\\/35 {
+    border-color: var(--dsw-alias-state-error-primary);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--dsw-alias-state-error-primary) 35%, transparent);
+    }
+  }
+  .border-success\\/35 {
+    border-color: var(--dsw-alias-state-success-primary);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--dsw-alias-state-success-primary) 35%, transparent);
+    }
+  }
   .bg-\\[color-mix\\(in_srgb\\,var\\(--dsw-alias-state-business-primary\\)_8\\%\\,transparent\\)\\] {
     background-color: var(--dsw-alias-state-business-primary);
     @supports (color: color-mix(in lab, red, red)) {
@@ -430,17 +593,38 @@ const TAIWINDCSS_GENERATED = `
   .bg-border-l2 {
     background-color: var(--dsw-alias-border-l2);
   }
+  .bg-business\\/8 {
+    background-color: var(--dsw-alias-state-business-primary);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--dsw-alias-state-business-primary) 8%, transparent);
+    }
+  }
+  .bg-error\\/8 {
+    background-color: var(--dsw-alias-state-error-primary);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--dsw-alias-state-error-primary) 8%, transparent);
+    }
+  }
   .bg-hover {
     background-color: var(--dsw-alias-interactive-bg-hover);
   }
   .bg-layer-1 {
     background-color: var(--dsw-alias-bg-layer-1);
   }
+  .bg-layer-3 {
+    background-color: var(--dsw-alias-bg-layer-3);
+  }
   .bg-module-platform {
     background-color: var(--dsw-alias-bg-module-platform);
   }
   .bg-primary-fill {
     background-color: var(--dsw-alias-button-primary-fill);
+  }
+  .bg-success\\/8 {
+    background-color: var(--dsw-alias-state-success-primary);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--dsw-alias-state-success-primary) 8%, transparent);
+    }
   }
   .bg-transparent {
     background-color: transparent;
@@ -457,8 +641,14 @@ const TAIWINDCSS_GENERATED = `
   .p-\\[6px\\] {
     padding: 6px;
   }
+  .p-\\[8px\\] {
+    padding: 8px;
+  }
   .p-\\[10px\\] {
     padding: 10px;
+  }
+  .px-\\[2px\\] {
+    padding-inline: 2px;
   }
   .px-\\[7px\\] {
     padding-inline: 7px;
@@ -487,11 +677,17 @@ const TAIWINDCSS_GENERATED = `
   .py-\\[1px\\] {
     padding-block: 1px;
   }
+  .py-\\[2px\\] {
+    padding-block: 2px;
+  }
   .py-\\[4px\\] {
     padding-block: 4px;
   }
   .py-\\[6px\\] {
     padding-block: 6px;
+  }
+  .py-\\[7px\\] {
+    padding-block: 7px;
   }
   .py-\\[8px\\] {
     padding-block: 8px;
@@ -511,6 +707,12 @@ const TAIWINDCSS_GENERATED = `
   .py-\\[28px\\] {
     padding-block: 28px;
   }
+  .py-\\[48px\\] {
+    padding-block: 48px;
+  }
+  .pt-\\[2px\\] {
+    padding-top: 2px;
+  }
   .pt-\\[28px\\] {
     padding-top: 28px;
   }
@@ -523,8 +725,14 @@ const TAIWINDCSS_GENERATED = `
   .pr-\\[10px\\] {
     padding-right: 10px;
   }
+  .pb-\\[46px\\] {
+    padding-bottom: 46px;
+  }
   .pb-\\[48px\\] {
     padding-bottom: 48px;
+  }
+  .pl-\\[2px\\] {
+    padding-left: 2px;
   }
   .pl-\\[8px\\] {
     padding-left: 8px;
@@ -538,6 +746,9 @@ const TAIWINDCSS_GENERATED = `
   .text-left {
     text-align: left;
   }
+  .text-right {
+    text-align: right;
+  }
   .\\[font-family\\:cursive\\] {
     font-family: cursive;
   }
@@ -546,6 +757,12 @@ const TAIWINDCSS_GENERATED = `
   }
   .\\[font-family\\:monospace\\] {
     font-family: monospace;
+  }
+  .\\[font-family\\:var\\(--ds-font-family-code\\)\\] {
+    font-family: var(--ds-font-family-code);
+  }
+  .font-sans {
+    font-family: var(--dsw-font-family);
   }
   .text-\\[10px\\] {
     font-size: 10px;
@@ -562,8 +779,22 @@ const TAIWINDCSS_GENERATED = `
   .text-\\[14px\\] {
     font-size: 14px;
   }
+  .text-\\[16px\\] {
+    font-size: 16px;
+  }
+  .text-\\[20px\\] {
+    font-size: 20px;
+  }
   .text-\\[28px\\] {
     font-size: 28px;
+  }
+  .leading-\\[1\\.5\\] {
+    --tw-leading: 1.5;
+    line-height: 1.5;
+  }
+  .leading-\\[1\\.55\\] {
+    --tw-leading: 1.55;
+    line-height: 1.55;
   }
   .leading-\\[16px\\] {
     --tw-leading: 16px;
@@ -588,6 +819,10 @@ const TAIWINDCSS_GENERATED = `
   .leading-\\[24px\\] {
     --tw-leading: 24px;
     line-height: 24px;
+  }
+  .leading-\\[28px\\] {
+    --tw-leading: 28px;
+    line-height: 28px;
   }
   .leading-none {
     --tw-leading: 1;
@@ -622,6 +857,12 @@ const TAIWINDCSS_GENERATED = `
   }
   .text-\\[var\\(--dsw-alias-label-secondary\\,var\\(--dsw-alias-label-primary\\)\\)\\] {
     color: var(--dsw-alias-label-secondary,var(--dsw-alias-label-primary));
+  }
+  .text-business {
+    color: var(--dsw-alias-state-business-primary);
+  }
+  .text-dimmed {
+    color: var(--dsw-alias-label-dimmed);
   }
   .text-error {
     color: var(--dsw-alias-state-error-primary);
@@ -677,6 +918,12 @@ const TAIWINDCSS_GENERATED = `
   }
   .opacity-0 {
     opacity: 0%;
+  }
+  .opacity-55 {
+    opacity: 55%;
+  }
+  .opacity-60 {
+    opacity: 60%;
   }
   .opacity-100 {
     opacity: 100%;
@@ -939,6 +1186,11 @@ const TAIWINDCSS_GENERATED = `
       border-color: var(--dsw-alias-brand-primary);
     }
   }
+  .focus-visible\\:border-business {
+    &:focus-visible {
+      border-color: var(--dsw-alias-state-business-primary);
+    }
+  }
   .focus-visible\\:bg-\\[var\\(--dsw-alias-bg-layer-4\\)\\] {
     &:focus-visible {
       background-color: var(--dsw-alias-bg-layer-4);
@@ -947,6 +1199,15 @@ const TAIWINDCSS_GENERATED = `
   .focus-visible\\:text-secondary {
     &:focus-visible {
       color: var(--dsw-alias-label-secondary);
+    }
+  }
+  .focus-visible\\:shadow-\\[0_0_0_2px_color-mix\\(in_srgb\\,var\\(--dsw-alias-state-business-primary\\)_18\\%\\,transparent\\)\\] {
+    &:focus-visible {
+      --tw-shadow: 0 0 0 2px var(--tw-shadow-color, var(--dsw-alias-state-business-primary));
+      @supports (color: color-mix(in lab, red, red)) {
+        --tw-shadow: 0 0 0 2px var(--tw-shadow-color, color-mix(in srgb,var(--dsw-alias-state-business-primary) 18%,transparent));
+      }
+      box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
     }
   }
   .focus-visible\\:shadow-focus-ring {
@@ -1043,9 +1304,97 @@ const TAIWINDCSS_GENERATED = `
       color: var(--dsw-alias-label-secondary);
     }
   }
+  .data-\\[kind\\=error\\]\\:border-\\[color-mix\\(in_srgb\\,var\\(--dsw-alias-state-error-primary\\)_35\\%\\,transparent\\)\\] {
+    &[data-kind="error"] {
+      border-color: var(--dsw-alias-state-error-primary);
+      @supports (color: color-mix(in lab, red, red)) {
+        border-color: color-mix(in srgb,var(--dsw-alias-state-error-primary) 35%,transparent);
+      }
+    }
+  }
+  .data-\\[kind\\=error\\]\\:bg-\\[color-mix\\(in_srgb\\,var\\(--dsw-alias-state-error-primary\\)_8\\%\\,transparent\\)\\] {
+    &[data-kind="error"] {
+      background-color: var(--dsw-alias-state-error-primary);
+      @supports (color: color-mix(in lab, red, red)) {
+        background-color: color-mix(in srgb,var(--dsw-alias-state-error-primary) 8%,transparent);
+      }
+    }
+  }
+  .data-\\[kind\\=info\\]\\:border-\\[color-mix\\(in_srgb\\,var\\(--dsw-alias-state-business-primary\\)_35\\%\\,transparent\\)\\] {
+    &[data-kind="info"] {
+      border-color: var(--dsw-alias-state-business-primary);
+      @supports (color: color-mix(in lab, red, red)) {
+        border-color: color-mix(in srgb,var(--dsw-alias-state-business-primary) 35%,transparent);
+      }
+    }
+  }
+  .data-\\[kind\\=info\\]\\:bg-\\[color-mix\\(in_srgb\\,var\\(--dsw-alias-state-business-primary\\)_8\\%\\,transparent\\)\\] {
+    &[data-kind="info"] {
+      background-color: var(--dsw-alias-state-business-primary);
+      @supports (color: color-mix(in lab, red, red)) {
+        background-color: color-mix(in srgb,var(--dsw-alias-state-business-primary) 8%,transparent);
+      }
+    }
+  }
+  .data-\\[kind\\=ok\\]\\:border-\\[color-mix\\(in_srgb\\,var\\(--dsw-alias-state-success-primary\\)_35\\%\\,transparent\\)\\] {
+    &[data-kind="ok"] {
+      border-color: var(--dsw-alias-state-success-primary);
+      @supports (color: color-mix(in lab, red, red)) {
+        border-color: color-mix(in srgb,var(--dsw-alias-state-success-primary) 35%,transparent);
+      }
+    }
+  }
+  .data-\\[kind\\=ok\\]\\:bg-\\[color-mix\\(in_srgb\\,var\\(--dsw-alias-state-success-primary\\)_8\\%\\,transparent\\)\\] {
+    &[data-kind="ok"] {
+      background-color: var(--dsw-alias-state-success-primary);
+      @supports (color: color-mix(in lab, red, red)) {
+        background-color: color-mix(in srgb,var(--dsw-alias-state-success-primary) 8%,transparent);
+      }
+    }
+  }
   .data-\\[open\\=true\\]\\:rotate-180 {
     &[data-open="true"] {
       rotate: 180deg;
+    }
+  }
+  .data-\\[short\\=true\\]\\:min-h-\\[96px\\] {
+    &[data-short="true"] {
+      min-height: 96px;
+    }
+  }
+  .data-\\[status\\=cancelled\\]\\:text-tertiary {
+    &[data-status="cancelled"] {
+      color: var(--dsw-alias-label-tertiary);
+    }
+  }
+  .data-\\[status\\=failed\\]\\:text-error {
+    &[data-status="failed"] {
+      color: var(--dsw-alias-state-error-primary);
+    }
+  }
+  .data-\\[status\\=interrupted\\]\\:text-error {
+    &[data-status="interrupted"] {
+      color: var(--dsw-alias-state-error-primary);
+    }
+  }
+  .data-\\[status\\=queued\\]\\:text-secondary {
+    &[data-status="queued"] {
+      color: var(--dsw-alias-label-secondary);
+    }
+  }
+  .data-\\[status\\=running\\]\\:text-secondary {
+    &[data-status="running"] {
+      color: var(--dsw-alias-label-secondary);
+    }
+  }
+  .data-\\[status\\=skipped\\]\\:text-tertiary {
+    &[data-status="skipped"] {
+      color: var(--dsw-alias-label-tertiary);
+    }
+  }
+  .data-\\[status\\=succeeded\\]\\:text-success {
+    &[data-status="succeeded"] {
+      color: var(--dsw-alias-state-success-primary);
     }
   }
   .data-\\[tone\\=danger\\]\\:bg-\\[color-mix\\(in_srgb\\,var\\(--dsw-alias-state-error-primary\\)_10\\%\\,transparent\\)\\] {
@@ -1100,14 +1449,280 @@ const TAIWINDCSS_GENERATED = `
       color: var(--dsw-alias-label-tertiary);
     }
   }
+  .max-\\[680px\\]\\:w-\\[140px\\] {
+    @media (width < 680px) {
+      width: 140px;
+    }
+  }
+  .max-\\[680px\\]\\:max-w-\\[160px\\] {
+    @media (width < 680px) {
+      max-width: 160px;
+    }
+  }
+  .max-\\[680px\\]\\:grid-cols-\\[minmax\\(0\\,1fr\\)\\] {
+    @media (width < 680px) {
+      grid-template-columns: minmax(0,1fr);
+    }
+  }
   .\\@max-\\[460px\\]\\:hidden {
     @container (width < 460px) {
       display: none;
     }
   }
+  .\\[\\&_a\\]\\:text-business {
+    & a {
+      color: var(--dsw-alias-state-business-primary);
+    }
+  }
+  .\\[\\&_code\\]\\:rounded-\\[4px\\] {
+    & code {
+      border-radius: 4px;
+    }
+  }
+  .\\[\\&_code\\]\\:bg-layer-3 {
+    & code {
+      background-color: var(--dsw-alias-bg-layer-3);
+    }
+  }
+  .\\[\\&_code\\]\\:px-\\[5px\\] {
+    & code {
+      padding-inline: 5px;
+    }
+  }
+  .\\[\\&_code\\]\\:py-\\[1px\\] {
+    & code {
+      padding-block: 1px;
+    }
+  }
+  .\\[\\&_code\\]\\:\\[font-family\\:var\\(--ds-font-family-code\\)\\] {
+    & code {
+      font-family: var(--ds-font-family-code);
+    }
+  }
+  .\\[\\&_code\\]\\:text-\\[12px\\] {
+    & code {
+      font-size: 12px;
+    }
+  }
+  .\\[\\&_h1\\]\\:mt-\\[14px\\] {
+    & h1 {
+      margin-top: 14px;
+    }
+  }
+  .\\[\\&_h1\\]\\:mb-\\[6px\\] {
+    & h1 {
+      margin-bottom: 6px;
+    }
+  }
+  .\\[\\&_h1\\]\\:text-\\[18px\\] {
+    & h1 {
+      font-size: 18px;
+    }
+  }
+  .\\[\\&_h1\\]\\:leading-\\[1\\.4\\] {
+    & h1 {
+      --tw-leading: 1.4;
+      line-height: 1.4;
+    }
+  }
+  .\\[\\&_h1\\]\\:text-primary {
+    & h1 {
+      color: var(--dsw-alias-label-primary);
+    }
+  }
+  .\\[\\&_h2\\]\\:mt-\\[14px\\] {
+    & h2 {
+      margin-top: 14px;
+    }
+  }
+  .\\[\\&_h2\\]\\:mb-\\[6px\\] {
+    & h2 {
+      margin-bottom: 6px;
+    }
+  }
+  .\\[\\&_h2\\]\\:text-\\[16px\\] {
+    & h2 {
+      font-size: 16px;
+    }
+  }
+  .\\[\\&_h2\\]\\:leading-\\[1\\.4\\] {
+    & h2 {
+      --tw-leading: 1.4;
+      line-height: 1.4;
+    }
+  }
+  .\\[\\&_h2\\]\\:text-primary {
+    & h2 {
+      color: var(--dsw-alias-label-primary);
+    }
+  }
+  .\\[\\&_h3\\]\\:m-0 {
+    & h3 {
+      margin: calc(var(--spacing) * 0);
+    }
+  }
+  .\\[\\&_h3\\]\\:mt-\\[14px\\] {
+    & h3 {
+      margin-top: 14px;
+    }
+  }
+  .\\[\\&_h3\\]\\:mb-\\[6px\\] {
+    & h3 {
+      margin-bottom: 6px;
+    }
+  }
+  .\\[\\&_h3\\]\\:text-\\[13px\\] {
+    & h3 {
+      font-size: 13px;
+    }
+  }
+  .\\[\\&_h3\\]\\:text-\\[14px\\] {
+    & h3 {
+      font-size: 14px;
+    }
+  }
+  .\\[\\&_h3\\]\\:text-\\[16px\\] {
+    & h3 {
+      font-size: 16px;
+    }
+  }
+  .\\[\\&_h3\\]\\:leading-\\[1\\.4\\] {
+    & h3 {
+      --tw-leading: 1.4;
+      line-height: 1.4;
+    }
+  }
+  .\\[\\&_h3\\]\\:leading-\\[20px\\] {
+    & h3 {
+      --tw-leading: 20px;
+      line-height: 20px;
+    }
+  }
+  .\\[\\&_h3\\]\\:leading-\\[24px\\] {
+    & h3 {
+      --tw-leading: 24px;
+      line-height: 24px;
+    }
+  }
+  .\\[\\&_h3\\]\\:font-medium {
+    & h3 {
+      --tw-font-weight: var(--font-weight-medium);
+      font-weight: var(--font-weight-medium);
+    }
+  }
+  .\\[\\&_h3\\]\\:font-semibold {
+    & h3 {
+      --tw-font-weight: var(--font-weight-semibold);
+      font-weight: var(--font-weight-semibold);
+    }
+  }
+  .\\[\\&_h3\\]\\:text-primary {
+    & h3 {
+      color: var(--dsw-alias-label-primary);
+    }
+  }
+  .\\[\\&_h4\\]\\:mt-\\[14px\\] {
+    & h4 {
+      margin-top: 14px;
+    }
+  }
+  .\\[\\&_h4\\]\\:mb-\\[6px\\] {
+    & h4 {
+      margin-bottom: 6px;
+    }
+  }
+  .\\[\\&_h4\\]\\:text-\\[13px\\] {
+    & h4 {
+      font-size: 13px;
+    }
+  }
+  .\\[\\&_h4\\]\\:leading-\\[1\\.4\\] {
+    & h4 {
+      --tw-leading: 1.4;
+      line-height: 1.4;
+    }
+  }
+  .\\[\\&_h4\\]\\:text-primary {
+    & h4 {
+      color: var(--dsw-alias-label-primary);
+    }
+  }
+  .\\[\\&_ol\\]\\:my-\\[6px\\] {
+    & ol {
+      margin-block: 6px;
+    }
+  }
+  .\\[\\&_ol\\]\\:pl-\\[20px\\] {
+    & ol {
+      padding-left: 20px;
+    }
+  }
   .\\[\\&_p\\]\\:m-0 {
     & p {
       margin: calc(var(--spacing) * 0);
+    }
+  }
+  .\\[\\&_p\\]\\:my-\\[6px\\] {
+    & p {
+      margin-block: 6px;
+    }
+  }
+  .\\[\\&_p\\]\\:leading-\\[20px\\] {
+    & p {
+      --tw-leading: 20px;
+      line-height: 20px;
+    }
+  }
+  .\\[\\&_pre\\]\\:my-\\[8px\\] {
+    & pre {
+      margin-block: 8px;
+    }
+  }
+  .\\[\\&_pre\\]\\:overflow-x-auto {
+    & pre {
+      overflow-x: auto;
+    }
+  }
+  .\\[\\&_pre\\]\\:rounded-\\[8px\\] {
+    & pre {
+      border-radius: 8px;
+    }
+  }
+  .\\[\\&_pre\\]\\:border {
+    & pre {
+      border-style: var(--tw-border-style);
+      border-width: 1px;
+    }
+  }
+  .\\[\\&_pre\\]\\:border-border-l2 {
+    & pre {
+      border-color: var(--dsw-alias-border-l2);
+    }
+  }
+  .\\[\\&_pre\\]\\:bg-layer-3 {
+    & pre {
+      background-color: var(--dsw-alias-bg-layer-3);
+    }
+  }
+  .\\[\\&_pre\\]\\:px-\\[12px\\] {
+    & pre {
+      padding-inline: 12px;
+    }
+  }
+  .\\[\\&_pre\\]\\:py-\\[10px\\] {
+    & pre {
+      padding-block: 10px;
+    }
+  }
+  .\\[\\&_strong\\]\\:font-semibold {
+    & strong {
+      --tw-font-weight: var(--font-weight-semibold);
+      font-weight: var(--font-weight-semibold);
+    }
+  }
+  .\\[\\&_strong\\]\\:text-secondary {
+    & strong {
+      color: var(--dsw-alias-label-secondary);
     }
   }
   .\\[\\&_svg\\]\\:h-\\[11px\\] {
@@ -1128,6 +1743,16 @@ const TAIWINDCSS_GENERATED = `
   .\\[\\&_svg\\]\\:w-\\[14px\\] {
     & svg {
       width: 14px;
+    }
+  }
+  .\\[\\&_ul\\]\\:my-\\[6px\\] {
+    & ul {
+      margin-block: 6px;
+    }
+  }
+  .\\[\\&_ul\\]\\:pl-\\[20px\\] {
+    & ul {
+      padding-left: 20px;
     }
   }
   .\\[\\&\\>\\*\\]\\:w-full {
@@ -1190,6 +1815,26 @@ const TAIWINDCSS_GENERATED = `
       object-fit: fill;
     }
   }
+  .\\[\\&\\>span\\:first-child\\]\\:text-tertiary {
+    &>span:first-child {
+      color: var(--dsw-alias-label-tertiary);
+    }
+  }
+}
+@property --tw-translate-x {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-translate-y {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-translate-z {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
 }
 @property --tw-rotate-x {
   syntax: "*";
@@ -1419,6 +2064,9 @@ const TAIWINDCSS_GENERATED = `
 @layer properties {
   @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
     *, ::before, ::after, ::backdrop {
+      --tw-translate-x: 0;
+      --tw-translate-y: 0;
+      --tw-translate-z: 0;
       --tw-rotate-x: initial;
       --tw-rotate-y: initial;
       --tw-rotate-z: initial;

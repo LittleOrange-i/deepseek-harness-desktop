@@ -1,7 +1,8 @@
-import type { ReactElement } from 'react'
+import type { SelectOption } from 'dsh-tauri-ui/client'
+import type { ReactElement, ReactNode } from 'react'
 import type { LocaleKey, Translate } from '../locales/index.types'
 import type { ScheduleForm, ScheduleKind, SchedulerOptions, TaskFormState, TaskInput, Weekday } from '../types'
-import { Button, ChevronDown, Chip, Icon, Input, Menu, Modal } from 'dsh-tauri-ui/client'
+import { Button, Input, Modal, Select, Text } from 'dsh-tauri-ui/client'
 import { isEmpty, map, omitBy, pick, range } from 'dsh-tauri/client'
 import { useRef, useState } from 'react'
 import { SCHEDULE_KINDS } from '../../shared/constants'
@@ -43,11 +44,6 @@ const SCHEDULE_KIND_KEYS: Record<ScheduleKind, LocaleKey> = {
   weekly: 'scheduleWeekly',
   monthly: 'scheduleMonthly',
   custom: 'scheduleCustom',
-}
-
-interface SelectOption {
-  value: string
-  label: string
 }
 
 /** 时间段选项：00:00 ~ 23:45，每 15 分钟一档。 */
@@ -93,40 +89,14 @@ function defaultScheduleFor(kind: ScheduleForm['kind']): ScheduleForm {
   }
 }
 
-/** dsh-tauri-ui 没有独立 Select：统一用 Chip(selector) + Menu 组合。 */
-function Select({ label, value, options, onChange }: {
-  label: string
-  value: string
-  options: readonly SelectOption[]
-  onChange: (value: string) => void
-}): ReactElement {
-  const [open, setOpen] = useState(false)
+/** 对话框内的字段：字段名 + 控件的紧凑堆叠（多控件字段用 `div`，单控件用 `label` 自动关联）。 */
+function TaskField({ label, as = 'div', children }: { label: ReactNode, as?: 'label' | 'div', children?: ReactNode }): ReactElement {
+  const Tag = as
   return (
-    <Menu
-      open={open}
-      onClose={() => setOpen(false)}
-      onSelect={(id) => {
-        setOpen(false)
-        onChange(id)
-      }}
-      items={options.map(option => ({ id: option.value, label: option.label }))}
-      selectedId={value}
-      portal
-      align="end"
-      anchor={(
-        <Chip
-          variant="selector"
-          open={open}
-          aria-label={label}
-          aria-haspopup="menu"
-          aria-expanded={open}
-          onClick={() => setOpen(openState => !openState)}
-          chevron={<Icon as={ChevronDown} />}
-        >
-          <span>{options.find(option => option.value === value)?.label ?? value}</span>
-        </Chip>
-      )}
-    />
+    <Tag className="flex flex-col gap-[2px] min-w-0 text-[13px]">
+      <span className="inline-flex items-center gap-[10px] text-secondary text-[12px] font-medium leading-[18px]">{label}</span>
+      {children}
+    </Tag>
   )
 }
 
@@ -210,7 +180,7 @@ export function TaskCreateDialog({ t, options, onClose, taskId, initial }: TaskC
       title={taskId ? t('editDialogTitle') : t('createDialogTitle')}
       description={t('dialogHint')}
       closeLabel={t('close')}
-      className="dshp-scheduler__modal"
+      className="w-[min(640px,100%)]!"
       footer={(
         <>
           <Button variant="outline" disabled={saving} onClick={closeSafe}>{t('cancel')}</Button>
@@ -221,19 +191,17 @@ export function TaskCreateDialog({ t, options, onClose, taskId, initial }: TaskC
       )}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <label className="dshp-scheduler__field">
-          <span className="dshp-scheduler__field-label">{t('taskName')}</span>
+        <TaskField as="label" label={t('taskName')}>
           <Input
             type="text"
             value={form.name}
             placeholder={t('taskNamePlaceholder')}
             onChange={event => setForm(state => ({ ...state, name: event.target.value }))}
           />
-        </label>
+        </TaskField>
 
-        <div className="dshp-scheduler__field">
-          <span className="dshp-scheduler__field-label">{t('schedule')}</span>
-          <div className="dshp-scheduler__inline">
+        <TaskField label={t('schedule')}>
+          <div className="flex flex-wrap gap-[8px] items-center">
             <Select
               label={t('schedule')}
               value={scheduleKind}
@@ -244,7 +212,7 @@ export function TaskCreateDialog({ t, options, onClose, taskId, initial }: TaskC
             {scheduleKind === 'once'
               ? (
                   <Input
-                    className="dshp-scheduler__schedule-once"
+                    className="flex-1 min-w-0"
                     type="datetime-local"
                     value={String(form.schedule.at).slice(0, 16)}
                     onChange={event => setSchedule({ kind: 'once', at: new Date(event.target.value).toISOString() })}
@@ -333,18 +301,17 @@ export function TaskCreateDialog({ t, options, onClose, taskId, initial }: TaskC
                             />
                           )}
           </div>
-        </div>
+        </TaskField>
 
-        <div className="dshp-scheduler__field">
-          <span className="dshp-scheduler__field-label">{t('schedulePrompt')}</span>
-          <div className="dshp-scheduler__prompt-wrap">
+        <TaskField label={t('schedulePrompt')}>
+          <div className="relative flex flex-col items-end gap-[8px]">
             <textarea
-              className="dshp-scheduler__textarea"
+              className="box-border w-full h-auto min-h-[240px] p-[10px] pb-[46px] border-[0.5px] border-border-l4 rounded-[8px] [font-family:inherit] bg-layer-1 text-primary text-[14px] leading-[1.55] resize-y outline-none focus:border-brand placeholder:text-dimmed"
               value={form.prompt}
               placeholder={t('schedulePromptPlaceholder')}
               onChange={event => setForm(state => ({ ...state, prompt: event.target.value }))}
             />
-            <div className="dshp-scheduler__composer">
+            <div className="flex gap-[8px] items-center">
               <Select
                 label={t('workspace')}
                 value={form.workspaceId}
@@ -381,9 +348,9 @@ export function TaskCreateDialog({ t, options, onClose, taskId, initial }: TaskC
               />
             </div>
           </div>
-        </div>
+        </TaskField>
       </div>
-      {error ? <p className="dshp-scheduler__error" role="alert">{error}</p> : null}
+      {error ? <Text tone="error" role="alert">{error}</Text> : null}
     </Modal>
   )
 }
