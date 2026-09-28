@@ -65,6 +65,13 @@ describe('configPlugin preset chip', () => {
     expect(source, '启用入口排除内置插件的桌面禁用态').toContain('cond={plugin.patchDisabled || (!plugin.internal && plugin.disabled)}')
     expect(source, '快照入口由 !plugin.internal 守卫').toContain('<If cond={!plugin.internal}>')
   })
+
+  it('hides the snapshot entries behind a default-off advanced toggle', () => {
+    const source = readFileSync(new URL('../src/ui/config/plugin.tsx', import.meta.url), 'utf8')
+    expect(source, '高级选项默认关闭').toContain('const [advanced, toggleAdvanced] = useToggle()')
+    expect(source, '快照入口受高级选项控制').toContain('<If cond={advanced}>')
+    expect(source, '控件挂在「打开预设」左侧').toContain('plugins.advanced_options')
+  })
 })
 
 // ── Suite C — uninstall flow wires to remove_dsh_plugin + restart ────────────

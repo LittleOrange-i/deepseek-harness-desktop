@@ -286,6 +286,7 @@
   "plugins.enable_override_confirm_title": "启用被配置覆盖禁用的插件",
   "plugins.enable_override_confirm_desc": "插件 {{name}} 在 cordis.patch.yml 中被配置覆盖禁用。启用将仅移除该禁用覆盖（保留其它配置条目）并重启服务，确定吗？",
   "plugins.enable_override_confirm": "移除覆盖并启用",
+  "plugins.advanced_options": "高级选项",
   "plugins.snapshot": "快照",
   "plugins.snapshot_toast": "插件 {{name}} 已创建快照",
   "plugins.snapshot_failed": "创建插件 {{name}} 快照失败",

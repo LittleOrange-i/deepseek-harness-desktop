@@ -1,7 +1,7 @@
 import type { BlockedRefusal } from '@/store/modules/preinstall'
 import type { DshPlugin } from '@/types'
 import { ChevronRight, CircleExclamation } from '@gravity-ui/icons'
-import { Button, Chip, Label, Spinner, Tooltip } from '@heroui/react'
+import { Button, Chip, Label, Spinner, Switch, Tooltip } from '@heroui/react'
 import { useOverlay } from '@overlastic/react'
 import { useMount, useToggle } from '@reause/core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -79,6 +79,8 @@ export function ConfigPlugin() {
 
   /** 「内置插件」分组是否展开：默认折叠，内置插件由启动自愈维护，不作为常规可管理项 */
   const [showInternal, toggleShowInternal] = useToggle()
+  /** 高级选项：默认关闭，快照（创建/还原/删除）属于低频维护操作，不常驻每行 */
+  const [advanced, toggleAdvanced] = useToggle()
   // 内置插件（internal）随包分发、由启动自愈安装与维护，排到列表末尾并收进默认折叠的
   // 分组：与可升级/可卸载的插件并列只会让用户把它们当作普通插件。它们仍可升级
   // （切换核心版本后内置包可能落后），但不提供卸载/禁用/快照入口。
@@ -614,43 +616,45 @@ export function ConfigPlugin() {
               </Chip>
             </If>
             <If cond={!plugin.internal}>
-              {/* 单插件快照：快照始终可用（已存在时覆盖确认）；还原/删除快照仅在
-                  存在快照时显示。还原会停服务，还原后 toast 提示重启（issue #303） */}
-              <Chip
-                className={actionChip({ busy: !!busy })}
-                variant="primary"
-                color="accent"
-                size="sm"
-                onClick={() => onSnapshot(plugin.id, plugin.name, plugin.hasSnapshot)}
-              >
-                <span className="flex items-center gap-1">
-                  <If cond={busy?.id === plugin.id && busy.action === 'snapshot'} then={<Spinner size="sm" color="current" />} />
-                  {t('plugins.snapshot')}
-                </span>
-              </Chip>
-              <If cond={plugin.hasSnapshot}>
+              <If cond={advanced}>
+                {/* 单插件快照：快照始终可用（已存在时覆盖确认）；还原/删除快照仅在
+                    存在快照时显示。还原会停服务，还原后 toast 提示重启（issue #303） */}
                 <Chip
                   className={actionChip({ busy: !!busy })}
                   variant="primary"
                   color="accent"
                   size="sm"
-                  onClick={() => onRestore(plugin.id, plugin.name)}
+                  onClick={() => onSnapshot(plugin.id, plugin.name, plugin.hasSnapshot)}
                 >
                   <span className="flex items-center gap-1">
-                    <If cond={busy?.id === plugin.id && busy.action === 'restore'} then={<Spinner size="sm" color="current" />} />
-                    {t('plugins.restore')}
+                    <If cond={busy?.id === plugin.id && busy.action === 'snapshot'} then={<Spinner size="sm" color="current" />} />
+                    {t('plugins.snapshot')}
                   </span>
                 </Chip>
-                <Chip
-                  className={actionChip({ busy: !!busy })}
-                  size="sm"
-                  onClick={() => onDeleteSnapshot(plugin.id, plugin.name)}
-                >
-                  <span className="flex items-center gap-1">
-                    <If cond={busy?.id === plugin.id && busy.action === 'delete-snapshot'} then={<Spinner size="sm" color="current" />} />
-                    {t('plugins.delete_snapshot')}
-                  </span>
-                </Chip>
+                <If cond={plugin.hasSnapshot}>
+                  <Chip
+                    className={actionChip({ busy: !!busy })}
+                    variant="primary"
+                    color="accent"
+                    size="sm"
+                    onClick={() => onRestore(plugin.id, plugin.name)}
+                  >
+                    <span className="flex items-center gap-1">
+                      <If cond={busy?.id === plugin.id && busy.action === 'restore'} then={<Spinner size="sm" color="current" />} />
+                      {t('plugins.restore')}
+                    </span>
+                  </Chip>
+                  <Chip
+                    className={actionChip({ busy: !!busy })}
+                    size="sm"
+                    onClick={() => onDeleteSnapshot(plugin.id, plugin.name)}
+                  >
+                    <span className="flex items-center gap-1">
+                      <If cond={busy?.id === plugin.id && busy.action === 'delete-snapshot'} then={<Spinner size="sm" color="current" />} />
+                      {t('plugins.delete_snapshot')}
+                    </span>
+                  </Chip>
+                </If>
               </If>
               <Chip
                 className={actionChip({ busy: !!busy })}
@@ -678,20 +682,35 @@ export function ConfigPlugin() {
         title={t('plugins.title')}
         testId="dsh-config-panel-title"
         action={(
-          <Tooltip delay={0}>
-            <Button
+          <div className="flex shrink-0 items-center gap-3">
+            <Switch
               size="sm"
-              variant="primary"
-              className="rounded-md"
-              onPress={store.preinstall.open}
-              isDisabled={preinstall.installing}
+              isSelected={advanced}
+              onChange={() => toggleAdvanced()}
+              aria-label={t('plugins.advanced_options')}
             >
-              {t('preinstall.open_preset')}
-            </Button>
-            <Tooltip.Content>
-              <p>{t('preinstall.settings_hint')}</p>
-            </Tooltip.Content>
-          </Tooltip>
+              <Switch.Content>
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch.Content>
+            </Switch>
+            <span className="text-xs font-medium text-muted">{t('plugins.advanced_options')}</span>
+            <Tooltip delay={0}>
+              <Button
+                size="sm"
+                variant="primary"
+                className="rounded-md"
+                onPress={store.preinstall.open}
+                isDisabled={preinstall.installing}
+              >
+                {t('preinstall.open_preset')}
+              </Button>
+              <Tooltip.Content>
+                <p>{t('preinstall.settings_hint')}</p>
+              </Tooltip.Content>
+            </Tooltip>
+          </div>
         )}
         description={t('plugins.panel_tooltip')}
       />
