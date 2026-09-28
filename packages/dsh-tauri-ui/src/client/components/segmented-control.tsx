@@ -1,10 +1,20 @@
 import type { ReactElement } from 'react'
 import type { SegmentedControlProps } from './segmented-control.types'
+import { tv } from 'dsh-tauri/client'
 import { useRef } from 'react'
-import { useMountStyle } from '../hooks/use-mount-style'
-import segmentedControlStyle from './segmented-control.cssr'
 
-export const SEGMENTED_CONTROL_STYLE_ID = 'dsh-tauri-ui-segmented-control-styles'
+const segmentedControl = tv({
+  slots: {
+    base: 'box-border inline-flex items-center gap-[2px] p-[2px] border-none rounded-[10px] bg-module-platform',
+    option: 'box-border inline-flex items-center justify-center gap-[6px] min-h-[28px] px-[12px] border-none rounded-[8px] bg-transparent text-secondary cursor-pointer [font:inherit] text-[13px] leading-[20px] whitespace-nowrap hover:not-disabled:bg-hover hover:not-disabled:text-primary focus-visible:shadow-focus-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
+  },
+  variants: {
+    selected: {
+      true: { option: 'bg-layer-1 text-primary font-medium shadow-[inset_0_0_0_0.5px_var(--dsw-alias-border-l3)] hover:not-disabled:bg-layer-1 hover:not-disabled:text-primary' },
+      false: {},
+    },
+  },
+})
 
 const FORWARD_KEYS = ['ArrowRight', 'ArrowDown']
 const BACKWARD_KEYS = ['ArrowLeft', 'ArrowUp']
@@ -34,8 +44,8 @@ export function stepSegment<T extends { disabled?: boolean }>(
 }
 
 export function SegmentedControl({ id, label, value, disabled, options, onChange }: SegmentedControlProps): ReactElement {
-  useMountStyle(segmentedControlStyle, SEGMENTED_CONTROL_STYLE_ID)
   const refs = useRef<(HTMLButtonElement | null)[]>([])
+  const styles = segmentedControl()
   const tabbed = id !== undefined
   const selected = options.findIndex(option => option.value === value)
 
@@ -61,7 +71,7 @@ export function SegmentedControl({ id, label, value, disabled, options, onChange
 
   return (
     <div
-      className="dshp-segmented-control"
+      className={styles.base()}
       role={tabbed ? 'tablist' : 'group'}
       aria-label={label}
       onKeyDown={(event) => {
@@ -78,7 +88,7 @@ export function SegmentedControl({ id, label, value, disabled, options, onChange
             type="button"
             id={segmentId(index)}
             role={tabbed ? 'tab' : undefined}
-            className={`dshp-segmented-control__option${active ? ' dshp-segmented-control__option--selected' : ''}`}
+            className={segmentedControl({ selected: active }).option()}
             aria-selected={tabbed ? active : undefined}
             aria-controls={tabbed && id !== undefined ? `${id}-${option.value}-panel` : undefined}
             aria-pressed={tabbed ? undefined : active}

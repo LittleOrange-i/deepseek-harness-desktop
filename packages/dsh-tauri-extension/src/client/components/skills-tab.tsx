@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react'
 import type { SkillRowView } from '../types'
 import type { OpenTarget, SkillEditorState, SkillsTabProps } from './skills-tab.types'
-import { ArrowRotateRight, Button, Checkbox, GraduationCap, Icon, IconButton, Input, LogoGithub, Modal, Pill, SegmentedControl, StateDot, Switch, Tag } from 'dsh-tauri-ui/client'
+import { Action, ArrowRotateRight, Button, Checkbox, GraduationCap, Icon, Input, LogoGithub, Modal, Pill, SegmentedControl, StateDot, Switch, Tag } from 'dsh-tauri-ui/client'
 import { orderBy, uniq } from 'dsh-tauri/client'
 import { useEffect, useMemo, useState } from 'react'
 import { deleteSkill, getSkill, getSkills, postOpenDir, postRoots, postSkill, postSkillPolicy, postSkillsRefresh } from '../apis'
@@ -222,7 +222,7 @@ export function SkillsTab({ t, createSkill }: SkillsTabProps): ReactElement {
         )}
         <span className="dshp-extension__spacer" />
         <Input className="dshp-extension__search" type="search" placeholder={t('searchSkills')} aria-label={t('searchSkills')} value={query} onChange={event => setQuery(event.target.value)} />
-        <IconButton variant="toolbar" icon={<Icon as={ArrowRotateRight} />} aria-label={t('refresh')} title={t('refresh')} disabled={busy} onClick={() => void doRefresh()} />
+        <Action variant="toolbar" icon={<Icon as={ArrowRotateRight} />} aria-label={t('refresh')} title={t('refresh')} disabled={busy} onClick={() => void doRefresh()} />
       </div>
       {sources.length > 1 && <div className="dshp-extension__chips" role="group" aria-label={t('source')}>{[{ id: 'all', label: t('filterAll') }, ...sources.map(source => ({ id: source, label: t(SOURCE_LOCALE_KEYS[source] ?? 'sourceCustom') }))].map(chip => <Pill key={chip.id} active={sourceFilter === chip.id} onClick={() => setSourceFilter(chip.id)}>{chip.label}</Pill>)}</div>}
       {skills === null && <p className="dshp-extension__empty">{t('loading')}</p>}
@@ -244,7 +244,7 @@ export function SkillsTab({ t, createSkill }: SkillsTabProps): ReactElement {
                   {skill.policyEditable && <Switch checked={skill.invocation.modelInvocable || skill.invocation.userInvocable} onChange={() => void doToggle(skill)} label={t('toggleSkill')} title={t('toggleSkillHint')} disabled={busy} />}
                   {skill.dir && <Button variant="ghost" size="sm" onClick={() => void doOpen({ target: 'skill', name: skill.name })}>{t('openFolder')}</Button>}
                   <span className="dshp-extension__spacer" />
-                  {githubUrl !== undefined && <IconButton variant="toolbar" icon={<Icon as={LogoGithub} />} aria-label={t('githubRepository')} title={t('githubRepository')} onClick={() => window.open(githubUrl, '_blank', 'noopener,noreferrer')} />}
+                  {githubUrl !== undefined && <Action variant="toolbar" icon={<Icon as={LogoGithub} />} aria-label={t('githubRepository')} title={t('githubRepository')} onClick={() => window.open(githubUrl, '_blank', 'noopener,noreferrer')} />}
                   <Button variant="ghost" size="sm" disabled={busy} onClick={() => void openExisting(skill)}>{skill.editable ? t('edit') : t('view')}</Button>
                   {skill.removable && <Button variant="ghost" size="sm" disabled={busy} onClick={() => setConfirmName(skill.name)}>{t('delete')}</Button>}
                 </div>

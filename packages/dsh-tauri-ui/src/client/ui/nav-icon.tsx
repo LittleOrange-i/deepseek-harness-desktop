@@ -14,7 +14,6 @@ const NAV_ICONS: Record<string, IconComponent> = {
   'agent-presets': Cubes3Overlap,
   'dsh-tauri-archive': Tray,
   'plugins': Puzzle,
-  // 远程（dsh-tauri-ssh）：网络图标，与壳层切换器的 Globe 同一语义
   'dsh-tauri-ssh': Server,
   'dsh-tauri-pet-settings': Ghost,
 }

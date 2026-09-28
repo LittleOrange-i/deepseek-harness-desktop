@@ -2,7 +2,7 @@ import type { MenuEntry } from 'dsh-tauri-ui/client'
 import type { ReactElement } from 'react'
 import type { LocaleKey, Translate } from '../locales/index.types'
 import type { TaskView } from '../types'
-import { Button, CirclePause, CirclePlay, EllipsisVertical, Icon, IconButton, Menu, Modal, Tag, Toast, TrashBin, TriangleExclamation as Warning } from 'dsh-tauri-ui/client'
+import { Action, Button, CirclePause, CirclePlay, EllipsisVertical, Icon, Menu, Modal, Tag, Toast, TrashBin, TriangleExclamation as Warning } from 'dsh-tauri-ui/client'
 import { useRef, useState } from 'react'
 import { deleteTask, runTask, toggleTask } from '../service/scheduler'
 
@@ -83,7 +83,7 @@ export function TaskCard({ task, t, describe, nextRun, paused, onEdit }: TaskCar
       }}
     >
       <div style={{ height: 36 }}>
-        <IconButton
+        <Action
           variant="action"
           icon={paused ? <Icon as={CirclePlay} /> : <Icon as={CirclePause} />}
           aria-label={paused ? t('resume') : t('pause')}
@@ -136,7 +136,7 @@ export function TaskCard({ task, t, describe, nextRun, paused, onEdit }: TaskCar
         portal
         align="end"
         anchor={(
-          <IconButton
+          <Action
             variant="action"
             icon={<Icon as={EllipsisVertical} size={12} />}
             aria-label={task.name}

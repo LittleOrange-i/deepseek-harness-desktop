@@ -123,43 +123,43 @@ export const UI_COMPONENT_REGISTRY: readonly UiComponentEntry[] = [
     upstreamPath: 'packages/client/ui-plugin-manager/src/client/PluginManagerPage.module.css',
     mappedClass: 'danger',
   }),
-  reforkVariant('IconButton', 'search', {
+  reforkVariant('Action', 'search', {
     package: '@deepseek-ai/dsh-client-ui-workspace',
     availableAt: AVAILABLE_BOTH,
     upstreamPath: 'packages/client/ui-workspace/src/client/rows/WorkspaceBrowser.module.css',
     mappedClass: 'searchButton',
   }),
-  reforkVariant('IconButton', 'toolbar', {
+  reforkVariant('Action', 'toolbar', {
     package: '@deepseek-ai/dsh-client-ui-plugin-manager',
     availableAt: AVAILABLE_LATEST,
     upstreamPath: 'packages/client/ui-plugin-manager/src/client/PluginManagerPage.module.css',
     mappedClass: 'iconButton',
   }),
-  reforkVariant('IconButton', 'model', {
+  reforkVariant('Action', 'model', {
     package: '@deepseek-ai/dsh-client-ui-settings-models',
     availableAt: AVAILABLE_BOTH,
     upstreamPath: 'packages/client/ui-settings-models/src/client/ModelsSection.module.css',
     mappedClass: 'iconButton',
   }),
-  reforkVariant('IconButton', 'round', {
+  reforkVariant('Action', 'round', {
     package: '@deepseek-ai/dsh-client-ui-sidebar',
     availableAt: AVAILABLE_BOTH,
     upstreamPath: 'packages/client/ui-sidebar/src/client/SidebarRoot.module.css',
     mappedClass: 'iconButton',
   }),
-  reforkVariant('IconButton', 'row', {
+  reforkVariant('Action', 'row', {
     package: '@deepseek-ai/dsh-client-ui-workspace',
     availableAt: AVAILABLE_BOTH,
     upstreamPath: 'packages/client/ui-workspace/src/client/rows/Rows.module.css',
     mappedClass: 'iconButton',
   }),
-  reforkVariant('IconButton', 'help', {
+  reforkVariant('Action', 'help', {
     package: PRIMITIVES,
     availableAt: AVAILABLE_LATEST,
     upstreamPath: 'packages/client/ui-primitives/src/settings-form/fields.module.css',
     mappedClass: 'helpButton',
   }),
-  reforkVariant('IconButton', 'action', {
+  reforkVariant('Action', 'action', {
     package: '@deepseek-ai/dsh-client-ui-chat',
     availableAt: AVAILABLE_BOTH,
     upstreamPath: 'packages/client/ui-chat/src/client/chat/MessageIconActions.module.css',
@@ -183,13 +183,13 @@ export const UI_COMPONENT_REGISTRY: readonly UiComponentEntry[] = [
     upstreamPath: 'packages/client/ui-permission-presets/src/client/PermissionRow.module.css',
     mappedClass: 'selector',
   }),
-  reforkVariant('GoalBar', 'bar', {
+  reforkVariant('ConversationBar', 'bar', {
     package: '@deepseek-ai/dsh-client-ui-goal',
     availableAt: AVAILABLE_BOTH,
     upstreamPath: 'packages/client/ui-goal/src/client/GoalBar.module.css',
     mappedClass: 'bar',
   }),
-  reforkVariant('GoalBar', 'action', {
+  reforkVariant('ConversationBar', 'action', {
     package: '@deepseek-ai/dsh-client-ui-goal',
     availableAt: AVAILABLE_BOTH,
     upstreamPath: 'packages/client/ui-goal/src/client/GoalBar.module.css',

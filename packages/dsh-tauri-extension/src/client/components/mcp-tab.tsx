@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import type { McpSaveBody } from '../apis/index.type'
 import type { McpRow } from '../types'
 import type { McpEditorMode, McpEditorState, McpImportItem, McpTabProps } from './mcp-tab.types'
-import { ArrowRotateRight, Button, ChevronDown, Chip, Icon, IconButton, Menu, Modal, PlugConnection, StateDot, Tag } from 'dsh-tauri-ui/client'
+import { Action, ArrowRotateRight, Button, ChevronDown, Chip, Icon, Menu, Modal, PlugConnection, StateDot, Tag } from 'dsh-tauri-ui/client'
 import { compact } from 'dsh-tauri/client'
 import { useEffect, useState } from 'react'
 import { deleteMcp, getImportScan, getMcp, postImportApply, postMcp, postMcpCheck, postMcpToggle } from '../apis'
@@ -357,7 +357,7 @@ export function McpTab({ t }: McpTabProps): ReactElement {
           )}
         />
         <span className="dshp-extension__spacer" />
-        <IconButton variant="toolbar" icon={<Icon as={ArrowRotateRight} />} aria-label={t('view')} title={t('view')} disabled={busy} onClick={() => setReload(value => value + 1)} />
+        <Action variant="toolbar" icon={<Icon as={ArrowRotateRight} />} aria-label={t('view')} title={t('view')} disabled={busy} onClick={() => setReload(value => value + 1)} />
       </div>
 
       {servers === null && <p className="dshp-extension__empty">{t('loading')}</p>}

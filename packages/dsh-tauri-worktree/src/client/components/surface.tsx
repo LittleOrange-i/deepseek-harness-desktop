@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import type { SurfaceBarProps } from './surface.types'
-import { ArrowRightFromSquare, CircleTree, GoalBar, GoalBarAction, Icon, TerminalLine, TrashBin, Xmark } from 'dsh-tauri-ui/client'
+import { ArrowRightFromSquare, CircleTree, ConversationBar, ConversationBarAction, Icon, TerminalLine, TrashBin, Xmark } from 'dsh-tauri-ui/client'
 import { useState } from 'react'
 import { useWorktreeSession } from '../hooks/use-worktree-session'
 import { locale } from '../locales'
@@ -29,38 +29,38 @@ export function WorktreeSurface({ sessionId }: SurfaceBarProps): ReactElement | 
   return (
     <div className="dshp-worktree">
       <div className="dshp-worktree__surface">
-        <GoalBar
+        <ConversationBar
           actions={(
             <>
               {bound && !deleting && (
                 <>
-                  <GoalBarAction
+                  <ConversationBarAction
                     aria-label={locale.text('surfaceCheckout')}
                     iconOnly
                     onClick={() => store.worktree.patch(sessionId, { checkoutOpen: true, error: '' })}
                     title={locale.text('surfaceCheckout')}
                   >
                     <Icon as={ArrowRightFromSquare} size={14} />
-                  </GoalBarAction>
-                  <GoalBarAction
+                  </ConversationBarAction>
+                  <ConversationBarAction
                     aria-label={locale.text('surfaceAbandon')}
                     iconOnly
                     onClick={() => store.worktree.patch(sessionId, { abandonOpen: true })}
                     title={locale.text('surfaceAbandon')}
                   >
                     <Icon as={TrashBin} size={14} />
-                  </GoalBarAction>
+                  </ConversationBarAction>
                 </>
               )}
               {failed && !bound && (
-                <GoalBarAction
+                <ConversationBarAction
                   aria-label={locale.text('surfaceDismiss')}
                   iconOnly
                   onClick={() => store.worktree.patch(sessionId, { phase: 'idle', error: '' })}
                   title={locale.text('surfaceDismiss')}
                 >
                   <Icon as={Xmark} size={14} />
-                </GoalBarAction>
+                </ConversationBarAction>
               )}
             </>
           )}
@@ -70,16 +70,16 @@ export function WorktreeSurface({ sessionId }: SurfaceBarProps): ReactElement | 
           label={`${label}${creating ? '...' : ''}`}
         >
           {bound && state.log.length > 0 && (
-            <GoalBarAction
+            <ConversationBarAction
               aria-label={locale.text('progressViewLogs')}
               iconOnly
               onClick={() => setLogOpen(value => !value)}
               title={locale.text('progressViewLogs')}
             >
               <Icon as={TerminalLine} size={14} />
-            </GoalBarAction>
+            </ConversationBarAction>
           )}
-        </GoalBar>
+        </ConversationBar>
         {logOpen && <Logs log={state.log} open={logOpen} />}
       </div>
     </div>

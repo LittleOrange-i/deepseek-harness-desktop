@@ -2,7 +2,7 @@ import type { MenuEntry } from 'dsh-tauri-ui/client'
 import type { ReactElement } from 'react'
 import type { ArchiveSort } from '../store/modules/archive.types'
 import type { ArchivePanelProps, DeleteConfirm } from './archive-panel.types'
-import { Button, ChevronDown, Chip, Ellipsis, FolderOpen, Icon, IconButton, Input, Magnifier, Menu, Modal, Toast, TrashBin, useMountStyle } from 'dsh-tauri-ui/client'
+import { Action, Button, ChevronDown, Chip, Ellipsis, FolderOpen, Icon, Input, Magnifier, Menu, Modal, Toast, TrashBin, useMountStyle } from 'dsh-tauri-ui/client'
 import { isEmpty, useWatchImmediate } from 'dsh-tauri/client'
 import { useCallback, useState } from 'react'
 import { PLUGIN_ID } from '../../shared/constants'
@@ -204,7 +204,7 @@ export function ArchivePanel(props: ArchivePanelProps): ReactElement | null {
                 portal
                 align="end"
                 anchor={(
-                  <IconButton
+                  <Action
                     variant="action"
                     icon={<Icon size={12} as={Ellipsis} />}
                     aria-label={locale.text('groupMenuAria')}
@@ -233,7 +233,7 @@ export function ArchivePanel(props: ArchivePanelProps): ReactElement | null {
                     <span className="dshp-session__row-time">{formatTime(row)}</span>
                   </div>
                   <div className="dshp-session__row-actions">
-                    <IconButton
+                    <Action
                       variant="action"
                       icon={<Icon as={TrashBin} />}
                       aria-label={locale.text('deleteRowAria')}

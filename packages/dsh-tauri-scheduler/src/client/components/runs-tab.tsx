@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react'
 import type { LocaleKey, Translate } from '../locales/index.types'
 import type { RunView } from '../types'
-import { Alarm, CircleCheck, CircleDashed, CircleStop, CircleXmark, Dot, Icon, IconButton, TrashBin } from 'dsh-tauri-ui/client'
+import { Action, Alarm, CircleCheck, CircleDashed, CircleStop, CircleXmark, Dot, Icon, TrashBin } from 'dsh-tauri-ui/client'
 import { formatLocalTime, isRunUnread } from './schedule.utils'
 
 export interface RunsTabProps {
@@ -61,7 +61,7 @@ export function RunsTab({ t, runs, readAt, readIds, emptyLabel, onOpen, onDelete
               <span className="dshp-scheduler__card-meta-text">{formatLocalTime(run.startedAt) ?? ''}</span>
             </div>
           </div>
-          <IconButton
+          <Action
             variant="action"
             icon={<Icon as={TrashBin} size={12} />}
             aria-label={t('deleteRun')}
