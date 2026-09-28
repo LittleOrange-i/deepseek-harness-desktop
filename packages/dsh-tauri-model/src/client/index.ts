@@ -4,6 +4,7 @@ import { LOCALE_EFFECT, MODELS_PAGE_EFFECT, STYLES_EFFECT } from './constants'
 import { locale } from './locales'
 import { registerModelsPage } from './register/models'
 import { registerStyles } from './register/styles'
+import { configureOpenInApp } from './service/open-in-app'
 
 export type { ModelsKey } from './models/locales.ts'
 export type { ModelsSectionInjected, ModelsSectionProps } from './models/ModelsSection.tsx'
@@ -25,6 +26,7 @@ export const inject = [
 ]
 
 export function apply(ctx: ClientContext): void {
+  configureOpenInApp(ctx)
   ctx.effect(locale.registerLocale, LOCALE_EFFECT)
   ctx.effect(registerStyles, STYLES_EFFECT)
   let started = false

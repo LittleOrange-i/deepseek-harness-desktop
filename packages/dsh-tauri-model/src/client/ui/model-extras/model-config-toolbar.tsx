@@ -1,6 +1,9 @@
 import type { ReactElement } from 'react'
+import type { WorkspacePathApplication } from '../../types/remotes.ts'
 import type { Translate } from './types'
-import { Action } from 'dsh-tauri-ui/client'
+import { Action, Select } from 'dsh-tauri-ui/client'
+import { useEffect, useState } from 'react'
+import { listConfigApplications, openConfigInApp } from '../../service/open-in-app'
 
 export type ModelDraft = Record<string, unknown>
 
@@ -19,29 +22,93 @@ export interface ModelConfigToolbarProps {
   disabled?: boolean
 }
 
+const DEFAULT_APPLICATION = ''
+const APPLICATION_CHOICE_KEY = 'dsh-tauri-model.open-in-app.choice'
+
 /**
- * 模型页工具条：只保留「打开配置文件」。
- * 文本编辑器选择器已删除——官方 `dsh-client-ui-open-in-app` 已独占「用哪个应用打开」这件事
- * （自带应用目录与记忆选择，且不对外 provide 客户端服务），本包不再重复实现。
+ * 模型页工具条：左侧用哪个应用打开（复用 ui 的 `Select`），右侧「打开配置文件」。
+ * 候选来自官方 open-in-app 的主机目录，低版本核心或非桌面环境为空，此时只剩右侧按钮。
  */
 export function ModelConfigToolbar({
   t,
   onOpenConfig,
   disabled,
 }: ModelConfigToolbarProps): ReactElement {
+  const [applications, setApplications] = useState<readonly WorkspacePathApplication[]>([])
+  const [choice, setChoice] = useState<string>(readChoice)
+
+  useEffect(() => {
+    let active = true
+    void listConfigApplications().then((next) => {
+      if (active)
+        setApplications(next)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  if (onOpenConfig === undefined)
+    return <div className="flex items-center flex-wrap gap-[8px] min-w-0" />
+
+  const selected = applications.find(application => application.id === choice)
+  const openConfig = (): void => {
+    if (selected === undefined)
+      onOpenConfig()
+    else
+      void openConfigInApp(selected.id)
+  }
+
   return (
     <div className="flex items-center flex-wrap gap-[8px] min-w-0">
-      {onOpenConfig === undefined
+      {applications.length === 0
         ? null
         : (
-            <Action
-              variant="link"
+            <Select
+              className="max-w-[200px]"
               disabled={disabled}
-              onClick={onOpenConfig}
-            >
-              {t('openConfigFile')}
-            </Action>
+              variant="composerTrigger"
+              options={[
+                { value: DEFAULT_APPLICATION, label: t('defaultApplication') },
+                ...applications.map(application => ({
+                  value: application.id,
+                  label: application.name,
+                  icon: <ApplicationIcon application={application} />,
+                })),
+              ]}
+              value={selected === undefined ? DEFAULT_APPLICATION : choice}
+              icon={selected === undefined ? undefined : <ApplicationIcon application={selected} />}
+              onChange={(id) => {
+                setChoice(id)
+                writeChoice(id)
+              }}
+            />
           )}
+      <Action className='text-[13px] text-secondary rounded-[14px]' variant="link" disabled={disabled} onClick={openConfig}>
+        {t('openConfigFile')}
+      </Action>
     </div>
   )
+}
+
+function ApplicationIcon({ application }: { application: WorkspacePathApplication }): ReactElement {
+  return <img src={application.icon ?? ''} alt="" className="w-[14px] h-[14px] rounded-[3px] flex-none" />
+}
+
+function readChoice(): string {
+  try {
+    return localStorage.getItem(APPLICATION_CHOICE_KEY) ?? DEFAULT_APPLICATION
+  }
+  catch {
+    return DEFAULT_APPLICATION
+  }
+}
+
+function writeChoice(id: string): void {
+  try {
+    localStorage.setItem(APPLICATION_CHOICE_KEY, id)
+  }
+  catch {
+
+  }
 }

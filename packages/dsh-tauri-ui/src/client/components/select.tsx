@@ -10,6 +10,8 @@ import { ChevronDown } from './icons'
 export interface SelectOption {
   value: string
   label: string
+  /** 逐项图标（菜单行与触发器共用同一套 chips 排版）。 */
+  icon?: ReactNode
 }
 
 export interface SelectProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'onChange' | 'value'> {
@@ -46,7 +48,7 @@ export function Select({
         setOpen(false)
         onChange(id)
       }}
-      items={options.map(option => ({ id: option.value, label: option.label }))}
+      items={options.map(option => ({ id: option.value, label: option.label, icon: option.icon }))}
       selectedId={value}
       portal
       align="end"

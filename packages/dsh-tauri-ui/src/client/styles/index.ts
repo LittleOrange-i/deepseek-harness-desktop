@@ -195,6 +195,9 @@ const TAILWINDCSS_GENERATED = `
   .table {
     display: table;
   }
+  .h-\\[14px\\] {
+    height: 14px;
+  }
   .h-\\[16px\\] {
     height: 16px;
   }
@@ -279,6 +282,9 @@ const TAILWINDCSS_GENERATED = `
   .w-\\[8px\\] {
     width: 8px;
   }
+  .w-\\[14px\\] {
+    width: 14px;
+  }
   .w-\\[16px\\] {
     width: 16px;
   }
@@ -332,6 +338,9 @@ const TAILWINDCSS_GENERATED = `
   }
   .w-full\\! {
     width: 100% !important;
+  }
+  .max-w-\\[200px\\] {
+    max-width: 200px;
   }
   .max-w-\\[220px\\] {
     max-width: 220px;
@@ -509,6 +518,9 @@ const TAILWINDCSS_GENERATED = `
   }
   .rounded {
     border-radius: 0.25rem;
+  }
+  .rounded-\\[3px\\] {
+    border-radius: 3px;
   }
   .rounded-\\[4px\\] {
     border-radius: 4px;

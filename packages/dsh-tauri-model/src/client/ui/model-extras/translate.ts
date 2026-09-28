@@ -3,6 +3,7 @@ import { locale } from '../../locales'
 
 export const MODEL_EXTRAS_KEYS = [
   'openConfigFile',
+  'defaultApplication',
   'autoConfigureModels',
   'autoConfigureModelsHint',
   'fetchModelConfig',

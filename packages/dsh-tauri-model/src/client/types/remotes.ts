@@ -98,8 +98,19 @@ export interface LlmRemote {
   discoverModels: (settingsNs: string, request: LlmModelDiscoveryRequest) => Promise<RemoteResult<LlmDiscoveredModel[]>>
 }
 
+export interface WorkspacePathApplication {
+  id: string
+  name: string
+  default: boolean
+  icon: string | null
+}
+
 export interface SessionRemote {
   modelCatalog: () => Promise<RemoteResult<LlmModelCatalog>>
+  /** 官方 open-in-app 会话远端（低版本核心没有这三项，据此隐藏入口）。 */
+  canOpenWorkspacePath?: () => Promise<RemoteResult<boolean>>
+  openWorkspacePath?: (request: { path: string, action?: 'reveal', application?: string }) => Promise<RemoteResult<unknown>>
+  workspacePathApplications?: (request: { path: string }) => Promise<RemoteResult<WorkspacePathApplication[]>>
 }
 
 export type RemoteEventName = 'settings/document-updated' | 'credentials/reference-updated' | 'credentials/record-updated' | 'llm/adapters-updated'

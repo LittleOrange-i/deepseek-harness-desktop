@@ -6,6 +6,10 @@ import { resolveSettingsFilePath } from '../utils/paths'
 
 /** 设置文件：存在就用系统默认应用打开，未创建则退到所在目录（编辑器选择交给官方 open-in-app）。 */
 export const configFile = defineService({
+  async resolve(): Promise<ConfigOpenResult> {
+    const path = resolveSettingsFilePath()
+    return { ok: true, path, opened: 'file' }
+  },
   async open(): Promise<ConfigOpenResult> {
     const path = resolveSettingsFilePath()
     try {
