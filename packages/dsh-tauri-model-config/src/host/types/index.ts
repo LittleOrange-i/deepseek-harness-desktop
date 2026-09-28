@@ -1,3 +1,5 @@
+import type { RoutesContext } from 'dsh-tauri'
+
 export interface IndexInjectEntry {
   kind: 'global'
   name: string
@@ -10,7 +12,8 @@ export interface IndexInjectTable {
 
 export type IndexInjectListener = (table: IndexInjectTable) => void
 
-export interface HostContext {
+export interface HostContext extends RoutesContext {
   on: (event: 'webserver/index-inject', listener: IndexInjectListener) => () => void
   effect: (callback: () => (() => void) | void, name?: string) => void
+  get: (name: string) => unknown
 }

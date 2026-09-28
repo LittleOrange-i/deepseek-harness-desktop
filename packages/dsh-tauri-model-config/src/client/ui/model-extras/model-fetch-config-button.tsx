@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react'
 import type { ModelFetchConfigButtonProps } from './model-fetch-config-button.types'
-import { Action } from '../../components/action'
-import { Text } from '../../components/text'
+import { Action, Text } from 'dsh-tauri-ui/client'
 import { hasModelConfig } from '../../service/model-config.utils'
 import { useModelConfigFetch } from './use-model-config-fetch'
 

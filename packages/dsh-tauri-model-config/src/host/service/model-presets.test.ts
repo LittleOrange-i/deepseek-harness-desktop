@@ -10,7 +10,7 @@ const UPSTREAM = {
   'openai/text-embedding-3-small': { mode: 'embedding', max_input_tokens: 8191 },
 }
 
-const CACHE_DIR = 'dsh-tauri-ui'
+const CACHE_DIR = 'dsh-tauri-model-config'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })

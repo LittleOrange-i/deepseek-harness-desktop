@@ -9,14 +9,10 @@ import type { SettingsSchemaOperations } from './schema-operations.ts'
 import type {} from './slot-contract.ts'
 import type { ModelsSettingsStore, ProviderRow } from './store.ts'
 import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import {
-  ModelConfigToolbar,
-  modelExtrasTranslate,
-  openConfigFile,
-  Plus,
-  SegmentedControl,
-} from 'dsh-tauri-ui/client'
+import { Plus, SegmentedControl } from 'dsh-tauri-ui/client'
 import { useId, useState } from 'react'
+import { openConfigFile } from '../service/model-config'
+import { ModelConfigToolbar, modelExtrasTranslate } from '../ui/model-extras'
 import { CustomProviderCard } from './CustomProviderCard.tsx'
 import { ProviderEditor } from './ProviderEditor.tsx'
 import { deriveKeyRef, protocolChoices, providerUsable } from './store.ts'

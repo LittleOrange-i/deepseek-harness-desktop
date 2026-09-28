@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react'
 import type { AutoConfigAllButtonProps } from './auto-config-all-button.types'
-import { Action } from '../../components/action'
-import { Text } from '../../components/text'
+import { Action, Text } from 'dsh-tauri-ui/client'
 import { useModelConfigFetch } from './use-model-config-fetch'
 
 export function AutoConfigAllButton({ t, models, probe, operations, disabled, onApply }: AutoConfigAllButtonProps): ReactElement {

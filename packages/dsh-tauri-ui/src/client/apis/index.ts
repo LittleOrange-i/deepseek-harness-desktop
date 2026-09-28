@@ -11,21 +11,6 @@ import type * as Types from "./index.type";
 export const baseURL = "/api/desktop/dsh-tauri-ui";
 
 /** @method post */
-export function postConfigOpen(options?: FetchOptions) {
-  return ofetch<Types.OpenModelsConfigResponse>("/config/open", { baseURL, method: "post", ...options });
-}
-
-/** @method get */
-export function getEndpointModels(params?: Types.GetEndpointModelsQuery, options?: FetchOptions) {
-  return ofetch<Types.EndpointModelsResponse>("/endpoint/models", { baseURL, method: "get", params, ...options });
-}
-
-/** @method get */
-export function getPresets(params?: Types.GetPresetsQuery, options?: FetchOptions) {
-  return ofetch<Types.PresetsResponse>("/presets", { baseURL, method: "get", params, ...options });
-}
-
-/** @method post */
 export function postSessionResume(body: Types.PostSessionResumeBody, options?: FetchOptions) {
   return ofetch<Types.SessionResumeResponse>("/session/resume", { baseURL, method: "post", body, ...options });
 }

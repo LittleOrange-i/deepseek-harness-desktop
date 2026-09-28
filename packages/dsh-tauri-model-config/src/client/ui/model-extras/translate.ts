@@ -2,12 +2,7 @@ import type { Translate } from './types'
 import { locale } from '../../locales'
 
 export const MODEL_EXTRAS_KEYS = [
-  'apply',
   'openConfigFile',
-  'openConfigFileHint',
-  'openConfigFileLanded',
-  'openConfigFileDirectory',
-  'openConfigFileFailed',
   'autoConfigureModels',
   'autoConfigureModelsHint',
   'fetchModelConfig',
@@ -17,7 +12,6 @@ export const MODEL_EXTRAS_KEYS = [
   'configNoneApplied',
   'configApplied',
   'configUndisclosed',
-  'modelConfig',
   'thinkingMode',
   'thinkingLevels',
   'thinkingModeHint',

@@ -6,13 +6,6 @@ import { loadModelCapacities } from '../../service/model-config'
 import { mergeModelCards, modelConfigNotice, withDetail } from '../../service/model-config.utils'
 import { ensurePresets } from '../../service/presets'
 
-export const EDITOR_LABEL_KEYS = {
-  system: 'editorSystem',
-  vscode: 'editorVSCode',
-  cursor: 'editorCursor',
-  custom: 'editorCustom',
-} as const
-
 export interface UseModelConfigFetchResult {
   busy: boolean
   failure?: string

@@ -1,9 +1,10 @@
 import type { ModelDiscoveryChannel } from '../../service/model-config'
-import type { ModelDraft, ModelProbeTarget } from './model-config-toolbar.types'
+import type { ModelDraft, ModelProbeTarget } from './model-config-toolbar'
 import type { Translate } from './types'
 
-export interface AutoConfigAllButtonProps {
+export interface ModelFetchConfigButtonProps {
   t: Translate
+  modelId: string
   models: readonly ModelDraft[]
   probe: ModelProbeTarget
   operations?: ModelDiscoveryChannel

@@ -18,21 +18,11 @@ export * from './components/panel'
 export * from './components/segmented-control'
 export * from './constants/theme'
 export * from './hooks/use-mount-style'
-export * from './service/model-compat'
-
-export * from './service/model-config'
-
-export { hasModelConfig, mergeModelCards, modelConfigNotice, withCount, withDetail, withPath } from './service/model-config.utils'
-
-export type { ModelConfigMerge, ModelConfigMergeOptions } from './service/model-config.utils'
-export * from './service/model-presets'
-export * from './service/presets'
 export type * from './store/modules/sections.types'
 export type * from './store/modules/settings.types'
 export * from './types/remotes'
 export type * from './types/sections'
 export type * from './types/selector'
-export * from './ui/model-extras'
 export * from './utils/cssr'
 export * from './utils/style'
 

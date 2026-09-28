@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react'
 import type { Translate } from './types'
-import { Action } from '../../components/action'
+import { Action } from 'dsh-tauri-ui/client'
 
 export type ModelDraft = Record<string, unknown>
 
@@ -16,8 +16,6 @@ export interface ModelProbeTarget {
 export interface ModelConfigToolbarProps {
   t: Translate
   onOpenConfig?: () => void
-  openConfigLabel?: string
-  openConfigHint?: string
   disabled?: boolean
 }
 
@@ -29,8 +27,6 @@ export interface ModelConfigToolbarProps {
 export function ModelConfigToolbar({
   t,
   onOpenConfig,
-  openConfigLabel,
-  openConfigHint,
   disabled,
 }: ModelConfigToolbarProps): ReactElement {
   return (
@@ -41,10 +37,9 @@ export function ModelConfigToolbar({
             <Action
               variant="link"
               disabled={disabled}
-              title={openConfigHint}
               onClick={onOpenConfig}
             >
-              {openConfigLabel ?? t('openConfigFile')}
+              {t('openConfigFile')}
             </Action>
           )}
     </div>
