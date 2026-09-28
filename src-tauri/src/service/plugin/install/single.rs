@@ -509,6 +509,11 @@ mod tests {
             (Some("0.1.6"), Some("1.4.0"), false),
             (Some("0.1.7-rc.2"), Some("1.4.0"), false),
             (Some("0.1.7-rc.2"), Some("1.2.0"), true),
+            // 回归：核心仍在声明区间内、已装版本**新于**该代区间 → 保留（用户自升级）
+            (Some("0.1.7-rc.2"), Some("1.5.0"), false),
+            (Some("0.1.7-rc.2"), Some("2.0.0"), false),
+            (Some("0.1.5-rc.3"), Some("1.3.0"), false),
+            (Some("0.1.5-rc.3"), Some("9.9.9"), false),
             (Some("0.2.0"), Some("1.4.0"), true),
             (Some("0.2.0"), Some("2.0.0"), false),
             (Some("0.2.0"), Some("1.0.0"), false),
