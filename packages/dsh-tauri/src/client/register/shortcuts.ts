@@ -5,8 +5,7 @@
  * `dsh://shortcuts` 送达壳层；壳层的「文件」「帮助」菜单右侧按键提示与「显示键盘快捷键」
  * 清单都读这一份（配置变更后重发，用户改键即时生效）。
  *
- * 宿主 → iframe：`dsh://edit` 由壳层的「编辑」菜单发出，在文档上执行对应编辑命令；
- * 剪贴板仍走系统快捷键（WebView 的原生粘贴不对脚本开放）。
+ * 宿主 → iframe：`dsh://shortcuts:open` 打开官方「键盘快捷键」弹层。
  *
  * 协议字面量与宿主侧 `src/layout/components/webview.tsx` / `navbar.tsx` 逐字一致。
  */
@@ -18,16 +17,8 @@ import { defineRegister } from './index'
 /** iframe → 宿主：快捷键目录回报。 */
 export const EVENT_SHORTCUTS = 'dsh://shortcuts'
 
-/** 宿主 → iframe：编辑菜单命令。 */
-export const CMD_EDIT = 'dsh://edit'
-
 /** 宿主 → iframe：打开官方「键盘快捷键」弹层（官方 `shortcuts.open` 命令，含官方蒙版）。 */
 export const CMD_SHORTCUTS_OPEN = 'dsh://shortcuts:open'
-
-/** 菜单可执行的编辑动作（`document.execCommand` 的命令名）。 */
-export const EDIT_ACTIONS = ['undo', 'redo', 'cut', 'copy', 'paste', 'selectAll'] as const
-
-export type EditAction = typeof EDIT_ACTIONS[number]
 
 /** 上报给壳层的一行目录（官方 `ShortcutCatalogEntry` 的投影）。 */
 export interface ShortcutRowReport {
@@ -63,12 +54,9 @@ export const shortcutsFeature = defineRegister((controller, ctx) => {
     controller.add(catalog.subscribe(report))
 
   controller.add(listenParent<ParentMessage>((data) => {
-    if (data.type === CMD_SHORTCUTS_OPEN) {
+    if (data.type === CMD_SHORTCUTS_OPEN)
       openReference(snapshot.call(catalog))
-      return
-    }
-    runEdit(data.action)
-  }, [CMD_EDIT, CMD_SHORTCUTS_OPEN]))
+  }, [CMD_SHORTCUTS_OPEN]))
 })
 
 /** 目录投影：只保留有 id 与文案的行，`keys` 逐项取字符串。 */
@@ -93,20 +81,6 @@ function project(rows: unknown): ShortcutRowReport[] {
       break
   }
   return out
-}
-
-/** 编辑命令：文档级 `document.execCommand`；失败只告警（原生快捷键仍是主路径）。 */
-function runEdit(action: unknown): void {
-  if (typeof action !== 'string' || !EDIT_ACTIONS.includes(action as EditAction))
-    return
-  if (typeof document === 'undefined')
-    return
-  try {
-    document.execCommand(action)
-  }
-  catch (error) {
-    console.warn('[dsh-tauri] running the edit command failed:', error)
-  }
 }
 
 /**
