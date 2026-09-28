@@ -7,6 +7,7 @@ import { clamp, cn, isEmpty, useEventListener, useStore } from 'dsh-tauri/client
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from '../components/icon'
 import { ArrowLeft, Cubes3Overlap, Database, Gear, Ghost, PersonPencil, Puzzle, Server, Tray } from '../components/icons'
+import { Input } from '../components/official'
 import {
   RAIL_WIDTH_DEFAULT,
   RAIL_WIDTH_MAX,
@@ -39,6 +40,8 @@ export function SettingsSidebar(_props: SettingsSidebarProps): ReactElement | nu
   const { rows } = useStore(store.sections)
   locale.useLocale()
   const searchRef = useRef<HTMLInputElement>(null)
+  // 官方 `Input` 的 props 类型没声明 ref（实现里 `...rest` 会落到 <input>），官方类型补全后可直接写 ref。
+  const searchInputRefProps = { ref: searchRef }
   const [dragging, setDragging] = useState(false)
   const draggingRef = useRef(false)
   const originRef = useRef({ width: RAIL_WIDTH_DEFAULT, x: 0 })
@@ -119,9 +122,9 @@ export function SettingsSidebar(_props: SettingsSidebarProps): ReactElement | nu
           <Icon as={ArrowLeft} />
           {locale.text('back')}
         </button>
-        <input
-          ref={searchRef}
-          className="box-border w-full h-[32px] px-[10px] border-[0.5px] border-border-l4 rounded-[8px] [font-family:inherit] bg-layer-1 text-primary text-[14px] leading-[22px] outline-none focus:border-brand placeholder:text-dimmed disabled:opacity-60 disabled:cursor-default"
+        <Input
+          {...searchInputRefProps}
+          className="w-full"
           value={ui.query}
           placeholder={locale.text('search')}
           aria-label={locale.text('search')}

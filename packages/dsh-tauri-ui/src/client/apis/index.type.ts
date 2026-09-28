@@ -1,20 +1,3 @@
-export type SessionResumeResponse = {
-  ok?: boolean;
-  error?: string;
-};
-
-export interface PostSessionResumeBody {
-  sessionId?: string;
-}
-
-export type EditorPreferenceResponse = {
-  preference?: EditorPreference;
-  error?: string;
-};
-export type EditorPreference = {
-  editor: "vscode" | "cursor" | "system" | "custom";
-  command: string;
-};
 export type OpenModelsConfigResponse = {
   ok?: boolean;
   path?: string;
@@ -37,10 +20,13 @@ export type PresetsResponse = {
   ok?: boolean;
   source?: string;
   fetchedAt?: string;
-  /** 上游不可达、回退到过期缓存时为 true。 */
   stale?: boolean;
   count?: number;
   presets?: Record<string, readonly number[]>;
+  error?: string;
+};
+export type SessionResumeResponse = {
+  ok?: boolean;
   error?: string;
 };
 export type UngroupedResponse = {
@@ -48,8 +34,8 @@ export type UngroupedResponse = {
   error?: string;
 };
 
-export interface EditorPreferenceBody {
-  preference: EditorPreference;
+export interface PostSessionResumeBody {
+  sessionId?: string;
 }
 export interface GetEndpointModelsQuery {
   ns?: string;

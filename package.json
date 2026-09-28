@@ -12,7 +12,7 @@
     "prebuild": "pnpm build:plugins",
     "build": "tsc && vite build",
     "build:plugins": "tsx scripts/build-plugins.ts",
-    "build:taiwindcss": "tsx packages/dsh-tauri-taiwindcss/scripts/taiwindcss.ts",
+    "build:taiwindcss": "tsx packages/dsh-tauri-ui/scripts/taiwindcss.ts",
     "build:debug": "tsx scripts/build-debug.ts",
     "genapi": "genapi",
     "preview": "vite preview",

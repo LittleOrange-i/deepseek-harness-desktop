@@ -12,6 +12,8 @@ const localVariants = {
   addGhost: 'inline-flex border-none gap-[4px] h-[32px] px-[12px] text-[13px] leading-[20px] bg-transparent text-primary rounded-md hover:not-disabled:bg-hover active:not-disabled:bg-active disabled:opacity-40',
   // 上游 `.danger` 是 token 重绑：本地覆盖 --dsw-alias-interactive-bg-hover，让 hover 洗色变红。
   danger: 'inline-flex gap-[4px] h-[36px] px-[14px] text-[14px] leading-[22px] text-error bg-transparent rounded-md border-[0.5px] border-[color-mix(in_srgb,var(--dsw-alias-state-error-primary)_30%,transparent)] [--dsw-alias-interactive-bg-hover:color-mix(in_srgb,var(--dsw-alias-state-error-primary)_8%,transparent)] hover:not-disabled:bg-hover disabled:opacity-40',
+  // 正文里的链接式按钮（归档会话标题这类「点开看详情」）：无底色，hover 才出下划线。
+  link: 'inline-flex border-none bg-transparent p-0 [font-family:inherit] text-[13px] leading-[22px] text-primary text-left max-w-full cursor-pointer hover:not-disabled:underline hover:not-disabled:underline-offset-2 hover:not-disabled:decoration-secondary disabled:opacity-50',
 } as const
 
 const localButton = tv({

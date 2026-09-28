@@ -1,9 +1,9 @@
 // 引用源 @deepseek-ai/dsh-client-ui-agent-preset · packages/client/ui-agent-preset/src/client/AgentPresetSeat.module.css ; @deepseek-ai/dsh-client-ui-permission-presets · packages/client/ui-permission-presets/src/client/PermissionSelect.module.css ; @deepseek-ai/dsh-client-ui-permission-presets · packages/client/ui-permission-presets/src/client/PermissionRow.module.css · 版本 0.1.7-rc.2（≥0.1.5-rc.1）· hash seat=cubgiG_seat composerTrigger=iWlSmW_trigger selector=oY77xG_selector
 import type { VariantProps } from 'dsh-tauri/client'
-import type { ButtonHTMLAttributes, ReactElement, ReactNode } from 'react'
+import type { ComponentProps, ReactElement, ReactNode } from 'react'
 import { tv } from 'dsh-tauri/client'
 
-export interface ChipProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
+export interface ChipProps extends Omit<ComponentProps<'button'>, 'children'> {
   variant: ChipVariant
   icon?: ReactNode
   badge?: ReactNode

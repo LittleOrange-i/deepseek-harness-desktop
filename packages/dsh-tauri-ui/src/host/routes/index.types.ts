@@ -1,14 +1,3 @@
-import type { EditorPreference } from '../../shared/editor.types'
-
-export interface EditorPreferenceBody {
-  preference: EditorPreference
-}
-
-export interface EditorPreferenceResponse {
-  preference?: EditorPreference
-  error?: string
-}
-
 export interface EndpointModelCard {
   id: string
   name?: string

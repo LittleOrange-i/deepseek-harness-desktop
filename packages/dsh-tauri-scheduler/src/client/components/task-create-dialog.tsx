@@ -2,7 +2,7 @@ import type { SelectOption } from 'dsh-tauri-ui/client'
 import type { ReactElement, ReactNode } from 'react'
 import type { LocaleKey, Translate } from '../locales/index.types'
 import type { ScheduleForm, ScheduleKind, SchedulerOptions, TaskFormState, TaskInput, Weekday } from '../types'
-import { Button, Input, Modal, Select, Text } from 'dsh-tauri-ui/client'
+import { Button, Input, Modal, Select, Text, Textarea } from 'dsh-tauri-ui/client'
 import { isEmpty, map, omitBy, pick, range } from 'dsh-tauri/client'
 import { useRef, useState } from 'react'
 import { SCHEDULE_KINDS } from '../../shared/constants'
@@ -305,8 +305,8 @@ export function TaskCreateDialog({ t, options, onClose, taskId, initial }: TaskC
 
         <TaskField label={t('schedulePrompt')}>
           <div className="relative flex flex-col items-end gap-[8px]">
-            <textarea
-              className="box-border w-full h-auto min-h-[240px] p-[10px] pb-[46px] border-[0.5px] border-border-l4 rounded-[8px] [font-family:inherit] bg-layer-1 text-primary text-[14px] leading-[1.55] resize-y outline-none focus:border-brand placeholder:text-dimmed"
+            <Textarea
+              className="min-h-[240px] pb-[46px] border-[0.5px] border-border-l4 [font-family:inherit] text-[14px] leading-[1.55]"
               value={form.prompt}
               placeholder={t('schedulePromptPlaceholder')}
               onChange={event => setForm(state => ({ ...state, prompt: event.target.value }))}

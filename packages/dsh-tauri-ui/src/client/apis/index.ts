@@ -10,16 +10,6 @@ import type * as Types from "./index.type";
 
 export const baseURL = "/api/desktop/dsh-tauri-ui";
 
-/** @method get */
-export function getConfigEditor(options?: FetchOptions) {
-  return ofetch<Types.EditorPreferenceResponse>("/config/editor", { baseURL, method: "get", ...options });
-}
-
-/** @method put */
-export function putConfigEditor(body: Types.EditorPreferenceBody, options?: FetchOptions) {
-  return ofetch<Types.EditorPreferenceResponse>("/config/editor", { baseURL, method: "put", body, ...options });
-}
-
 /** @method post */
 export function postConfigOpen(options?: FetchOptions) {
   return ofetch<Types.OpenModelsConfigResponse>("/config/open", { baseURL, method: "post", ...options });

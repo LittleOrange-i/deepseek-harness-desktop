@@ -11,7 +11,6 @@
     "dsh-tauri-rightclick": "workspace:*",
     "dsh-tauri-scheduler": "workspace:*",
     "dsh-tauri-ssh": "workspace:*",
-    "dsh-tauri-taiwindcss": "workspace:*",
     "dsh-tauri-ui": "workspace:*",
     "dsh-tauri-worktree": "workspace:*"
   }

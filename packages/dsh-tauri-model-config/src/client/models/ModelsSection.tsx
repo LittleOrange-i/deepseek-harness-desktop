@@ -10,15 +10,13 @@ import type {} from './slot-contract.ts'
 import type { ModelsSettingsStore, ProviderRow } from './store.ts'
 import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import {
-  loadEditor,
   ModelConfigToolbar,
   modelExtrasTranslate,
   openConfigFile,
   Plus,
-  saveEditor,
   SegmentedControl,
 } from 'dsh-tauri-ui/client'
-import { useEffect, useId, useState } from 'react'
+import { useId, useState } from 'react'
 import { CustomProviderCard } from './CustomProviderCard.tsx'
 import { ProviderEditor } from './ProviderEditor.tsx'
 import { deriveKeyRef, protocolChoices, providerUsable } from './store.ts'
@@ -186,17 +184,6 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace, renderS
   const [deleteFailure, setDeleteFailure] = useState<string | undefined>(undefined)
   const [savedTarget, setSavedTarget] = useState<ProviderIdentity | undefined>(undefined)
   const [dismissedSetup, setDismissedSetup] = useState<ReadonlySet<string>>(() => new Set())
-  const [editor, setEditor] = useState<Awaited<ReturnType<typeof loadEditor>>>()
-  useEffect(() => {
-    let current = true
-    void loadEditor().then((preference) => {
-      if (current)
-        setEditor(preference)
-    })
-    return () => {
-      current = false
-    }
-  }, [])
 
   const announceSaved = (target: ProviderIdentity): void => {
     void controller.load().then(() => {
@@ -307,11 +294,6 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace, renderS
         <h2 className={styles.title}>{t('title')}</h2>
         <ModelConfigToolbar
           t={modelExtrasTranslate}
-          editor={editor}
-          onEditorChange={(next) => {
-            setEditor(next)
-            void saveEditor(next)
-          }}
           onOpenConfig={() => { void openConfigFile() }}
         />
       </div>

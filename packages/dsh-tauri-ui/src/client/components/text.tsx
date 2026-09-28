@@ -22,6 +22,7 @@ const text = tv({
       tertiary: 'text-tertiary',
       dimmed: 'text-dimmed',
       error: 'text-error',
+      success: 'text-success',
     },
   },
   defaultVariants: { size: 'xs', tone: 'secondary' },
