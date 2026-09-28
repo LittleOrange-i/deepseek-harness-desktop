@@ -24,7 +24,7 @@ import {
   SETTINGS_TRIGGER,
 } from '../support/browser'
 
-/** 与 `packages/dsh-tauri-ui/src/host/routes/index.ts:5` 的唯一路由对齐。 */
+/** 与 `packages/dsh-tauri-ui/src/host/routes/index.ts:6` 的会话恢复路由对齐。 */
 const RESUME_PATH = '/api/desktop/dsh-tauri-ui/session/resume'
 
 /** 未分组目录解析路由（`packages/dsh-tauri-ui/src/host/routes/ungrouped/get.ts`）。 */

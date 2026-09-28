@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import type { Translate } from './types'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
@@ -28,21 +27,15 @@ vi.mock('dsh-tauri/client', async () => ({
   },
 }))
 
-vi.mock('@deepseek-ai/dsh-client-ui-primitives', () => ({
-  Menu: ({ anchor, open }: { anchor?: ReactNode, open?: boolean }) => (
-    <>
-      {anchor}
-      {open === true ? null : null}
-    </>
-  ),
-  Modal: ({ open, title, children }: { open?: boolean, title?: ReactNode, children?: ReactNode }) =>
-    open === true ? <div role="dialog" aria-label={typeof title === 'string' ? title : undefined}>{children}</div> : null,
-  Button: ({ children, ...rest }: { children?: ReactNode } & Record<string, unknown>) => <button type="button" {...rest}>{children}</button>,
+// `dsh-tauri-ui/client` 的产物是部署期 ModuleLoader 外壳（顶层 `window.__ModuleLoader__.load`），
+// node 下不可导入；与 `running-changes-chip.cssr.test.ts` 同法，从 ui 源码路径取真实组件。
+vi.mock('dsh-tauri-ui/client', async () => ({
+  ...await import('../../../../../dsh-tauri-ui/src/client/components/action.tsx'),
+  ...await import('../../../../../dsh-tauri-ui/src/client/components/text.tsx'),
 }))
 
 const t: Translate = (key, params) => {
   const dict: Record<string, string> = {
-    textEditor: 'Text editor',
     openConfigFile: 'Open config file',
     autoConfigureModels: 'Configure all models',
     autoConfigureModelsHint: 'Fill in limits',
