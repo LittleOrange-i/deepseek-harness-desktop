@@ -57,6 +57,7 @@ Plugins offered in the first-run wizard; select what you need and install on dem
 - [DSH Market](https://github.com/dsh-market/dsh-market) — browse, search, and one-click install community plugins (Recommended)
 - [DSH Better Sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) — a VSCode-like right sidebar, isolated per session (Recommended)
 - [DSH Rewind](https://github.com/SiriLee/dsh-rewind) — in-window conversation rewind that never forks a new session, plus a lightweight workspace backup that restores files along with the rewind (Recommended)
+- [DSH Bridge](https://github.com/wenbin-wb/dsh-bridge) — LAN QR-code connect, Cloudflare and self-hosted public tunnels, plus WeChat / QQ / Feishu / Telegram bot conversations so you can keep working on your local Harness from anywhere; includes built-in access authentication and tamper safeguards (Recommended)
 - [DSH-IM](https://github.com/xmanrui/dsh-im) — connect WeChat, Feishu, DingTalk, WeCom, QQ, Slack, Telegram, Discord, WhatsApp, iMessage and more to your local Harness, managed from an "IM" sidebar panel (Recommended)
 
 > The preset list is maintained by the desktop project. To request a new or updated preset, open an issue in [deepseek-harness-desktop](https://github.com/dsh-tauri/deepseek-harness-desktop/issues).

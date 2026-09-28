@@ -196,6 +196,16 @@
         ]
       },
       {
+        "id": "@wenbin_wb/dsh-bridge",
+        "spec": "@wenbin_wb/dsh-bridge",
+        "name": "DSH Bridge",
+        "description": "Remote access and security guard for a local DeepSeek Harness: LAN QR-code connect, Cloudflare or self-hosted public tunnels, and full-lifecycle WeChat / QQ / Feishu / Telegram bot conversations, with built-in access authentication and tamper safeguards.",
+        "repo": "https://github.com/wenbin-wb/dsh-bridge",
+        "recommended": true,
+        "checked": false,
+        "version": "latest"
+      },
+      {
         "id": "@xmanrui/dsh-im",
         "spec": "@xmanrui/dsh-im",
         "name": "DSH IM",
@@ -209,7 +219,7 @@
             "dsh": "^0.1.5-rc.1"
           },
           {
-            "version": "^4.28.0",
+            "version": "latest",
             "dsh": "^0.1.7-rc.1"
           }
         ]

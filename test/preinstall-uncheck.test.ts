@@ -56,12 +56,15 @@ describe('unchecked preset suppresses first-run preselection', () => {
     expect(source.indexOf('p.defaultUnchecked')).toBeLessThan(source.indexOf('p.recommended || p.fix'))
   })
 
-  it('declares the DSH IM preset as recommended but not pre-checked', () => {
-    const im = readManifest().plugins.preset.find(p => p.id === '@xmanrui/dsh-im')
-    expect(im).toBeDefined()
-    expect(im?.recommended).toBe(true)
-    // 资源清单是唯一真值：Rust 侧据此派生 defaultUnchecked（checked === false）
-    expect(im?.checked).toBe(false)
+  it('declares DSH Bridge and DSH IM as recommended but not pre-checked', () => {
+    const preset = readManifest().plugins.preset
+    for (const id of ['@wenbin_wb/dsh-bridge', '@xmanrui/dsh-im']) {
+      const entry = preset.find(p => p.id === id)
+      expect(entry, id).toBeDefined()
+      expect(entry?.recommended, id).toBe(true)
+      // 资源清单是唯一真值：Rust 侧据此派生 defaultUnchecked（checked === false）
+      expect(entry?.checked, id).toBe(false)
+    }
   })
 })
 

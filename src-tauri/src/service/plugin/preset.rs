@@ -602,7 +602,7 @@ mod tests {
     #[test]
     fn preset_manifest_declares_version_matrix_per_core() {
         let presets = load_presets_for_test();
-        let expected: [(&str, PluginVersion); 4] = [
+        let expected: [(&str, PluginVersion); 5] = [
             ("dshmarket", PluginVersion::Declared("latest".into())),
             (
                 "dsh-better-sidebar",
@@ -616,8 +616,12 @@ mod tests {
                 ]),
             ),
             (
+                "@wenbin_wb/dsh-bridge",
+                PluginVersion::Declared("latest".into()),
+            ),
+            (
                 "@xmanrui/dsh-im",
-                matrix(&[("^4.25.0", "^0.1.5-rc.1"), ("^4.28.0", "^0.1.7-rc.1")]),
+                matrix(&[("^4.25.0", "^0.1.5-rc.1"), ("latest", "^0.1.7-rc.1")]),
             ),
         ];
         assert_eq!(presets.len(), expected.len());
@@ -693,6 +697,9 @@ mod tests {
     /// 回归：核心换代后，落在**上一代**推荐区间的已装插件必须退役，由安装流程按当前
     /// 那一代区间钉版本重装（核心 0.1.7-rc.1 上装着的 0.19.x 属于 `^0.1.5-rc.1` 一代）；
     /// 已经装成当前那一代的版本则必须保留。
+    ///
+    /// dsh-im 当前代声明 `latest`：字符串声明没有下界语义，判定恒为「不过期」，因此
+    /// 这一代不再退役旧版本（升级交由插件面板与 registry 解析）。
     #[test]
     fn covered_core_retires_previous_generation_preset() {
         for (id, core, installed, retire) in [
@@ -700,7 +707,7 @@ mod tests {
             ("dsh-better-sidebar", "0.1.7-rc.1", "0.21.3", false),
             ("dsh-rewind-plugin", "0.1.7-rc.1", "0.12.2", true),
             ("dsh-rewind-plugin", "0.1.7-rc.1", "0.14.0", false),
-            ("@xmanrui/dsh-im", "0.1.7-rc.1", "4.26.0", true),
+            ("@xmanrui/dsh-im", "0.1.7-rc.1", "4.26.0", false),
             ("@xmanrui/dsh-im", "0.1.7-rc.1", "4.28.1", false),
             ("dsh-better-sidebar", "0.1.5-rc.3", "0.19.1", false),
         ] {
