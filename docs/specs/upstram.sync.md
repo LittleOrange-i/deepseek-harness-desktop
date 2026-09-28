@@ -19,7 +19,7 @@
 | └─ 气泡文案 / 状态优先级 | [`QCYTSN/dsh-dafeiyu`](https://github.com/QCYTSN/dsh-dafeiyu) | `source/dsh-dafeiyu` | `v0.1.9` (`f4f4482`) | 同上 |
 | └─ Codex 图集 / 会话状态 | [`Skylarking/dsh-plugin-codex-pets`](https://github.com/Skylarking/dsh-plugin-codex-pets) | `source/dsh-plugin-codex-pets` | `22e93f4` | 同上 |
 | └─ 原生拖动 / DPI / 穿透 | [`ayangweb/BongoCat`](https://github.com/ayangweb/BongoCat) | `source/BongoCat` | `v1.1.0-5` (`44f44bc`) | 同上 |
-| `dsh-tauri-extension` | [`qinyre/dsh-plugin-capabilities`](https://github.com/qinyre/dsh-plugin-capabilities) | `source/dsh-plugin-capabilities` | `v0.3.10` (`e5e3596`) | [`upstream-sync-log.md`](https://www.google.com/search?q=../packages/dsh-tauri-extension/docs/upstream-sync-log.md) |
+| `dsh-tauri-extension` | [`qinyre/dsh-plugin-capabilities`](https://github.com/qinyre/dsh-plugin-capabilities) | `source/dsh-plugin-capabilities` | `v0.3.11` (`52e3f66`) | - |
 | `dsh-tauri-scheduler` | [`MichengAI/dsh-automation`](https://github.com/MichengAI/dsh-automation) | `source/dsh-automation` | `f1bc91a` (跟进 `c426c3d`) | [`sync-log.md`](https://www.google.com/search?q=../packages/dsh-tauri-scheduler/docs/sync-log.md) |
 
 **连带跟随依赖（非独立上游，须同步提升基线）**
@@ -75,7 +75,7 @@ git -C source/dsh-dafeiyu fetch --all --tags && git -C source/dsh-dafeiyu log --
 git -C source/dsh-plugin-codex-pets fetch --all && git -C source/dsh-plugin-codex-pets log --oneline 22e93f4..origin/main
 git -C source/BongoCat fetch --all --tags && git -C source/BongoCat log --oneline 44f44bc..origin/main
 git -C source/dsh-automation fetch --all --tags && git -C source/dsh-automation log --oneline f1bc91a..origin/main
-git -C source/dsh-plugin-capabilities fetch --all --tags && git -C source/dsh-plugin-capabilities log --oneline e5e3596..origin/main
+git -C source/dsh-plugin-capabilities fetch --all --tags && git -C source/dsh-plugin-capabilities log --oneline 52e3f66..origin/main
 
 ```
 
@@ -158,7 +158,7 @@ git diff --check
 | `dsh-tauri-pet` | `QCYTSN/dsh-dafeiyu` | `source/dsh-dafeiyu` | `v0.1.9` (`f4f4482`) | `v0.1.14` (`9c0588c`) | `v0.1.10`–`v0.1.14` 待评估 | [日志](https://www.google.com/search?q=../packages/dsh-tauri-pet/docs/sync-log.md) |
 | `dsh-tauri-pet` | `Skylarking/dsh-plugin-codex-pets` | `source/dsh-plugin-codex-pets` | `22e93f4` | - | 未评估 main 分支更新 | [日志](https://www.google.com/search?q=../packages/dsh-tauri-pet/docs/sync-log.md) |
 | 桌宠窗口 | `ayangweb/BongoCat` | `source/BongoCat` | `44f44bc` | `v1.1.0` | HEAD 已超前 Tag 5 个 Commit | [日志](https://www.google.com/search?q=../packages/dsh-tauri-pet/docs/sync-log.md) |
-| `dsh-tauri-extension` | `qinyre/dsh-plugin-capabilities` | `source/dsh-plugin-capabilities` | `v0.3.10` (`e5e3596`) | `v0.3.10` | 暂无待评估项（该上游的 Market 模块确定不移植；扩展面板的市场页改为直接消费 `dshmarket` 的 `market` 服务） | [日志](https://www.google.com/search?q=../packages/dsh-tauri-extension/docs/upstream-sync-log.md) |
+| `dsh-tauri-extension` | `qinyre/dsh-plugin-capabilities` | `source/dsh-plugin-capabilities` | `v0.3.11` (`52e3f66`) | `v0.3.11` | 暂无待评估项（该上游的 Market 模块确定不移植；扩展面板的市场页改为直接消费 `dshmarket` 的 `market` 服务） | - |
 | `dsh-tauri-extension`（市场标签页） | `dsh-market/dsh-market` | `source/dsh-market` | `v1.47.0-6` (`53f793e`) | `v1.47.0-6` (`53f793e`) | 非代码移植：消费其 `ctx.provide('market')` 服务。`render()` 尚未发版，故先以 `source` 子模块承载；待上游发版后改为常规 npm 依赖并移除子模块 | - |
 | `dsh-tauri-scheduler` | `MichengAI/dsh-automation` | `source/dsh-automation` | `f1bc91a` (+`c426c3d`) | `v0.1.42` (`e75499e`) | `v0.1.33`–`v0.1.42` 已评估：全部不采纳（2026-09-16）；无待评估项 | [日志](https://www.google.com/search?q=../packages/dsh-tauri-scheduler/docs/sync-log.md) |
 

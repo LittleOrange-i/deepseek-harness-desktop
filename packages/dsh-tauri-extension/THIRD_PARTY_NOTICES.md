@@ -3,8 +3,8 @@
 ## qinyre/dsh-plugin-capabilities
 
 - Repository: <https://github.com/qinyre/dsh-plugin-capabilities>
-- Version: `0.3.10`
-- Revision: `e5e3596aff8fe9317a29ea96aa63449e1656ad35`
+- Version: `0.3.11`
+- Revision: `52e3f664dbe1c9f1166ea3cf4e7416d5352f3ee9`
 - Baseline adopted: `3412f8ddf0a92bdc89a3bab104b480f8745ebfc1`
 - Source: `source/dsh-plugin-capabilities`
 - License: MIT — Copyright (c) 2026 qinyre
