@@ -47,7 +47,7 @@ export const PET_MENU_PATCHED = '[data-dsh-tauri-pet-menu-patched="1"]'
 /** dsh 内部结构（上游产物）：可用稳定结构性锚点。 */
 export const SIDEBAR = '[data-slot="sidebar"]'
 export const SIDEBAR_PANELLIST = '[data-slot="sidebar.panellist"]'
-export const SETTINGS_TRIGGER = '.dshp-settings-trigger'
+export const SETTINGS_TRIGGER = '[data-settings-trigger]'
 export const SETTINGS_SIDEBAR = '[data-slot-sidebar="dsh-tauri-ui"]'
 export const SETTINGS_SECTION_SLOT = '[data-slot="settings.section"]'
 export const SETTINGS_NAV_ITEM = 'nav[aria-label] button'
@@ -276,7 +276,7 @@ async function captureFrameSnapshot(frame: Frame): Promise<FrameSnapshot | strin
       loaderKeys: loader === undefined ? [] : Object.keys(loader),
       loaderMode: String(loader?.mode ?? 'n/a'),
       loaderPending: Array.isArray(loader?.pendingQueue) ? loader.pendingQueue.length : -1,
-      settingsTrigger: doc.querySelector('.dshp-settings-trigger') !== null,
+      settingsTrigger: doc.querySelector('[data-settings-trigger]') !== null,
       settingsSidebar: doc.querySelector('[data-slot-sidebar="dsh-tauri-ui"]') !== null,
     }
   }, SNAPSHOT_ELEMENT_BUDGET)

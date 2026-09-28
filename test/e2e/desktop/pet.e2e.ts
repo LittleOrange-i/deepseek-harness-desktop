@@ -17,7 +17,7 @@ const ASSEMBLY_TIMEOUT_MS = 900_000
 const PET_WINDOW_TIMEOUT_MS = 30_000
 
 /** 就绪锚点：壳层设置触发器（桌宠样式迁移到 Tailwind 后不再有 `style[cssr-id=…]` 产物）。 */
-const SETTINGS_TRIGGER = '.dshp-settings-trigger'
+const SETTINGS_TRIGGER = '[data-settings-trigger]'
 
 /** 桌宠尺寸合法区间（`src-tauri/src/desktop/pet.rs:48-49` 的 50.0 / 200.0）。 */
 const PET_SIZE_MIN = 50

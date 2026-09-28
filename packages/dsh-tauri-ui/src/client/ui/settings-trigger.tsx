@@ -93,8 +93,9 @@ export function SettingsTrigger({ wide, useSessions }: SettingsTriggerProps): Re
         }
         setMenuOpen(value => !value)
       }}
+      data-settings-trigger="dsh-tauri-ui"
       className={cn(
-        'dshp-settings-trigger box-border flex flex-none items-center gap-[8px] w-[calc(100%+4px)] h-[42px] my-[4px] -mx-[2px] pr-[10px] pl-[8px] border-none rounded-[12px] bg-transparent [font-family:inherit] text-[14px] leading-[22px] text-primary overflow-hidden cursor-pointer hover:bg-hover',
+        'box-border flex flex-none items-center gap-[8px] w-[calc(100%+4px)] h-[42px] my-[4px] -mx-[2px] pr-[10px] pl-[8px] border-none rounded-[12px] bg-transparent [font-family:inherit] text-[14px] leading-[22px] text-primary overflow-hidden cursor-pointer hover:bg-hover',
         !wide && 'justify-center gap-0 w-[36px] h-[36px] mt-[8px] mb-[10px] mx-0 p-0 rounded-full',
       )}
     >

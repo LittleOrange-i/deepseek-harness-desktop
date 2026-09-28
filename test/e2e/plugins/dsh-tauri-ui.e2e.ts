@@ -128,7 +128,7 @@ describe('L2 客户端', () => {
     const app = await newDshPage(browser, { ready: SETTINGS_TRIGGER })
     try {
       const triggerHost = await app.frame.evaluate(() => {
-        const trigger = document.querySelector('.dshp-settings-trigger')
+        const trigger = document.querySelector('[data-settings-trigger]')
         const sidebar = document.querySelector('[data-slot="sidebar"]')
         return {
           triggerInsideSidebar: Boolean(trigger && sidebar?.contains(trigger)),
