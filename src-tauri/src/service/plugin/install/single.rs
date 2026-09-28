@@ -17,7 +17,7 @@ use crate::service::workflow;
 use super::artifact::{ensure_plugin_entry_built, installed_package_name};
 use super::build_plugin_envs;
 use super::diagnose::{
-    git_transport_hint, network_error_hint, pick_error_message,
+    git_transport_hint, incompatible_versions, network_error_hint, pick_error_message,
     policy_blocked_versions, policy_verification_network_failure, store_mismatch_hint,
 };
 use super::errors;
@@ -344,6 +344,20 @@ async fn run_single_plugin_command(
 
     if exit_code != 0 {
         log::error!("dsh plugin {action} failed for {id} with exit code {exit_code}");
+        // 版本兼容性拒绝：dsh 在 pnpm 之前核对插件声明的 DSH peer 依赖，未授权精确版本
+        // 即拒绝（不下载、不构建），升级同样会撞上（新版本声明了更高的核心 peer 依赖）。
+        // 与批量安装路径一致地解析成精确三元组，交前端「授权后重跑」；不记插件错误——
+        // 插件没坏，只是待用户授权。
+        let incompatible = incompatible_versions(&last_attempt);
+        if !incompatible.is_empty() {
+            log::warn!(
+                "dsh refused the {action} for incompatible plugin versions: {incompatible:?}"
+            );
+            return Err(format!(
+                "PLUGIN_VERSION_INCOMPATIBLE: {}",
+                serde_json::to_string(&incompatible).unwrap_or_default()
+            ));
+        }
         // 真实的发布时长策略违规优先识别：档案已声明/装了太新的版本，pnpm 的 lockfile
         // 校验不放行，于是升级/卸载/安装都会在这里失败。不是插件故障、也不是网络问题
         // （发布时间都拿到了），重试无用——解析成精确 `包名@版本` 交给前端由用户授权，

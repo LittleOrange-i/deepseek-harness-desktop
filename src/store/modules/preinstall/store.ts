@@ -12,49 +12,45 @@ import { harnessUpdater } from '../harness-updater'
 const LOG_LIMIT = 200
 
 /**
- * 后端版本兼容性拒绝的前缀：其后是 `IncompatibleVersion[]` 的 JSON。
+ * 后端「拦截清单」的两套前缀：其后都是清单 JSON。
  *
- * dsh 在 pnpm 之前核对插件声明的 DSH peer 依赖，未授权精确版本即整批拒绝。后端把
- * 拒绝清单挂在错误串上（Tauri 命令的错误通道只有字符串），这里解出来交给界面走
- * 「逐项授权 → 重试」；解析失败返回 null，退回普通的安装失败展示，绝不假装可授权。
+ * dsh 的版本兼容性与 pnpm 的发布时长策略（`minimumReleaseAge`）是两套互不相干的拦截，
+ * 但形状一致：后端把清单挂在错误串上（Tauri 命令的错误通道只有字符串），前端解出来
+ * 交给用户逐项授权后重跑。
  */
 const INCOMPATIBLE_PREFIX = 'PLUGIN_VERSION_INCOMPATIBLE:'
-
-/**
- * 发布时长策略拦下的载荷前缀（后端 `policy_blocked_versions` 的结果）：其后是
- * `{ name, version }[]` 的 JSON。
- *
- * 与 [`INCOMPATIBLE_PREFIX`] 是两套互不相干的拦截（dsh 的版本兼容性 vs pnpm 的
- * `minimumReleaseAge`），但处理形状一致：都交给界面列出来让用户勾选授权后重跑。
- */
 const POLICY_BLOCKED_PREFIX = 'PLUGIN_POLICY_BLOCKED:'
 
+/** 被拦下的清单：核心版本兼容性拒绝，或 pnpm 发布时长策略拒绝。 */
+export type BlockedRefusal
+  = | { kind: 'incompatible', versions: IncompatibleVersion[] }
+    | { kind: 'policy', versions: PolicyBlockedVersion[] }
+
 /**
- * 解析后端「发布时长策略拦下」的载荷（[`POLICY_BLOCKED_PREFIX`] 之后的
- * `{ name, version }[]` JSON）；识别不出来返回 null，退回普通失败展示。
+ * 解析后端拦截清单的错误载荷；识别不出来返回 null。
+ *
+ * 引导页与插件面板共用这一处解析：两边的错误通道都一样，规则必须一致。解析失败一律
+ * 退回普通失败展示——绝不把读不出来的 JSON 当成可授权项（那会变成一次来路不明的授权）。
  */
-function parsePolicyBlocked(error: string): PolicyBlockedVersion[] | null {
-  if (!error.startsWith(POLICY_BLOCKED_PREFIX))
-    return null
-  try {
-    const parsed = JSON.parse(error.slice(POLICY_BLOCKED_PREFIX.length)) as PolicyBlockedVersion[]
-    return parsed.length > 0 ? parsed : null
-  }
-  catch (err) {
-    console.error('[Harness] failed to parse policy-blocked payload:', err)
-    return null
-  }
+export function parseBlockedRefusal(error: string): BlockedRefusal | null {
+  const incompatible = parseVersions<IncompatibleVersion>(error, INCOMPATIBLE_PREFIX)
+  if (incompatible)
+    return { kind: 'incompatible', versions: incompatible }
+  const policy = parseVersions<PolicyBlockedVersion>(error, POLICY_BLOCKED_PREFIX)
+  if (policy)
+    return { kind: 'policy', versions: policy }
+  return null
 }
 
-function parseIncompatible(error: string): IncompatibleVersion[] | null {
-  if (!error.startsWith(INCOMPATIBLE_PREFIX))
+function parseVersions<T>(error: string, prefix: string): T[] | null {
+  if (!error.startsWith(prefix))
     return null
   try {
-    const parsed = JSON.parse(error.slice(INCOMPATIBLE_PREFIX.length)) as IncompatibleVersion[]
+    const parsed = JSON.parse(error.slice(prefix.length)) as T[]
     return parsed.length > 0 ? parsed : null
   }
   catch (err) {
-    console.error('[Harness] failed to parse incompatible plugin payload:', err)
+    console.error(`[Harness] failed to parse ${prefix} payload:`, err)
     return null
   }
 }
@@ -150,15 +146,14 @@ export const preinstall = defineStore({
       catch (err) {
         console.error('[Harness] preinstall failed:', err)
         const error = String(err)
-        const incompatible = parseIncompatible(error)
-        const policyBlocked = parsePolicyBlocked(error)
-        if (incompatible) {
+        const refusal = parseBlockedRefusal(error)
+        if (refusal?.kind === 'incompatible') {
           // 不是故障而是待授权清单：交给界面展示风险与勾选，用户授权后重跑安装
-          this.incompatible = incompatible
+          this.incompatible = refusal.versions
         }
-        else if (policyBlocked) {
+        else if (refusal?.kind === 'policy') {
           // 同上，但拦下它的是 pnpm 的发布时长策略：清单同样交给界面勾选授权
-          this.policyBlocked = policyBlocked
+          this.policyBlocked = refusal.versions
         }
         else {
           this.error = error.startsWith('NETWORK_ERROR:')

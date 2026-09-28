@@ -1,3 +1,4 @@
+import type { BlockedRefusal } from '@/store/modules/preinstall'
 import type { DshPlugin } from '@/types'
 import { ChevronRight, CircleExclamation } from '@gravity-ui/icons'
 import { Button, Chip, Label, Spinner, Tooltip } from '@heroui/react'
@@ -18,39 +19,9 @@ import { Panel } from '@/components/panel'
 import { queryKeys } from '@/config/query-keys'
 import { useListen } from '@/hooks/use-listen'
 import { store } from '@/store'
+import { parseBlockedRefusal } from '@/store/modules/preinstall'
 import { silence } from '@/utils/silence'
 import { toast } from '@/utils/toast'
-
-/**
- * 被 pnpm 发布时长策略拦下的条目（后端 `PolicyBlockedVersion`）。
- *
- * 豁免是按精确 `包名@版本` 写进档案的 `minimumReleaseAgeExclude` 的，所以只需要这两个
- * 字段；`published_at` 之类的细节由用户自己看时机，不参与授权键。
- */
-interface PolicyBlockedVersion {
-  name: string
-  version: string
-}
-
-const POLICY_BLOCKED_PREFIX = 'PLUGIN_POLICY_BLOCKED:'
-
-/**
- * 解析后端「发布时长策略拦下」的载荷；识别不出来返回 null，退回普通失败展示。
- *
- * 解析失败绝不能假装可授权——那会把一条读不出来的 JSON 变成用户勾选的豁免。
- */
-function parsePolicyBlocked(error: string): PolicyBlockedVersion[] | null {
-  if (!error.startsWith(POLICY_BLOCKED_PREFIX))
-    return null
-  try {
-    const parsed = JSON.parse(error.slice(POLICY_BLOCKED_PREFIX.length)) as PolicyBlockedVersion[]
-    return parsed.length > 0 ? parsed : null
-  }
-  catch (err) {
-    console.error('[ConfigPlugin] failed to parse policy-blocked payload:', err)
-    return null
-  }
-}
 
 /**
  * 操作 chip 的样式变体：busy 时禁止点击并降低透明度，否则可点击。
@@ -118,53 +89,51 @@ export function ConfigPlugin() {
   const [dialogHolder, openDialog] = useOverlay(Modal, { type: 'holder' })
 
   /**
-   * 记录发布时长策略豁免：pnpm 的 `minimumReleaseAge`（11 默认 24 小时）不放行档案里
-   * 已声明的太新版本，于是**每次**插件操作都硬失败（见后端 `PLUGIN_POLICY_BLOCKED`）。
-   * 用户确认接受这些精确版本后写进档案的 `minimumReleaseAgeExclude`，再重跑原操作。
+   * 记录被拦下版本的精确授权：核心版本兼容性走 `allow_plugin_versions`（写档案的
+   * `compatibility.json`），发布时长策略走 `allow_plugin_policy_versions`（写
+   * `minimumReleaseAgeExclude`）。两套授权互不相干，但都只认精确版本、都由用户在这里确认。
    */
-  const allowPolicy = useMutation({
-    mutationFn: (versions: PolicyBlockedVersion[]) => invoke<void>('allow_plugin_policy_versions', { versions }),
+  const allowBlocked = useMutation({
+    mutationFn: (refusal: BlockedRefusal) => invoke<void>(
+      refusal.kind === 'incompatible' ? 'allow_plugin_versions' : 'allow_plugin_policy_versions',
+      { versions: refusal.versions },
+    ),
     onError: (err) => {
-      console.error('[ConfigPlugin] allow_plugin_policy_versions failed:', err)
-      toast(t('plugins.policy_allow_failed'), {})
+      console.error('[ConfigPlugin] authorising blocked versions failed:', err)
+      toast(t('plugins.authorize_failed'), {})
     },
   })
 
   /**
-   * 被发布时长策略拦住时的出路：先让用户看清单并明确确认（与版本兼容性豁免一样，
-   * 不放宽默认策略、不替用户决定），确认后写入精确豁免并重跑原操作。
+   * 插件操作被拦下时的出路：标题 + 说明 + 被拦下的精确版本，动作按钮「授权」点一次补齐
+   * 所需豁免并重跑原操作（不想要就关掉气泡，不另设取消按钮）。
+   *
+   * 常驻（`timeout: 0`）：这是需要用户决定的岔口，超时消失等于把人晾在原地。授权后重跑
+   * 原操作——豁免写进档案后仍要由 pnpm 真正改一遍依赖，不能假定写入即生效。
    */
-  async function onPolicyBlocked(blocked: PolicyBlockedVersion[], retry: () => Promise<void>) {
+  function onBlocked(refusal: BlockedRefusal, name: string, retry: () => Promise<void>) {
+    const core = refusal.kind === 'incompatible'
+    const blocked = refusal.versions.map(item => `${item.name}@${item.version}`).join('、')
+    const key = toast(t(core ? 'plugins.blocked_incompatible_title' : 'plugins.blocked_policy_title', { name }), {
+      variant: core ? 'danger' : 'warning',
+      timeout: 0,
+      description: t(core ? 'plugins.blocked_incompatible_desc' : 'plugins.blocked_policy_desc', { blocked }),
+      actionProps: {
+        children: t('buttons.authorize'),
+        onPress: () => {
+          toast.close(key)
+          void authorise(refusal, retry)
+        },
+      },
+    })
+  }
+
+  async function authorise(refusal: BlockedRefusal, retry: () => Promise<void>) {
     try {
-      await openDialog({
-        status: 'warning',
-        title: t('plugins.policy_blocked_title'),
-        description: (
-          <div className="flex flex-col gap-2">
-            <p>{t('plugins.policy_blocked_desc')}</p>
-            <ul className="flex flex-col gap-1">
-              {blocked.map(item => (
-                <li key={`${item.name}@${item.version}`} className="font-mono text-[11px] text-ink">
-                  {item.name}
-                  @
-                  {item.version}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ),
-        confirmText: t('plugins.policy_blocked_confirm'),
-      })
+      await allowBlocked.mutateAsync(refusal)
     }
     catch (e) {
-      silence(e, 'plugin policy blocked: dialog cancelled')
-      return
-    }
-    try {
-      await allowPolicy.mutateAsync(blocked)
-    }
-    catch (e) {
-      silence(e, 'plugin policy blocked: error already shown by mutation onError')
+      silence(e, 'plugin blocked: error already shown by mutation onError')
       return
     }
     await retry()
@@ -185,11 +154,11 @@ export function ConfigPlugin() {
     onError: (err, id) => {
       const name = plugins.find(p => p.id === id)?.name ?? id
       console.error('[ConfigPlugin] upgrade failed:', err)
-      // 被发布时长策略拦住不是「升级失败」：档案已声明太新的版本，pnpm 不放行，重跑
-      // 多少次都一样。给出可操作的出路（授权精确版本后重试），而不是一句失败。
-      const blocked = parsePolicyBlocked(String(err))
-      if (blocked) {
-        void onPolicyBlocked(blocked, () => onUpgrade(id))
+      // 被拦下不是「升级失败」：要么是核心不兼容、要么是发布保护期，重跑多少次都一样。
+      // 给出可操作的出路（授权精确版本后重试），而不是一句没有出路的失败。
+      const refusal = parseBlockedRefusal(String(err))
+      if (refusal) {
+        onBlocked(refusal, name, () => onUpgrade(id))
         return
       }
       toast(t('plugins.upgrade_failed', { name }), {})
@@ -206,11 +175,11 @@ export function ConfigPlugin() {
     onError: (err, id) => {
       const name = plugins.find(p => p.id === id)?.name ?? id
       console.error('[ConfigPlugin] remove failed:', err)
-      // 卸载同样会重写 lockfile 并复核整份档案，因此同样可能被发布时长策略拦住
-      // （档案里另有太新版本时）：一样给出授权后重跑的出路，而不是一句失败。
-      const blocked = parsePolicyBlocked(String(err))
-      if (blocked) {
-        void onPolicyBlocked(blocked, () => runRemove(id))
+      // 卸载同样要重写 lockfile 并复核整份档案，因此同样可能被核心不兼容或发布保护期
+      // 拦下：一样给出授权后重跑的出路，而不是一句失败。
+      const refusal = parseBlockedRefusal(String(err))
+      if (refusal) {
+        onBlocked(refusal, name, () => runRemove(id))
         return
       }
       toast(t('plugins.remove_failed', { name }), {})
@@ -288,15 +257,15 @@ export function ConfigPlugin() {
     setBusy({ id, action: 'update' })
     try {
       await upgrade.mutateAsync(id)
+      // 只有升级成功才拉起服务：失败时档案/依赖仍是待处理状态（不兼容、发布保护期、
+      // 网络…），此时重启只会再失败一次（重启 > 报错），把真正的失败原因淹没掉。
+      void store.harness.restart()
     }
     catch (e) {
       silence(e, 'plugin upgrade: error already shown by mutation onError')
     }
     finally {
       setBusy(null)
-      // 插件操作会停掉运行中的服务（即使失败也已被后端停止），这里统一拉起服务并
-      // 同步前端运行状态，避免留下「服务已死但界面仍显示运行中」的过期状态。
-      void store.harness.restart()
     }
   }
 
@@ -329,14 +298,14 @@ export function ConfigPlugin() {
     setBusy({ id, action: 'remove' })
     try {
       await remove.mutateAsync(id)
+      // 同升级：只有成功才拉起服务（失败时档案仍是待处理状态，重启只会报错一次）
+      void store.harness.restart()
     }
     catch (e) {
       silence(e, 'plugin remove: error already shown by mutation onError')
     }
     finally {
       setBusy(null)
-      // 同上：卸载后统一拉起服务，避免服务被后端停止后前端状态过期。
-      void store.harness.restart()
     }
   }
 
@@ -347,14 +316,14 @@ export function ConfigPlugin() {
     setBusy({ id, action: 'disable' })
     try {
       await disable.mutateAsync(id)
+      // 只有成功才拉起服务，使新的 bundles 列表生效（失败时什么都没变，重启没有意义）
+      void store.harness.restart()
     }
     catch (e) {
       silence(e, 'plugin disable: error already shown by mutation onError')
     }
     finally {
       setBusy(null)
-      // 禁用后统一拉起服务，使新的 bundles 列表生效。
-      void store.harness.restart()
     }
   }
 
@@ -385,14 +354,14 @@ export function ConfigPlugin() {
     setBusy({ id, action: 'enable' })
     try {
       await enable.mutateAsync({ id, clearConfigOverride })
+      // 同禁用：只有成功才拉起服务，使新的 bundles 列表生效
+      void store.harness.restart()
     }
     catch (e) {
       silence(e, 'plugin enable: error already shown by mutation onError')
     }
     finally {
       setBusy(null)
-      // 启用后统一拉起服务，使新的 bundles 列表生效。
-      void store.harness.restart()
     }
   }
 
