@@ -21,7 +21,7 @@ import type { Connection, Server as SshServer } from 'ssh2'
 import type { MachineProfile, SshMachineStage, SshMachineTerminal } from '../../../packages/dsh-tauri-ssh/src/host/types/index'
 import { execSync } from 'node:child_process'
 import { generateKeyPairSync } from 'node:crypto'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer, connect as tcpConnect } from 'node:net'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'pathe'
@@ -161,6 +161,36 @@ function id(name: string): ReturnType<typeof MachineId> {
 }
 
 /**
+ * Whether the operator's `~/.ssh/config` declares a host alias. The drop spec
+ * needs a real sshd it may kill a session on, so it can only be verified where
+ * such an alias exists; the gate reads the config file itself (no network) and
+ * the reason is printed, so a skipped run is never a silent one.
+ */
+function sshConfigDeclaresHost(host: string): boolean {
+  try {
+    return readFileSync(join(homedir(), '.ssh', 'config'), 'utf8')
+      .split('\n')
+      .some((line) => {
+        const declared = /^Host[ \t]+(\S.*)$/iu.exec(line.trim())?.[1]
+        return declared !== undefined && declared.split(/\s+/u).includes(host)
+      })
+  }
+  catch {
+    return false
+  }
+}
+
+/** The alias the drop spec drives (the gate for verifying it). */
+const DROP_HOST_ALIAS = 'dev'
+
+const dropHostAvailable = sshConfigDeclaresHost(DROP_HOST_ALIAS)
+
+if (!dropHostAvailable) {
+  // eslint-disable-next-line no-console -- the skip reason has to be visible in CI logs
+  console.warn(`[e2e] skipping the reconnect drop spec: ~/.ssh/config declares no \`${DROP_HOST_ALIAS}\` host to kill a session on`)
+}
+
+/**
  * E2E #1 — drop-driven auto-reconnect on a real linux x64 machine.
  *
  * Flow: connect to `ssh dev` (a python3 HTTP server stands in for the remote
@@ -171,14 +201,20 @@ function id(name: string): ReturnType<typeof MachineId> {
  * that appeared while connecting; never the listener, never a global
  * restart), and watch the manager walk connected → reconnecting → connected
  * with the SAME tunnel URL serving HTTP again.
+ *
+ * Environment gate: this spec is the only one in the suite that cannot be
+ * stood in for — it kills a live sshd session, so it needs the operator's own
+ * `dev` alias. Without that alias the describe is reported as skipped (with
+ * the reason printed above), never silently passed; a machine that has `dev`
+ * verifies the real contract.
  */
-describe('e2e reconnect (linux x64 dev machine)', () => {
+describe.skipIf(!dropHostAvailable)('e2e reconnect (linux x64 dev machine)', () => {
   const REMOTE_PORT = 3100
 
   const profile: MachineProfile = {
     id: id('dev-drop'),
     name: 'dev-drop',
-    host: 'dev',
+    host: DROP_HOST_ALIAS,
     port: 22,
     user: '',
     // The remote instance stand-in: any loopback HTTP listener exercises the
