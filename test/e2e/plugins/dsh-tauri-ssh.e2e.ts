@@ -186,7 +186,6 @@ const DROP_HOST_ALIAS = 'dev'
 const dropHostAvailable = sshConfigDeclaresHost(DROP_HOST_ALIAS)
 
 if (!dropHostAvailable) {
-  // eslint-disable-next-line no-console -- the skip reason has to be visible in CI logs
   console.warn(`[e2e] skipping the reconnect drop spec: ~/.ssh/config declares no \`${DROP_HOST_ALIAS}\` host to kill a session on`)
 }
 

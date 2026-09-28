@@ -66,6 +66,9 @@
       "dsh-session-context-menu",
       "dsh-tauri-ssh",
       "dsh-tauri-panel",
+      "dsh-tauri-panel-extension",
+      "dsh-tauri-panel-scheduler",
+      "dsh-tauri-ssh-ui",
       "dsh-tauri-turnrewind",
       "dsh-tauri-connection"
     ],

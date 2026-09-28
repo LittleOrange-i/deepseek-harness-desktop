@@ -27,5 +27,4 @@ export const styles = {
     boxShadow: '0 0 0 2px var(--dsw-alias-border-l3)',
     outline: 'none',
   },
-  chevronSelectSvg: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2381858C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
 } as const

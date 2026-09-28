@@ -11,7 +11,7 @@ const PACKAGES_ROOT = join(REPO_ROOT, 'packages')
 const STYLES_DIR = join(PACKAGE_ROOT, 'src', 'client', 'styles')
 const INPUT_FILE = join(STYLES_DIR, 'index.css')
 const OUTPUT_FILE = join(STYLES_DIR, 'taiwindcss.ts')
-/** 决定产物的配置：plugins 配置是入口，主题与色板继承 tailwind.config.js。 */
+/** 决定产物的配置：plugins 配置是入口且主题自带（不继承 tailwind.config.js），根配置改动只需触发重建。 */
 const CONFIG_FILES = ['tailwind.config.js', 'tailwind.plugins.config.js']
 /** 扫描口径与 tailwind.plugins.config.js 的 content 一致：只认 packages 下各包 src 目录里的源码与样式。 */
 const SOURCE_FILE = /[\\/]src[\\/].*\.(?:css|js|jsx|ts|tsx)$/
