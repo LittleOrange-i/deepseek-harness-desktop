@@ -3,8 +3,8 @@
 ## deepseek-ai/deepseek-harness
 
 - Repository: <https://github.com/deepseek-ai/deepseek-harness>
-- Version: `dsh-v0.1.7-rc.2`
-- Revision: `477b4f420553e8a52c2fbccc464d7561b239c443`
+- Version: `dsh-v0.2.0-rc.1`
+- Revision: `4878cdabd87d4041bdaff61d04c966883b9fd07a`
 - Source: `source/deepseek-harness`
 - License: MIT — Copyright (c) 2026 DeepSeek
 
@@ -12,8 +12,8 @@ Derived (upstream → this package):
 
 - `apps/desktop/src/main.ts` — `platformLoginUrl()`, `welcomeBackend.account.watch(...)`, `shell.openExternal(...)` while `attempt.phase === 'waiting-browser'` → `src/client/register/account.ts`: the watch → open flow, run in the embedded UI and opened through the shell's `open_external_url`.
 - `packages/client/ui-settings-account/src/client/index.ts` — `ctx.remote.$stream({ name: 'account', open: signal => ctx.remote.account.watch(signal) })` consuming `frame.value` / `frame.accept()`, gated by `'dshDesktop' in globalThis` → `src/client/register/account.ts`: the account-stream consumption pattern and carrier gate.
-- `apps/desktop/src/preload-app.ts` — `contextBridge.exposeInMainWorld('dshDesktop', <app origin> ? createProductApi() : { protocolVersion: 1 })` → `src/host/apply.ts`: the carrier marker; only `{ protocolVersion: 1 }` is published, no Electron product API (`browser`, `updates`) is faked.
-- `packages/host/webserver` — structured index-injection rows (`global`, `script`, `script-src`, …) → `src/host/types/harness.ts` (`IndexInjectRow`).
+- `apps/desktop/src/preload-app.ts` — `contextBridge.exposeInMainWorld('dshDesktop', <app origin> ? createProductApi() : { protocolVersion: 1 })` → `src/host/apply.ts`: the carrier marker; `protocolVersion: 1` plus `deviceInfo()` returning `navigator.userAgent` are published, no Electron product API (`browser`, `updates`) is faked.
+- `packages/host/webserver` — structured index-injection rows (`global`, `script`, `script-src`, …) → `src/host/types/harness.ts` (`IndexInjectRow`; upstream exports the same union as `IndexInjection`).
 - `apps/desktop/src/main.ts` — `app.setAsDefaultProtocolClient('dsh')` + `open-url` handling that focuses the primary window for `dsh://open` → `src-tauri/src/desktop/deep_link.rs` (app shell).
 
 Not derived:
@@ -22,7 +22,7 @@ Not derived:
 
 Note:
 
-- The account-stream carrier gate and the sidebar/DOM contracts mirrored here are unchanged from `0.1.7-alpha.1`.
+- The account-stream carrier gate and the sidebar/DOM contracts mirrored here survived `0.1.7-alpha.1` → `0.2.0-rc.1` unchanged; `dshDesktop` still reports `protocolVersion: 1` and only gained the optional `deviceInfo` member.
 
 ## License
 

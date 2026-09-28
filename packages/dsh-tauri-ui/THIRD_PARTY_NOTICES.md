@@ -3,10 +3,10 @@
 ## deepseek-ai/deepseek-harness
 
 - Repository: <https://github.com/deepseek-ai/deepseek-harness>
-- Version: `dsh-v0.1.7-rc.2`
-- Revision: `477b4f420553e8a52c2fbccc464d7561b239c443`
+- Version: `dsh-v0.2.0-rc.1`
+- Revision: `4878cdabd87d4041bdaff61d04c966883b9fd07a`
 - Source: `source/deepseek-harness`
-- Catalog pin: `dsh:` → `0.1.7-alpha.1` (`pnpm-workspace.yaml`)
+- Catalog pin: `dsh:` → `0.2.0-rc.1` (`pnpm-workspace.yaml`)
 - License: MIT — Copyright (c) 2026 DeepSeek
 - Not copied: a Tauri-flavoured refork of the official client UI — official components are re-exported as-is where both kernel generations agree, reforked locally where only the newer kernel implements or exports them; no official source file is vendored.
 
