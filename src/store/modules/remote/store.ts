@@ -154,8 +154,12 @@ export const remote = defineStore({
           this.pendingId = null
         }
         else {
-          // 本地实例不可达（启动中/已停止）：降级但保留既有列表，静默重试
-          console.warn('[remote] /api-ssh unreachable:', err)
+          // 本地实例不可达（启动中/已停止）：降级但保留既有列表，静默重试。
+          // 只在「可达 → 不可达」这一次打日志，之后每 2 秒的失败轮次不再打：实例停着
+          // （插件操作会停服）时会连续失败几百轮，每轮带一份堆栈就是把日志淹掉，而这行
+          // 信息的增量是零——`available` 已经表达了降级态。
+          if (this.available)
+            console.warn('[remote] /api-ssh unreachable:', messageOf(err))
           this.available = false
         }
       }
