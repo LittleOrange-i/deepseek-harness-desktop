@@ -20,7 +20,6 @@ import {
   launchDshBrowser,
   newDshPage,
   openSettings,
-  PET_STYLES,
   SETTINGS_SIDEBAR,
   SETTINGS_TRIGGER,
 } from '../support/browser'
@@ -126,7 +125,7 @@ describe('L2 客户端', () => {
   })
 
   it('验证设置侧栏与触发器被注入 dsh 界面', async () => {
-    const app = await newDshPage(browser, { ready: PET_STYLES })
+    const app = await newDshPage(browser, { ready: SETTINGS_TRIGGER })
     try {
       const triggerHost = await app.frame.evaluate(() => {
         const trigger = document.querySelector('.dshp-settings-trigger')
@@ -392,7 +391,7 @@ describe('L2 客户端', () => {
    * 症状就是用户报的「偶发 UI 整体混乱，刷新才好」。断言对象是真实页面里的 DOM。
    */
   it('验证插件 cssr 样式标签都自报 data-plugin 归属，不会被别人的重载连带删除', async () => {
-    const app = await newDshPage(browser, { ready: PET_STYLES })
+    const app = await newDshPage(browser, { ready: SETTINGS_TRIGGER })
     try {
       const ownership = await app.frame.evaluate(() => {
         const tags = Array.from(document.querySelectorAll('style[cssr-id]'))

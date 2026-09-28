@@ -18,7 +18,6 @@ import {
   launchDshBrowser,
   newDshPage,
   openSettings,
-  PET_STYLES,
   selectSettingsSection,
   SETTINGS_NAV_ITEM,
   SETTINGS_TRIGGER,
@@ -227,13 +226,11 @@ describe('L2 客户端', () => {
 
       const slots = await top.frame.evaluate(() => ({
         hasTrigger: document.querySelector('.dshp-settings-trigger') !== null,
-        petStyles: document.querySelectorAll('style[cssr-id="dsh-tauri-pet-styles"]').length,
         petSections: document.querySelectorAll('[id="dsh-tauri-pet-settings"]').length,
       }))
 
       expect(slots.hasTrigger, '顶层页面必须真的渲染出设置触发器（否则这条断言是空转）').toBe(true)
-      expect(slots.petStyles, '顶层页面不得挂载桌宠样式与菜单补丁（window.parent === window 早退）').toBe(0)
-      expect(slots.petSections, '顶层页面不得注册桌宠设置分区').toBe(0)
+      expect(slots.petSections, '顶层页面不得注册桌宠设置分区（window.parent === window 早退）').toBe(0)
       expectNoSyntheticFallbacks(top)
       expect(top.errors, '早退路径不得产出应用级错误').toEqual([])
     }
@@ -243,7 +240,7 @@ describe('L2 客户端', () => {
   })
 
   it('验证 iframe 内桌宠设置分区正常渲染且无崩溃', async () => {
-    const app = await newDshPage(browser, { ready: PET_STYLES })
+    const app = await newDshPage(browser, { ready: SETTINGS_TRIGGER })
     try {
       await openSettings(app.page, app.frame, app.syntheticFallbacks)
 

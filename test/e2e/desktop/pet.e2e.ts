@@ -16,8 +16,8 @@ const ASSEMBLY_TIMEOUT_MS = 900_000
 /** 桌宠窗口创建/销毁的收敛窗口（Rust 侧建窗是异步的）。 */
 const PET_WINDOW_TIMEOUT_MS = 30_000
 
-/** 插件就绪锚点：插件样式元素（`mountStyle` 交给 css-render 落成 `style[cssr-id=…]`）。 */
-const PET_STYLES = 'style[cssr-id="dsh-tauri-pet-styles"]'
+/** 就绪锚点：壳层设置触发器（桌宠样式迁移到 Tailwind 后不再有 `style[cssr-id=…]` 产物）。 */
+const SETTINGS_TRIGGER = '.dshp-settings-trigger'
 
 /** 桌宠尺寸合法区间（`src-tauri/src/desktop/pet.rs:48-49` 的 50.0 / 200.0）。 */
 const PET_SIZE_MIN = 50
@@ -103,12 +103,12 @@ describe.skipIf(process.platform !== 'win32')('桌面端桌宠独立窗口', () 
 
     // 切入 iframe 安装收集器并等待 UI 渲染。
     //
-    // 就绪锚点只认桌宠插件自己的产物：菜单入口相关用例已删除，这里不再为它们等菜单锚。
+    // 就绪锚点用壳层设置触发器：桌宠设置分区及其菜单补丁由后续用例断言，这里只等界面可用。
     await withIframe(async () => {
       await browser.execute(collectPageErrors)
       await browser.waitUntil(
-        () => browser.execute(elementExists, PET_STYLES),
-        { timeout: 60_000, timeoutMsg: '内嵌 dsh 界面未渲染出桌宠插件产物（插件 client 未生效）' },
+        () => browser.execute(elementExists, SETTINGS_TRIGGER),
+        { timeout: 60_000, timeoutMsg: '内嵌 dsh 界面未渲染出设置触发器（插件 client 未生效）' },
       )
     })
 

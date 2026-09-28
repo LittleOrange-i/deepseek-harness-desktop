@@ -9,6 +9,7 @@ const TAIWINDCSS_GENERATED = `
     --spacing: 0.25rem;
     --font-weight-normal: 400;
     --font-weight-medium: 500;
+    --font-weight-semibold: 600;
     --default-transition-duration: 150ms;
     --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -82,6 +83,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .my-\\[4px\\] {
     margin-block: 4px;
+  }
+  .mt-\\[4px\\] {
+    margin-top: 4px;
   }
   .mt-\\[6px\\] {
     margin-top: 6px;
@@ -158,6 +162,9 @@ const TAIWINDCSS_GENERATED = `
   .h-\\[42px\\] {
     height: 42px;
   }
+  .h-\\[56px\\] {
+    height: 56px;
+  }
   .h-\\[calc\\(28px\\+var\\(--dsh-content-font-delta\\,0px\\)\\)\\] {
     height: calc(28px + var(--dsh-content-font-delta,0px));
   }
@@ -187,6 +194,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .w-\\[36px\\] {
     width: 36px;
+  }
+  .w-\\[56px\\] {
+    width: 56px;
   }
   .w-\\[calc\\(28px\\+var\\(--dsh-content-font-delta\\,0px\\)\\)\\] {
     width: calc(28px + var(--dsh-content-font-delta,0px));
@@ -296,6 +306,9 @@ const TAIWINDCSS_GENERATED = `
   .gap-\\[14px\\] {
     gap: 14px;
   }
+  .gap-\\[16px\\] {
+    gap: 16px;
+  }
   .self-center {
     align-self: center;
   }
@@ -364,9 +377,19 @@ const TAIWINDCSS_GENERATED = `
     border-style: var(--tw-border-style);
     border-width: 0.5px;
   }
+  .border-dashed {
+    --tw-border-style: dashed;
+    border-style: dashed;
+  }
   .border-none {
     --tw-border-style: none;
     border-style: none;
+  }
+  .border-\\[color-mix\\(in_srgb\\,var\\(--dsw-alias-state-business-primary\\)_35\\%\\,transparent\\)\\] {
+    border-color: var(--dsw-alias-state-business-primary);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in srgb,var(--dsw-alias-state-business-primary) 35%,transparent);
+    }
   }
   .border-\\[color-mix\\(in_srgb\\,var\\(--dsw-alias-state-error-primary\\)_30\\%\\,transparent\\)\\] {
     border-color: var(--dsw-alias-state-error-primary);
@@ -383,6 +406,15 @@ const TAIWINDCSS_GENERATED = `
   .border-border-l4 {
     border-color: var(--dsw-alias-border-l4);
   }
+  .border-border-weak {
+    border-color: var(--dsw-alias-border-weak);
+  }
+  .bg-\\[color-mix\\(in_srgb\\,var\\(--dsw-alias-state-business-primary\\)_8\\%\\,transparent\\)\\] {
+    background-color: var(--dsw-alias-state-business-primary);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in srgb,var(--dsw-alias-state-business-primary) 8%,transparent);
+    }
+  }
   .bg-\\[var\\(--dsw-alias-bg-base\\)\\] {
     background-color: var(--dsw-alias-bg-base);
   }
@@ -398,6 +430,9 @@ const TAIWINDCSS_GENERATED = `
   .bg-border-l2 {
     background-color: var(--dsw-alias-border-l2);
   }
+  .bg-hover {
+    background-color: var(--dsw-alias-interactive-bg-hover);
+  }
   .bg-layer-1 {
     background-color: var(--dsw-alias-bg-layer-1);
   }
@@ -409,6 +444,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .bg-transparent {
     background-color: transparent;
+  }
+  .object-cover {
+    object-fit: cover;
   }
   .p-0 {
     padding: calc(var(--spacing) * 0);
@@ -461,8 +499,14 @@ const TAIWINDCSS_GENERATED = `
   .py-\\[9px\\] {
     padding-block: 9px;
   }
+  .py-\\[10px\\] {
+    padding-block: 10px;
+  }
   .py-\\[12px\\] {
     padding-block: 12px;
+  }
+  .py-\\[24px\\] {
+    padding-block: 24px;
   }
   .py-\\[28px\\] {
     padding-block: 28px;
@@ -487,6 +531,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .pl-\\[12px\\] {
     padding-left: 12px;
+  }
+  .text-center {
+    text-align: center;
   }
   .text-left {
     text-align: left;
@@ -514,6 +561,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .text-\\[14px\\] {
     font-size: 14px;
+  }
+  .text-\\[28px\\] {
+    font-size: 28px;
   }
   .leading-\\[16px\\] {
     --tw-leading: 16px;
@@ -550,6 +600,10 @@ const TAIWINDCSS_GENERATED = `
   .font-normal {
     --tw-font-weight: var(--font-weight-normal);
     font-weight: var(--font-weight-normal);
+  }
+  .font-semibold {
+    --tw-font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-semibold);
   }
   .break-all {
     word-break: break-all;
@@ -617,6 +671,9 @@ const TAIWINDCSS_GENERATED = `
   }
   .accent-\\[var\\(--dsw-alias-button-primary-fill\\)\\] {
     accent-color: var(--dsw-alias-button-primary-fill);
+  }
+  .accent-brand {
+    accent-color: var(--dsw-alias-brand-primary);
   }
   .opacity-0 {
     opacity: 0%;
@@ -698,9 +755,6 @@ const TAIWINDCSS_GENERATED = `
   }
   .\\[corner-shape\\:round\\] {
     corner-shape: round;
-  }
-  .\\[font\\:inherit\\] {
-    font: inherit;
   }
   .\\[transition\\:grid-template-rows_180ms_cubic-bezier\\(\\.16\\,1\\,\\.3\\,1\\)\\,opacity_140ms_ease\\] {
     transition: grid-template-rows 180ms cubic-bezier(.16,1,.3,1),opacity 140ms ease;
@@ -1051,6 +1105,11 @@ const TAIWINDCSS_GENERATED = `
       display: none;
     }
   }
+  .\\[\\&_p\\]\\:m-0 {
+    & p {
+      margin: calc(var(--spacing) * 0);
+    }
+  }
   .\\[\\&_svg\\]\\:h-\\[11px\\] {
     & svg {
       height: 11px;
@@ -1079,6 +1138,56 @@ const TAIWINDCSS_GENERATED = `
   .\\[\\&\\>\\*\\]\\:max-w-\\[960px\\] {
     &>* {
       max-width: 960px;
+    }
+  }
+  .\\[\\&\\>img\\]\\:absolute {
+    &>img {
+      position: absolute;
+    }
+  }
+  .\\[\\&\\>img\\]\\:top-0 {
+    &>img {
+      top: calc(var(--spacing) * 0);
+    }
+  }
+  .\\[\\&\\>img\\]\\:left-0 {
+    &>img {
+      left: calc(var(--spacing) * 0);
+    }
+  }
+  .\\[\\&\\>img\\]\\:block {
+    &>img {
+      display: block;
+    }
+  }
+  .\\[\\&\\>img\\]\\:h-\\[1100\\%\\] {
+    &>img {
+      height: 1100%;
+    }
+  }
+  .\\[\\&\\>img\\]\\:h-full {
+    &>img {
+      height: 100%;
+    }
+  }
+  .\\[\\&\\>img\\]\\:w-\\[800\\%\\] {
+    &>img {
+      width: 800%;
+    }
+  }
+  .\\[\\&\\>img\\]\\:w-full {
+    &>img {
+      width: 100%;
+    }
+  }
+  .\\[\\&\\>img\\]\\:max-w-none {
+    &>img {
+      max-width: none;
+    }
+  }
+  .\\[\\&\\>img\\]\\:object-fill {
+    &>img {
+      object-fit: fill;
     }
   }
 }

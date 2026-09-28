@@ -6,6 +6,7 @@ export const styles = {
   borderL2: 'var(--dsw-alias-border-l2)',
   borderL3: 'var(--dsw-alias-border-l3)',
   borderL4: 'var(--dsw-alias-border-l4)',
+  borderWeak: 'var(--dsw-alias-border-weak)',
   brand: 'var(--dsw-alias-brand-primary)',
   business: 'var(--dsw-alias-state-business-primary)',
   layer1: 'var(--dsw-alias-bg-layer-1)',

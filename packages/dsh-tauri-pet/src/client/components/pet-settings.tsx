@@ -1,4 +1,5 @@
 import type { ChangeEvent, ReactElement } from 'react'
+import type { PetActionResult } from '../service/pet.types'
 import { ArrowRightFromSquare, Button, Icon, Plus, SegmentedControl } from 'dsh-tauri-ui/client'
 import { useStore, useWatchImmediate } from 'dsh-tauri/client'
 import { useEffect, useId, useRef, useState } from 'react'
@@ -23,7 +24,6 @@ const TAB_OPTIONS = [
   { value: 'pets', label: 'Pets' },
   { value: 'codex', label: 'Codex' },
 ] as const
-import type { PetActionResult } from '../service/pet.types'
 
 /** settings.section 槽位注入给设置分区的属性。 */
 export interface PetSettingsProps {
@@ -197,9 +197,9 @@ export function PetSettings(props: PetSettingsProps): ReactElement {
   const petsPanel = (
     <>
       {busy && presetPets.length === 0 && chatPets.length === 0
-        ? <div className="dshp-pet__loading">{locale.text('loading')}</div>
+        ? <div className="px-[16px] py-[24px] text-center text-[13px] leading-[20px] text-secondary">{locale.text('loading')}</div>
         : (
-            <div className="dshp-pet__cards">
+            <div className="flex flex-col gap-[12px]">
               {presetPets.map(item => (
                 <PetCard
                   key={item.id}
@@ -231,9 +231,9 @@ export function PetSettings(props: PetSettingsProps): ReactElement {
   )
 
   const codexPanel = (
-    <div className="dshp-pet__cards">
+    <div className="flex flex-col gap-[12px]">
       {codexPets.length === 0
-        ? <div className="dshp-pet__empty">{locale.text('emptyImported')}</div>
+        ? <div className="px-[16px] py-[24px] text-center text-[13px] leading-[20px] rounded-[12px] border border-dashed border-border-weak text-secondary">{locale.text('emptyImported')}</div>
         : codexPets.map(item => (
             <PetCard
               key={item.id}
@@ -251,16 +251,16 @@ export function PetSettings(props: PetSettingsProps): ReactElement {
   )
 
   return (
-    <div className="dshp-pet__page">
+    <div className="flex flex-col gap-[12px] text-primary">
       {/* 开启并重启后 overlaySupported 变回 true、提示消失，没有 forceXwayland 这一支就再也关不掉。
           xwaylandRestart 一支覆盖在 XWayland 下关闭开关的情形：前两个条件同时落空，
           整块会连同刚点过的按钮一起卸载，重启提示无从显示。
           macOS / Windows 上三个条件都不成立，整块不渲染。 */}
       {overlaySupported === false || forceXwayland || xwaylandRestart
         ? (
-            <div className="dshp-pet__notice" role="status">
+            <div className="flex flex-col gap-[8px] px-[12px] py-[10px] text-[12px] leading-[18px] rounded-[10px] border border-border-weak text-secondary [&_p]:m-0" role="status">
               {overlaySupported === false ? <p>{locale.text('waylandNotice')}</p> : null}
-              <div className="dshp-pet__notice-actions">
+              <div className="flex items-center flex-wrap gap-[8px]">
                 <Button
                   type="button"
                   variant="outline"
@@ -272,13 +272,13 @@ export function PetSettings(props: PetSettingsProps): ReactElement {
                 </Button>
               </div>
               {xwaylandRestart
-                ? <p className="dshp-pet__notice-banner">{locale.text('xwaylandRestart')}</p>
+                ? <p className="m-0 px-[10px] py-[8px] text-[13px] leading-[20px] rounded-[8px] border border-[color-mix(in_srgb,var(--dsw-alias-state-business-primary)_35%,transparent)] bg-[color-mix(in_srgb,var(--dsw-alias-state-business-primary)_8%,transparent)] text-primary">{locale.text('xwaylandRestart')}</p>
                 : null}
-              <p className="dshp-pet__notice-hint">{locale.text('xwaylandDesc')}</p>
+              <p className="text-[12px] leading-[18px] text-tertiary">{locale.text('xwaylandDesc')}</p>
             </div>
           )
         : null}
-      <div className="dshp-pet__tabs">
+      <div className="flex items-center justify-between gap-[16px] flex-wrap mt-[4px]">
         <SegmentedControl
           id={tabsId}
           label={locale.text('name')}
@@ -286,7 +286,7 @@ export function PetSettings(props: PetSettingsProps): ReactElement {
           options={TAB_OPTIONS}
           onChange={next => setTab(next === 'codex' ? 'codex' : 'pets')}
         />
-        <div className="dshp-pet__tab-tools">
+        <div className="flex items-center gap-[6px]">
           {tab === 'pets'
             ? (
                 <>
@@ -335,18 +335,18 @@ export function PetSettings(props: PetSettingsProps): ReactElement {
               )}
         </div>
       </div>
-      <p className="dshp-pet__tab-desc">
+      <p className="m-0 text-[13px] leading-[20px] text-secondary">
         {tab === 'pets' ? locale.text('tabInstalledDesc') : locale.text('tabCodexDesc')}
       </p>
       <div id={`${tabsId}-${tab}-panel`} role="tabpanel" aria-labelledby={`${tabsId}-${tab}`}>
         {tab === 'pets' ? petsPanel : codexPanel}
       </div>
-      {error ? <div className="dshp-pet__error" role="alert">{error}</div> : null}
-      <div className="dshp-pet__size-row">
-        <span className="dshp-pet__size-label">{locale.text('sizeLabel')}</span>
+      {error ? <div className="text-[12px] leading-[18px] text-error" role="alert">{error}</div> : null}
+      <div className="flex items-center gap-[12px]">
+        <span className="flex-none font-medium">{locale.text('sizeLabel')}</span>
         <input
           type="range"
-          className="dshp-pet__size-slider"
+          className="flex-1 accent-brand cursor-pointer"
           min={PET_SIZE_MIN}
           max={PET_SIZE_MAX}
           step={PET_SIZE_STEP}
@@ -359,7 +359,7 @@ export function PetSettings(props: PetSettingsProps): ReactElement {
           }}
         />
       </div>
-      <p className="dshp-pet__hint">{locale.text('sizeHint')}</p>
+      <p className="m-0 text-[12px] leading-[18px] text-secondary">{locale.text('sizeHint')}</p>
     </div>
   )
 }

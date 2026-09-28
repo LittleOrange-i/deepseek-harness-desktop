@@ -40,6 +40,7 @@ export default {
         'border-l2': 'var(--dsw-alias-border-l2)',
         'border-l3': 'var(--dsw-alias-border-l3)',
         'border-l4': 'var(--dsw-alias-border-l4)',
+        'border-weak': 'var(--dsw-alias-border-weak)',
         'brand': 'var(--dsw-alias-brand-primary)',
         'business': 'var(--dsw-alias-state-business-primary)',
         'layer-1': 'var(--dsw-alias-bg-layer-1)',
