@@ -9,7 +9,7 @@
 import sshStyle from './index.cssr'
 
 /** The mounted stylesheet id (style tag identity, plugin-prefixed). */
-export const SSH_STYLE_ID = 'dsh-tauri-ssh-ui-styles'
+export const SSH_STYLE_ID = 'dsh-tauri-ssh-styles'
 
 /** The css-render tree, mounted once by the client apply via ctx.effect. */
 export { sshStyle }

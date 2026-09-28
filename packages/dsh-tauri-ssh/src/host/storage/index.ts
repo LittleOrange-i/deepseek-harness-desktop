@@ -111,7 +111,7 @@ export const ConfigSchema: z<Config> = z.object({
   reconnectInitialDelayMs: z.number().default(1_000),
   reconnectMaxDelayMs: z.number().default(20_000),
   reconnectMaxAttempts: z.number().default(6),
-})
+}) as z<Config>
 
 /** Project one stored record; malformed rows are dropped, never fatal. */
 export function machineProfileOf(raw: unknown): MachineProfile | undefined {

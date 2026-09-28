@@ -5,10 +5,10 @@ import process from 'node:process'
 import tailwindcss from '@tailwindcss/postcss'
 import postcss from 'postcss'
 
-const PLUGIN_ID = 'dsh-tauri-taiwindcss'
-const REPO_ROOT = resolve(import.meta.dirname, '..')
+const PACKAGE_ROOT = resolve(import.meta.dirname, '..')
+const REPO_ROOT = resolve(PACKAGE_ROOT, '../..')
 const PACKAGES_ROOT = join(REPO_ROOT, 'packages')
-const STYLES_DIR = join(PACKAGES_ROOT, PLUGIN_ID, 'src', 'client', 'styles')
+const STYLES_DIR = join(PACKAGE_ROOT, 'src', 'client', 'styles')
 const INPUT_FILE = join(STYLES_DIR, 'index.css')
 const OUTPUT_FILE = join(STYLES_DIR, 'taiwindcss.ts')
 /** 决定产物的配置：plugins 配置是入口，主题与色板继承 tailwind.config.js。 */

@@ -1,6 +1,5 @@
 import type { UiContext } from './types/index'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { apply as hostApply } from '../index'
 import { SshSection } from './components/ssh-section.tsx'
 import { apply, inject } from './index'
 import { en, zh } from './locales/index'
@@ -48,10 +47,6 @@ function scriptedCtx(): {
 }
 
 describe('ui-ssh client plugin', () => {
-  it('host half apply is a no-op', () => {
-    expect(hostApply()).toBeUndefined()
-  })
-
   it('declares its inject topology', () => {
     expect(inject).toEqual(['slots', 'locale'])
   })

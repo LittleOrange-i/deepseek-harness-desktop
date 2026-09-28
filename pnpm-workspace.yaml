@@ -112,9 +112,7 @@ catalog:
   '@genapi/shared': ^4.1.4
   '@tauri-apps/plugin-os': ^2.3.2
   '@tauri-apps/plugin-store': ^2.4.4
-  anser: ^2.3.5
   h3: 2.0.1-rc.31
-  shiki: ^1.29.2
   valtio: ^2.3.2
 
 catalogs:

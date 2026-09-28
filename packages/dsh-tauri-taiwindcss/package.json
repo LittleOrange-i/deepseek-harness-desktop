@@ -50,9 +50,9 @@
     }
   },
   "scripts": {
-    "build": "tsx ../../scripts/build-taiwindcss.ts && tsdown",
-    "dev": "tsx ../../scripts/build-taiwindcss.ts --watch & tsdown --watch",
-    "generate": "tsx ../../scripts/build-taiwindcss.ts",
+    "build": "tsx scripts/taiwindcss.ts && tsdown",
+    "dev": "tsx scripts/taiwindcss.ts --watch & tsdown --watch",
+    "generate": "tsx scripts/taiwindcss.ts",
     "prepublishOnly": "nr build",
     "typecheck": "tsc"
   },
@@ -60,8 +60,10 @@
     "dsh-tauri": "workspace:*"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "catalog:build",
     "dsh-tauri-tsdown": "workspace:*",
     "dsh-tauri-ui": "workspace:*",
+    "postcss": "catalog:build",
     "tsdown": "catalog:cli"
   }
 }

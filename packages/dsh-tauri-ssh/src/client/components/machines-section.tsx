@@ -43,7 +43,7 @@ export type SecretFieldName = 'password' | 'passphrase'
 export interface MachinesSectionInjected {
   store: MachinesStore
   /** Desktop bridge; absent (or unanswered probe) means pure web. */
-  bridge?: RemoteBridge
+  bridge?: RemoteBridge | undefined
 }
 
 export interface MachinesSectionProps extends MachinesSectionInjected {

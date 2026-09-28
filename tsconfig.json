@@ -27,9 +27,9 @@
     "src",
     "test",
     "packages/*/src",
+    "packages/*/scripts",
     "types",
     "packages/.test/test-utils.ts",
-    "scripts/build-plugins.ts",
-    "scripts/build-taiwindcss.ts"
+    "scripts/build-plugins.ts"
   ]
 }

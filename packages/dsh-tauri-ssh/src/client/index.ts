@@ -33,8 +33,8 @@ export const inject = ['slots', 'locale']
  * @param ctx - client root context.
  */
 export function apply(ctx: UiContext): void {
-  ctx.effect(() => ctx.locale.register(SSH_LOCALE_NS, { zh, en }), 'dsh-tauri-ssh-ui: dictionaries')
-  ctx.effect(() => mountStyle(sshStyle, SSH_STYLE_ID), 'dsh-tauri-ssh-ui: styles')
+  ctx.effect(() => ctx.locale.register(SSH_LOCALE_NS, { zh, en }), 'dsh-tauri-ssh: dictionaries')
+  ctx.effect(() => mountStyle(sshStyle, SSH_STYLE_ID), 'dsh-tauri-ssh: styles')
   const t = ctx.locale.bind(SSH_LOCALE_NS)
   const store = new MachinesStore((url, init) => fetch(url, init))
   ctx.slots.inject(SETTINGS_SECTION_SLOT, () => ctx.slots.register({

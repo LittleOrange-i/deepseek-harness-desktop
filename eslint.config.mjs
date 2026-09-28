@@ -18,7 +18,7 @@ export default antfu({
     // genapi 产物：格式由生成器（prettier 默认）决定，不由项目 eslint 规约
     'packages/*/src/client/apis/index.ts',
     'packages/*/src/client/apis/index.type.ts',
-    // 插件 Tailwind 产物：由 scripts/build-taiwindcss.ts 生成，转义后的选择器与体积
+    // 插件 Tailwind 产物：由 packages/dsh-tauri-taiwindcss/scripts/taiwindcss.ts 生成，转义后的选择器与体积
     // 都不适合本仓 lint 规约
     'packages/*/src/client/styles/taiwindcss.ts',
   ],
