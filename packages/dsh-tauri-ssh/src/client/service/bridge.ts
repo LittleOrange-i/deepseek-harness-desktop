@@ -4,7 +4,7 @@
  * asking the shell to open (or focus) a machine's remote window. Both rides
  * go through `invoke` (the dsh-tauri/client bridge) — a timeout or rejection
  * on the ping means pure web, where the popup affordance simply never shows.
- * @module dsh-tauri-ssh-ui/client/service/bridge
+ * @module dsh-tauri-ssh/client/service/bridge
  */
 
 import type { RemoteBridge } from '../types/index'

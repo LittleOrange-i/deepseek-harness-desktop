@@ -6,7 +6,7 @@
  * upstream settings RPC is deliberately NOT used for this namespace — its
  * configuration-client allowlist is hard-coded upstream, and the plugin must
  * stay zero-upstream-change. Framework-agnostic: tests inject a fake fetch.
- * @module dsh-tauri-ssh-ui/client/store
+ * @module dsh-tauri-ssh/client/store
  */
 
 import type { SshKey } from '../locales/index'

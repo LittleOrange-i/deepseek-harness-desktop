@@ -5,7 +5,7 @@
  * copied from the harness's own registrants) and never imports the private
  * packages at runtime — the loader calls `apply` with the real context and
  * duck-typing does the rest.
- * @module dsh-tauri-ssh-ui/client/types
+ * @module dsh-tauri-ssh/client/types
  */
 
 /** One settings-section registration option set. */

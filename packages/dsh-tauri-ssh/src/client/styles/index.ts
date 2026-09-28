@@ -3,7 +3,7 @@
  * `index.cssr.ts`), its mount id, and the `cls` map the components consume.
  * Class names keep the plugin prefix (`dshp-ssh-*`); components never
  * hand-write the prefixed strings.
- * @module dsh-tauri-ssh-ui/client/styles
+ * @module dsh-tauri-ssh/client/styles
  */
 
 import sshStyle from './index.cssr'

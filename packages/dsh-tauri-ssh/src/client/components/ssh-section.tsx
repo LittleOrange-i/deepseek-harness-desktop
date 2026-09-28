@@ -4,7 +4,7 @@
  * renders only the enable hero — no machine list, no sync surface, and no
  * connection work on the host. Switching it on reveals the `SSH machines` and
  * `Sync to remote` tabs; the desktop shell deep link picks the tab.
- * @module dsh-tauri-ssh-ui/client/components/ssh-section
+ * @module dsh-tauri-ssh/client/components/ssh-section
  */
 
 import type { ReactNode } from 'react'

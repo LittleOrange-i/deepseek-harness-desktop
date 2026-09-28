@@ -124,12 +124,12 @@ describe('syncPanel', () => {
     const store = connectedStore(routeFetch({ 'machine.list': { items: [] } }))
     store.store.update((state) => {
       state.sync.applying = true
-      state.statuses = { a: { state: 'connected', progress: { phase: 'syncing', attempt: 3, total: 5, item: 'dsh-tauri-ssh-ui' } } }
+      state.statuses = { a: { state: 'connected', progress: { phase: 'syncing', attempt: 3, total: 5, item: 'dsh-tauri-pet' } } }
     })
     render(<SyncPanel store={store} t={t} />)
     await waitFor(() => expect(screen.getByTestId('sync-progress')).toBeTruthy())
     expect(screen.getByTestId('sync-progress').textContent).toContain('3/5')
-    expect(screen.getByTestId('sync-progress').textContent).toContain('dsh-tauri-ssh-ui')
+    expect(screen.getByTestId('sync-progress').textContent).toContain('dsh-tauri-pet')
     // 3/5 起跑（已完成 2 项）→ 进度条 40%
     const fill = screen.getByTestId('sync-progress').querySelector('[class*="sync-bar-fill"]') as HTMLElement
     expect(fill.style.width).toBe('40%')

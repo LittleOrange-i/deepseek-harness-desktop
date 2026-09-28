@@ -9,7 +9,7 @@
  * across runs so a retry keeps the earlier batch visible. All domain state
  * lives in the injected {@link MachinesStore}; only the selection and the
  * target are local.
- * @module dsh-tauri-ssh-ui/client/components/sync-panel
+ * @module dsh-tauri-ssh/client/components/sync-panel
  */
 
 import type { ReactNode } from 'react'

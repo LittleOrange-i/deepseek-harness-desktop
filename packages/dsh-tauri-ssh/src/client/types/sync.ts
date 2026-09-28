@@ -3,7 +3,7 @@
  * event channel, and the S3-owned connection-state vocabulary this panel
  * consumes (the contracts are drafted by their owners; these shapes are the
  * panel's tolerant readers of them).
- * @module dsh-tauri-ssh-ui/client/types/sync
+ * @module dsh-tauri-ssh/client/types/sync
  */
 
 /**

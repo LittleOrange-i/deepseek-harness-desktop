@@ -3,7 +3,7 @@
  * reconnect retry as an epoch-ms instant (`nextRetryAt`, S3-owned); the UI
  * renders it as a short relative hint, so the clock math lives here as a
  * pure function (testable without React or a store).
- * @module dsh-tauri-ssh-ui/client/utils/retry
+ * @module dsh-tauri-ssh/client/utils/retry
  */
 
 /**

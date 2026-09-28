@@ -2,7 +2,7 @@
  * Shared client constants of the SSH-machines settings page: the settings
  * slot protocol identifiers, the locale namespace, and the same-origin API
  * route the host half (`dsh-tauri-ssh`) mounts.
- * @module dsh-tauri-ssh-ui/client/constants
+ * @module dsh-tauri-ssh/client/constants
  */
 
 /** Dictionary namespace owned by this plugin. */

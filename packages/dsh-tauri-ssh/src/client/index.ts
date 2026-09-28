@@ -7,7 +7,7 @@
  * through the host plugin's /api-ssh route). The css-render style tree mounts
  * once here via ctx.effect (unmounts with the plugin). Export discipline: thin
  * apply, everything else in feature modules.
- * @module dsh-tauri-ssh-ui/client
+ * @module dsh-tauri-ssh/client
  */
 
 import type { UiContext } from './types'
