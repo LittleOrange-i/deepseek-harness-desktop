@@ -73,6 +73,33 @@ pub async fn cancel_preinstall_plugins(app_handle: AppHandle) {
     plugin::cancel(&app_handle).await;
 }
 
+/// 授予「插件版本豁免」：为被核心版本兼容性拒绝的精确 `包名@版本` 组合写授权。
+///
+/// 前端在风险提示中让用户逐项确认后调用（授权项来自 `install_preinstall_plugins`
+/// 返回的 `PLUGIN_VERSION_INCOMPATIBLE:` 载荷），随后重跑安装；豁免不随插件或
+/// 核心升级继承，且只对列出的精确版本 + 运行时版本生效。
+#[tauri::command]
+pub async fn allow_plugin_versions(
+    app_handle: AppHandle,
+    versions: Vec<plugin::IncompatibleVersion>,
+) -> Result<(), String> {
+    plugin::allow_version_exemptions(&app_handle, &versions).await
+}
+
+/// 记录发布时长策略豁免：用户确认接受「刚发布、还在 24 小时窗口内」的精确版本后调用。
+///
+/// 授权项来自 `PLUGIN_POLICY_BLOCKED:` 载荷（pnpm 的 `minimumReleaseAge` 门禁——档案
+/// 已声明这样的版本时，每次插件操作都会失败）。写的是精确 `包名@版本`，只让列出的条目
+/// 过闸，其余解析照旧受窗口约束；随后由界面重跑原操作。与 `allow_plugin_versions`
+/// （dsh 的版本兼容性豁免，写 `compatibility.json`）是两套互不相干的授权。
+#[tauri::command]
+pub async fn allow_plugin_policy_versions(
+    app_handle: AppHandle,
+    versions: Vec<plugin::PolicyBlockedVersion>,
+) -> Result<(), String> {
+    plugin::allow_policy_versions(&app_handle, &versions)
+}
+
 /// 跳过预装插件引导：记录状态与预设指纹，之后不再弹出（除非清单内容变更）
 #[tauri::command]
 pub async fn skip_preinstall_plugins(app_handle: AppHandle) -> Result<(), String> {

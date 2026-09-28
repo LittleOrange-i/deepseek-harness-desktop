@@ -1,6 +1,7 @@
+import type { BlockedRefusal } from '@/store/modules/preinstall'
 import type { DshPlugin } from '@/types'
 import { ChevronRight, CircleExclamation } from '@gravity-ui/icons'
-import { Button, Chip, Label, Spinner, Tooltip } from '@heroui/react'
+import { Button, Chip, Label, Spinner, Switch, Tooltip } from '@heroui/react'
 import { useOverlay } from '@overlastic/react'
 import { useMount, useToggle } from '@reause/core'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -18,6 +19,7 @@ import { Panel } from '@/components/panel'
 import { queryKeys } from '@/config/query-keys'
 import { useListen } from '@/hooks/use-listen'
 import { store } from '@/store'
+import { parseBlockedRefusal } from '@/store/modules/preinstall'
 import { silence } from '@/utils/silence'
 import { toast } from '@/utils/toast'
 
@@ -77,6 +79,8 @@ export function ConfigPlugin() {
 
   /** 「内置插件」分组是否展开：默认折叠，内置插件由启动自愈维护，不作为常规可管理项 */
   const [showInternal, toggleShowInternal] = useToggle()
+  /** 高级选项：默认关闭，快照（创建/还原/删除）属于低频维护操作，不常驻每行 */
+  const [advanced, toggleAdvanced] = useToggle()
   // 内置插件（internal）随包分发、由启动自愈安装与维护，排到列表末尾并收进默认折叠的
   // 分组：与可升级/可卸载的插件并列只会让用户把它们当作普通插件。它们仍可升级
   // （切换核心版本后内置包可能落后），但不提供卸载/禁用/快照入口。
@@ -85,6 +89,77 @@ export function ConfigPlugin() {
   const managedPlugins = plugins.filter(plugin => !plugin.internal)
 
   const [dialogHolder, openDialog] = useOverlay(Modal, { type: 'holder' })
+
+  /**
+   * 记录被拦下版本的精确授权：核心版本兼容性走 `allow_plugin_versions`（写档案的
+   * `compatibility.json`），发布时长策略走 `allow_plugin_policy_versions`（写
+   * `minimumReleaseAgeExclude`）。两套授权互不相干，但都只认精确版本、都由用户在这里确认。
+   */
+  const allowBlocked = useMutation({
+    mutationFn: (refusal: BlockedRefusal) => invoke<void>(
+      refusal.kind === 'incompatible' ? 'allow_plugin_versions' : 'allow_plugin_policy_versions',
+      { versions: refusal.versions },
+    ),
+    onError: (err) => {
+      console.error('[ConfigPlugin] authorising blocked versions failed:', err)
+      toast(t('plugins.authorize_failed'), {})
+    },
+  })
+
+  /**
+   * 插件操作被拦下时的出路：标题 + 说明 + 被拦下的精确版本，动作按钮「授权」点一次补齐
+   * 所需豁免并重跑原操作（不想要就关掉气泡，不另设取消按钮）。
+   *
+   * 三种情况共用这条通道：核心版本不兼容、发布保护期挡下、以及「升级以 0 退出但版本没动」
+   * （最后一种只是同一种发布保护期的静默形态：`--latest` 盯着最新版本，而最新版本还在窗口
+   * 内时 pnpm 直接不动、也不打印原因）。标题是**这次操作的插件**，清单是**档案里真正挡住
+   * 它的条目**——两者可以不同：插件操作要过整份 lockfile 校验，档案里任何一条太新的版本
+   * 都会拦下别人的升级。
+   *
+   * 常驻（`timeout: 0`）：这是需要用户决定的岔口，超时消失等于把人晾在原地。授权后重跑
+   * 原操作——豁免写进档案后仍要由 pnpm 真正改一遍依赖，不能假定写入即生效。
+   */
+  function onBlocked(refusal: BlockedRefusal, name: string, retry: () => Promise<void>) {
+    const core = refusal.kind === 'incompatible'
+    const hold = refusal.kind === 'update-hold'
+    // 「升级没落地」只有发布保护期这一种成因有出路；后端判定为档案钉死（或没探测到新版
+    // 本）时不给按钮，否则用户只会反复点一个没用的动作。
+    const actionable = !hold || refusal.retryable
+    const titleKey = core
+      ? 'plugins.blocked_incompatible_title'
+      : hold ? 'plugins.hold_title' : 'plugins.blocked_policy_title'
+    const descKey = core
+      ? 'plugins.blocked_incompatible_desc'
+      : hold
+        ? (actionable ? 'plugins.hold_desc' : 'plugins.hold_pinned_desc')
+        : 'plugins.blocked_policy_desc'
+    const blocked = refusal.versions.map(item => `${item.name}@${item.version}`).join('、')
+    const key = toast(t(titleKey, { name }), {
+      variant: core ? 'danger' : 'warning',
+      timeout: 0,
+      description: t(descKey, { blocked }),
+      actionProps: actionable
+        ? {
+            children: t('buttons.authorize'),
+            onPress: () => {
+              toast.close(key)
+              void authorise(refusal, retry)
+            },
+          }
+        : undefined,
+    })
+  }
+
+  async function authorise(refusal: BlockedRefusal, retry: () => Promise<void>) {
+    try {
+      await allowBlocked.mutateAsync(refusal)
+    }
+    catch (e) {
+      silence(e, 'plugin blocked: error already shown by mutation onError')
+      return
+    }
+    await retry()
+  }
 
   /** 行内操作进行中状态：id + 操作类型（update/remove/disable/enable/snapshot/restore/delete-snapshot），保证单例运行 */
   const [busy, setBusy] = useState<{ id: string, action: 'update' | 'remove' | 'disable' | 'enable' | 'snapshot' | 'restore' | 'delete-snapshot' } | null>(null)
@@ -101,6 +176,13 @@ export function ConfigPlugin() {
     onError: (err, id) => {
       const name = plugins.find(p => p.id === id)?.name ?? id
       console.error('[ConfigPlugin] upgrade failed:', err)
+      // 被拦下不是「升级失败」：要么是核心不兼容、要么是发布保护期，重跑多少次都一样。
+      // 给出可操作的出路（授权精确版本后重试），而不是一句没有出路的失败。
+      const refusal = parseBlockedRefusal(String(err))
+      if (refusal) {
+        onBlocked(refusal, name, () => onUpgrade(id))
+        return
+      }
       toast(t('plugins.upgrade_failed', { name }), {})
     },
   })
@@ -115,6 +197,13 @@ export function ConfigPlugin() {
     onError: (err, id) => {
       const name = plugins.find(p => p.id === id)?.name ?? id
       console.error('[ConfigPlugin] remove failed:', err)
+      // 卸载同样要重写 lockfile 并复核整份档案，因此同样可能被核心不兼容或发布保护期
+      // 拦下：一样给出授权后重跑的出路，而不是一句失败。
+      const refusal = parseBlockedRefusal(String(err))
+      if (refusal) {
+        onBlocked(refusal, name, () => runRemove(id))
+        return
+      }
       toast(t('plugins.remove_failed', { name }), {})
     },
   })
@@ -190,15 +279,15 @@ export function ConfigPlugin() {
     setBusy({ id, action: 'update' })
     try {
       await upgrade.mutateAsync(id)
+      // 只有升级成功才拉起服务：失败时档案/依赖仍是待处理状态（不兼容、发布保护期、
+      // 网络…），此时重启只会再失败一次（重启 > 报错），把真正的失败原因淹没掉。
+      void store.harness.restart()
     }
     catch (e) {
       silence(e, 'plugin upgrade: error already shown by mutation onError')
     }
     finally {
       setBusy(null)
-      // 插件操作会停掉运行中的服务（即使失败也已被后端停止），这里统一拉起服务并
-      // 同步前端运行状态，避免留下「服务已死但界面仍显示运行中」的过期状态。
-      void store.harness.restart()
     }
   }
 
@@ -221,17 +310,24 @@ export function ConfigPlugin() {
       silence(e, 'plugin remove: dialog cancelled')
       return
     }
+    await runRemove(id)
+  }
+
+  /** 已确认过的卸载（发布时长豁免后重跑时不再追问一次「确认卸载」）。 */
+  async function runRemove(id: string) {
+    if (busy)
+      return
     setBusy({ id, action: 'remove' })
     try {
       await remove.mutateAsync(id)
+      // 同升级：只有成功才拉起服务（失败时档案仍是待处理状态，重启只会报错一次）
+      void store.harness.restart()
     }
     catch (e) {
       silence(e, 'plugin remove: error already shown by mutation onError')
     }
     finally {
       setBusy(null)
-      // 同上：卸载后统一拉起服务，避免服务被后端停止后前端状态过期。
-      void store.harness.restart()
     }
   }
 
@@ -242,14 +338,14 @@ export function ConfigPlugin() {
     setBusy({ id, action: 'disable' })
     try {
       await disable.mutateAsync(id)
+      // 只有成功才拉起服务，使新的 bundles 列表生效（失败时什么都没变，重启没有意义）
+      void store.harness.restart()
     }
     catch (e) {
       silence(e, 'plugin disable: error already shown by mutation onError')
     }
     finally {
       setBusy(null)
-      // 禁用后统一拉起服务，使新的 bundles 列表生效。
-      void store.harness.restart()
     }
   }
 
@@ -280,14 +376,14 @@ export function ConfigPlugin() {
     setBusy({ id, action: 'enable' })
     try {
       await enable.mutateAsync({ id, clearConfigOverride })
+      // 同禁用：只有成功才拉起服务，使新的 bundles 列表生效
+      void store.harness.restart()
     }
     catch (e) {
       silence(e, 'plugin enable: error already shown by mutation onError')
     }
     finally {
       setBusy(null)
-      // 启用后统一拉起服务，使新的 bundles 列表生效。
-      void store.harness.restart()
     }
   }
 
@@ -520,43 +616,45 @@ export function ConfigPlugin() {
               </Chip>
             </If>
             <If cond={!plugin.internal}>
-              {/* 单插件快照：快照始终可用（已存在时覆盖确认）；还原/删除快照仅在
-                  存在快照时显示。还原会停服务，还原后 toast 提示重启（issue #303） */}
-              <Chip
-                className={actionChip({ busy: !!busy })}
-                variant="primary"
-                color="accent"
-                size="sm"
-                onClick={() => onSnapshot(plugin.id, plugin.name, plugin.hasSnapshot)}
-              >
-                <span className="flex items-center gap-1">
-                  <If cond={busy?.id === plugin.id && busy.action === 'snapshot'} then={<Spinner size="sm" color="current" />} />
-                  {t('plugins.snapshot')}
-                </span>
-              </Chip>
-              <If cond={plugin.hasSnapshot}>
+              <If cond={advanced}>
+                {/* 单插件快照：快照始终可用（已存在时覆盖确认）；还原/删除快照仅在
+                    存在快照时显示。还原会停服务，还原后 toast 提示重启（issue #303） */}
                 <Chip
                   className={actionChip({ busy: !!busy })}
                   variant="primary"
                   color="accent"
                   size="sm"
-                  onClick={() => onRestore(plugin.id, plugin.name)}
+                  onClick={() => onSnapshot(plugin.id, plugin.name, plugin.hasSnapshot)}
                 >
                   <span className="flex items-center gap-1">
-                    <If cond={busy?.id === plugin.id && busy.action === 'restore'} then={<Spinner size="sm" color="current" />} />
-                    {t('plugins.restore')}
+                    <If cond={busy?.id === plugin.id && busy.action === 'snapshot'} then={<Spinner size="sm" color="current" />} />
+                    {t('plugins.snapshot')}
                   </span>
                 </Chip>
-                <Chip
-                  className={actionChip({ busy: !!busy })}
-                  size="sm"
-                  onClick={() => onDeleteSnapshot(plugin.id, plugin.name)}
-                >
-                  <span className="flex items-center gap-1">
-                    <If cond={busy?.id === plugin.id && busy.action === 'delete-snapshot'} then={<Spinner size="sm" color="current" />} />
-                    {t('plugins.delete_snapshot')}
-                  </span>
-                </Chip>
+                <If cond={plugin.hasSnapshot}>
+                  <Chip
+                    className={actionChip({ busy: !!busy })}
+                    variant="primary"
+                    color="accent"
+                    size="sm"
+                    onClick={() => onRestore(plugin.id, plugin.name)}
+                  >
+                    <span className="flex items-center gap-1">
+                      <If cond={busy?.id === plugin.id && busy.action === 'restore'} then={<Spinner size="sm" color="current" />} />
+                      {t('plugins.restore')}
+                    </span>
+                  </Chip>
+                  <Chip
+                    className={actionChip({ busy: !!busy })}
+                    size="sm"
+                    onClick={() => onDeleteSnapshot(plugin.id, plugin.name)}
+                  >
+                    <span className="flex items-center gap-1">
+                      <If cond={busy?.id === plugin.id && busy.action === 'delete-snapshot'} then={<Spinner size="sm" color="current" />} />
+                      {t('plugins.delete_snapshot')}
+                    </span>
+                  </Chip>
+                </If>
               </If>
               <Chip
                 className={actionChip({ busy: !!busy })}
@@ -584,20 +682,35 @@ export function ConfigPlugin() {
         title={t('plugins.title')}
         testId="dsh-config-panel-title"
         action={(
-          <Tooltip delay={0}>
-            <Button
+          <div className="flex shrink-0 items-center gap-3">
+            <Switch
               size="sm"
-              variant="primary"
-              className="rounded-md"
-              onPress={store.preinstall.open}
-              isDisabled={preinstall.installing}
+              isSelected={advanced}
+              onChange={() => toggleAdvanced()}
+              aria-label={t('plugins.advanced_options')}
             >
-              {t('preinstall.open_preset')}
-            </Button>
-            <Tooltip.Content>
-              <p>{t('preinstall.settings_hint')}</p>
-            </Tooltip.Content>
-          </Tooltip>
+              <Switch.Content>
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch.Content>
+            </Switch>
+            <span className="text-xs font-medium text-muted">{t('plugins.advanced_options')}</span>
+            <Tooltip delay={0}>
+              <Button
+                size="sm"
+                variant="primary"
+                className="rounded-md"
+                onPress={store.preinstall.open}
+                isDisabled={preinstall.installing}
+              >
+                {t('preinstall.open_preset')}
+              </Button>
+              <Tooltip.Content>
+                <p>{t('preinstall.settings_hint')}</p>
+              </Tooltip.Content>
+            </Tooltip>
+          </div>
         )}
         description={t('plugins.panel_tooltip')}
       />

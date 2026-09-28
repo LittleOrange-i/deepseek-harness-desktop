@@ -315,12 +315,14 @@ export function TaskCreateDialog({ t, options, onClose, taskId, initial }: TaskC
               <Select
                 label={t('workspace')}
                 value={form.workspaceId}
+                variant="composerTrigger"
                 options={workspaceOptions}
                 onChange={id => setForm(state => ({ ...state, workspaceId: id }))}
               />
               <Select
                 label={t('permission')}
                 value={form.permission}
+                variant="composerTrigger"
                 options={permissionOptions}
                 onChange={id => setForm(state => ({ ...state, permission: id }))}
               />

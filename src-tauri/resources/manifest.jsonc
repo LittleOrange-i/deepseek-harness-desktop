@@ -168,7 +168,7 @@
         "version": [
           { "version": "^0.19.1", "dsh": "^0.1.5-rc.1" },
           { "version": "^0.21.1", "dsh": "^0.1.7-rc.1" },
-          { "version": "^0.22.1", "dsh": "^0.2.0-rc.1" }
+          { "version": "^0.24.1", "dsh": "^0.2.0-rc.1" }
         ]
       },
       {
@@ -193,7 +193,11 @@
         "repo": "https://github.com/wenbin-wb/dsh-bridge",
         "recommended": true,
         "checked": false,
-        "version": "latest"
+        "version": [
+          { "version": "^2.11.0", "dsh": "^0.1.5-rc.1" },
+          { "version": "latest", "dsh": "^0.1.7-rc.1" },
+          { "version": "latest", "dsh": "^0.2.0-rc.1" }
+        ]
       },
       {
         "id": "@xmanrui/dsh-im",

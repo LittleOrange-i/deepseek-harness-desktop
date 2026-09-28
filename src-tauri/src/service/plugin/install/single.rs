@@ -17,8 +17,8 @@ use crate::service::workflow;
 use super::artifact::{ensure_plugin_entry_built, installed_package_name};
 use super::build_plugin_envs;
 use super::diagnose::{
-    git_transport_hint, network_error_hint, pick_error_message,
-    policy_verification_network_failure, store_mismatch_hint,
+    git_transport_hint, incompatible_versions, network_error_hint, pick_error_message,
+    policy_blocked_versions, policy_verification_network_failure, store_mismatch_hint,
 };
 use super::errors;
 use super::installed_name;
@@ -33,6 +33,8 @@ use super::run_plugin_with_allow_build_retry;
 use super::uninstall_recovery;
 use super::PreinstallPluginInfo;
 use super::{PreinstallLogPayload, PREINSTALL_LOG_EVENT};
+use crate::service::plugin::update::known_latest;
+use crate::service::profile::profile_release_age_excluded;
 
 pub async fn update(app_handle: &AppHandle, id: &str) -> Result<(), String> {
     run_single_plugin_command(app_handle, id, "update", &update_pnpm_args(id)).await
@@ -245,7 +247,10 @@ pub(crate) async fn uninstall_deprecated_plugins(app_handle: &AppHandle) -> Resu
 /// pnpm 收到的就是 `pnpm remove remove <id>`（issue #715 日志中的 `pnpm remove
 /// remove dshmarket`）——`remove` 会去找一个名为 `remove` 的依赖，卸载/升级因此
 /// 不生效甚至失败。
-fn single_plugin_args(profile: &str, action: &str, sub_args: &[String]) -> Vec<OsString> {
+///
+/// 版本豁免授权（`allow-version`，见 [`super::allow_version_exemptions`]）同样走
+/// 这个形状：dsh 在转发给 pnpm 之前先拦下该动词，`--profile` 的拼装完全一致。
+pub(super) fn single_plugin_args(profile: &str, action: &str, sub_args: &[String]) -> Vec<OsString> {
     let mut args = vec![
         OsString::from("plugin"),
         OsString::from("--profile"),
@@ -341,6 +346,35 @@ async fn run_single_plugin_command(
 
     if exit_code != 0 {
         log::error!("dsh plugin {action} failed for {id} with exit code {exit_code}");
+        // 版本兼容性拒绝：dsh 在 pnpm 之前核对插件声明的 DSH peer 依赖，未授权精确版本
+        // 即拒绝（不下载、不构建），升级同样会撞上（新版本声明了更高的核心 peer 依赖）。
+        // 与批量安装路径一致地解析成精确三元组，交前端「授权后重跑」；不记插件错误——
+        // 插件没坏，只是待用户授权。
+        let incompatible = incompatible_versions(&last_attempt);
+        if !incompatible.is_empty() {
+            log::warn!(
+                "dsh refused the {action} for incompatible plugin versions: {incompatible:?}"
+            );
+            return Err(format!(
+                "PLUGIN_VERSION_INCOMPATIBLE: {}",
+                serde_json::to_string(&incompatible).unwrap_or_default()
+            ));
+        }
+        // 真实的发布时长策略违规优先识别：档案已声明/装了太新的版本，pnpm 的 lockfile
+        // 校验不放行，于是升级/卸载/安装都会在这里失败。不是插件故障、也不是网络问题
+        // （发布时间都拿到了），重试无用——解析成精确 `包名@版本` 交给前端由用户授权，
+        // 写进档案的 `minimumReleaseAgeExclude` 后再重跑。
+        let policy_blocked = policy_blocked_versions(&last_attempt);
+        if !policy_blocked.is_empty() {
+            log::warn!(
+                "pnpm release-age policy rejected {} profile entries during {action}: {policy_blocked:?}",
+                policy_blocked.len()
+            );
+            return Err(format!(
+                "PLUGIN_POLICY_BLOCKED: {}",
+                serde_json::to_string(&policy_blocked).unwrap_or_default()
+            ));
+        }
         // lockfile 供应链校验因 registry 元数据拉取失败而误判违规时，对用户而言就是
         // 网络问题：给「检查网络后重试」而不是一条看不懂的供应链违规。分类只看最后
         // 一次尝试的输出——历次拼接会让早先一次的网络字样给真·违规「背书」；拼接串
@@ -388,21 +422,46 @@ async fn run_single_plugin_command(
     // 清单依赖 basename），解析不到时跳过核验（警告即可，不误杀成功更新）。
     if action == "update" {
         // 假成功核验：pnpm 以 0 退出、但该依赖的解析结果与升级前完全一致，说明这次
-        // 升级没有落地（典型：档案 spec 是 `catalog:`，范围被 catalog 条目钉死）。
-        // 必须如实报错——报成功会让用户以为已在新版本上、实际仍在旧版本，比报失败
-        // 更难发现（与 [`remove`] 的「卸载后核验」同理）。
+        // 升级没有落地。两种已知成因都属于「按当前策略不该动」，而不是插件损坏：
+        // 1. 档案 spec 把版本钉死（`catalog:` 条目 / git 提交 / `link:` 本地目录），
+        //    `--latest` 也越不过声明范围；
+        // 2. pnpm 的 release-age 策略：新版本发布不足 `minimumReleaseAge`（pnpm 11
+        //    默认 1440 分钟 = 24 小时）时解析会回落到仍达标的最新版本，命令照旧以 0
+        //    退出且**不打印任何说明**——实测 bundled pnpm 11.7.0 在 `^2.10.15` 上
+        //    `update --latest` 静默停在 2.10.15，把 `minimumReleaseAge: 0` 写进档案
+        //    才取到 2.11.2。因此这条消息不能只归因于 catalog 钉死（会把人引偏）。
+        // 必须如实报「没升级」——报成功会让用户以为已在新版本上（与 [`remove`] 的
+        // 「卸载后核验」同理）；但**不**记进插件错误：插件没坏，记了会让列表挂上
+        // 「可能已损坏或与当前环境不兼容」的误导标记（安装/升级真失败各有记录点）。
         if let Some(before) = before_fingerprint.as_deref() {
             if dependency_fingerprint(&profile_dir(app_handle), id).as_deref() == Some(before) {
                 let detail = installed_package_version(&profile_dir(app_handle), id)
                     .unwrap_or_else(|| before.to_string());
-                let message = format!(
-                    "PLUGIN_UPDATE_NO_CHANGE: pnpm exited successfully but {id} is still at {detail}; the profile pins this dependency (for example a `catalog:` entry in pnpm-workspace.yaml), so the upgrade did not take effect"
+                // 只有「新版本太新」这一种成因有出路（授权那个精确版本即可过闸），因此把
+                // 目标版本与「是否已在豁免清单里」一并带出去：已经授权过还是不动，说明成因
+                // 是档案把来源钉死，界面就别再给按钮——否则用户只会反复点一个没用的动作。
+                // 目标版本取自更新探测缓存（不新发网络请求）；git 托管插件的「最新」是提交
+                // SHA、不是 registry 版本，不能进发布时长豁免清单，按形状挡掉。
+                let latest = known_latest(id).filter(|latest| {
+                    latest != &detail
+                        && latest.contains('.')
+                        && latest.starts_with(|c: char| c.is_ascii_digit())
+                });
+                let retryable = latest.as_deref().is_some_and(|latest| {
+                    !profile_release_age_excluded(app_handle, &format!("{id}@{latest}"))
+                });
+                log::warn!(
+                    "dsh plugin update made no change for {id}, still at {detail}, newest {latest:?}, actionable {retryable}"
                 );
-                log::error!("dsh plugin update made no change for {id}: {detail}");
-                if let Err(e) = errors::record(app_handle, id, action, &message) {
-                    log::warn!("failed to record plugin error for {id}: {e}");
-                }
-                return Err(message);
+                return Err(format!(
+                    "PLUGIN_UPDATE_NO_CHANGE: {}",
+                    serde_json::json!({
+                        "name": id,
+                        "version": detail,
+                        "latest": latest,
+                        "retryable": retryable,
+                    })
+                ));
             }
         }
         let Some(name) = installed_package_name(app_handle, id) else {

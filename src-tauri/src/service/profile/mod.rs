@@ -151,7 +151,60 @@ pub(crate) fn parse_workspace_document(content: &str) -> Result<(Value, bool), S
     }
 }
 
+/// 保证档案具备桌面端预设所需的发布时长策略豁免（见 [`PROFILE_MINIMUM_RELEASE_AGE_EXCLUDES`]）。
 pub(crate) fn ensure_profile_pnpm_policy(app_handle: &AppHandle) -> Result<(), String> {
+    let entries: Vec<String> = PROFILE_MINIMUM_RELEASE_AGE_EXCLUDES
+        .iter()
+        .map(|package| (*package).to_string())
+        .collect();
+    profile_release_age_excludes(app_handle, &entries)
+}
+
+/// 档案的 `minimumReleaseAgeExclude` 里是否已经有这个精确 `包名@版本`。
+///
+/// 用来区分「升级没落地」的两种成因：已经授权过这个版本还是不动，说明瓶颈不是发布时长
+/// 策略（而是档案把来源钉死），界面就不该再提供「授权」这个没用的动作。档案缺失或读不出
+/// 来时返回 false（宁可多给一次授权机会，也不替用户判定成钉死）。
+pub(crate) fn profile_release_age_excluded(app_handle: &AppHandle, entry: &str) -> bool {
+    let path = profile_dir_of(app_handle, &active_profile(app_handle)).join("pnpm-workspace.yaml");
+    let Ok(content) = fs::read_to_string(&path) else {
+        return false;
+    };
+    let Ok((document, _)) = parse_workspace_document(&content) else {
+        return false;
+    };
+    let Some(sequence) = document
+        .as_mapping()
+        .and_then(|mapping| mapping.get(Value::String("minimumReleaseAgeExclude".to_string())))
+        .and_then(|value| value.as_sequence())
+    else {
+        return false;
+    };
+    let wanted = Value::String(entry.to_string());
+    sequence.iter().any(|item| item == &wanted)
+}
+
+/// 把用户明确授权过的精确 `包名@版本` 追加进档案的 `minimumReleaseAgeExclude`。
+///
+/// pnpm 的发布时长策略（`minimumReleaseAge`，11 默认 24 小时）在解析与 lockfile 校验
+/// 两处都会拦下太新的版本；档案一旦声明了这样的版本，**每次**插件操作都会失败。用户
+/// 在界面上确认接受这些精确版本后走这里：写的是精确条目，只让列出的版本过闸，其余
+/// 解析照旧受窗口约束；已存在的条目不会重复写。
+pub(crate) fn allow_profile_release_age(
+    app_handle: &AppHandle,
+    entries: &[String],
+) -> Result<(), String> {
+    if entries.is_empty() {
+        return Err("PROFILE_RELEASE_AGE_EMPTY: no release-age exemption to record".to_string());
+    }
+    profile_release_age_excludes(app_handle, entries)
+}
+
+/// 把 `entries` 并入档案 `pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude`（按需落盘）。
+fn profile_release_age_excludes(
+    app_handle: &AppHandle,
+    entries: &[String],
+) -> Result<(), String> {
     let path = profile_dir_of(app_handle, &active_profile(app_handle)).join("pnpm-workspace.yaml");
     let existing = match fs::read_to_string(&path) {
         Ok(content) => content,
@@ -181,8 +234,8 @@ pub(crate) fn ensure_profile_pnpm_policy(app_handle: &AppHandle) -> Result<(), S
     })?;
     // 归一化（多文档 → 单文档）本身就是需要落盘的改动：不写回的话 pnpm 依然读不了。
     let mut changed = normalized;
-    for package in PROFILE_MINIMUM_RELEASE_AGE_EXCLUDES {
-        let value = Value::String(package.to_string());
+    for package in entries {
+        let value = Value::String(package.clone());
         if !sequence.iter().any(|item| item == &value) {
             sequence.push(value);
             changed = true;

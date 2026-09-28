@@ -65,6 +65,21 @@ fn cache_key(id: &str, spec: &str, version: &str, locked: &HashMap<String, Strin
     format!("{id}\u{0}{spec}\u{0}{version}\u{0}{locked_commit}")
 }
 
+/// 探测缓存里该插件的「最新版本」；没探测过或缓存里没有它时返回 `None`。
+///
+/// 升级「以 0 退出但版本没动」时需要知道本该装到哪个版本：发布时长豁免是按精确
+/// `包名@版本` 写的，没有目标版本就给不出可授权的条目。这里只读缓存、不新发请求
+/// （探测由 [`refresh`] 统一负责），缓存键以 `id` 开头（见 [`cache_key`]）。
+pub(crate) fn known_latest(id: &str) -> Option<String> {
+    let cache = cache().lock().unwrap();
+    let prefix = format!("{id}\u{0}");
+    cache
+        .iter()
+        .filter(|(key, _)| key.starts_with(&prefix))
+        .max_by_key(|(_, entry)| entry.at)
+        .and_then(|(_, entry)| entry.info.latest.clone())
+}
+
 // ---------------------------------------------------------------------------
 // 读取安装态（spec / 版本 / 锁定提交）
 // ---------------------------------------------------------------------------
