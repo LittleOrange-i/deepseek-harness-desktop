@@ -222,7 +222,7 @@ export interface NavbarProps { /** iframe 回报的 dsh 侧边栏折叠状态（
   onOpenSyncToRemote?: () => void
   /** 打开文件夹：向 iframe 发 `dsh://workspace:add`（dsh 官方「添加工作区」）；传入时该项可用 */
   onOpenFolder?: () => void
-  /** 显示键盘快捷键：向 iframe 发 `dsh://shortcuts:open`，弹官方 `shortcuts.open` 弹层（官方蒙版） */
+  /** 显示键盘快捷键：向 iframe 发 `dsh://shortcuts:open`，弹官方 `shortcuts.open` 弹层（官方蒙版）；传入时该项可用 */
   onOpenShortcuts?: () => void
 }
 
@@ -591,6 +591,7 @@ export function Navbar({ sidebarCollapsed = false, onToggleSidebar, onNewChat, o
                   className="rounded-md"
                   id="keyboard-shortcuts"
                   data-testid="dsh-navbar-item-keyboard-shortcuts"
+                  isDisabled={onOpenShortcuts == null}
                   textValue={t('menu.keyboard_shortcuts')}
                   onAction={() => onHelpAction('keyboard-shortcuts')}
                 >
