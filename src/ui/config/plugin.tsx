@@ -104,7 +104,11 @@ export function ConfigPlugin() {
       // 「命令成功但版本没动」不是插件故障（档案钉死或 pnpm 的 release-age 策略，
       // 见后端 PLUGIN_UPDATE_NO_CHANGE）：报「升级失败」会把用户引去排查插件本身。
       if (String(err).startsWith('PLUGIN_UPDATE_NO_CHANGE:')) {
-        toast(t('plugins.upgrade_held', { name }), { variant: 'warning' })
+        toast(t('plugins.upgrade_held', { name }), {
+          variant: 'warning',
+          description: t('plugins.upgrade_held_hint'),
+          timeout: 10_000,
+        })
         return
       }
       toast(t('plugins.upgrade_failed', { name }), {})

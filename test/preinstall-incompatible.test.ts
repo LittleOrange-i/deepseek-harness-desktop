@@ -101,4 +101,13 @@ describe('preinstall version-exemption grant', () => {
     expect(preinstall.incompatible).toEqual([])
     expect(preinstall.error).toBe('PLUGIN_EXEMPTION_FAILED: dsh-better-sidebar@0.22.1: dsh plugin exited with code 1')
   })
+
+  it('drops a stale pending list when the wizard is reopened', async () => {
+    preinstall.incompatible = BLOCKED
+    invoke.mockResolvedValue([])
+
+    await preinstall.open()
+
+    expect(preinstall.incompatible).toEqual([])
+  })
 })

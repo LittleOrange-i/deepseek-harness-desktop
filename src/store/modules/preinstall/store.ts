@@ -216,6 +216,8 @@ export const preinstall = defineStore({
         return
       void hooks['config.dialog.hidden'].trigger()
       this.error = ''
+      // 重新打开引导时清掉上次留下的拦截清单，否则会直接落在授权对话框上
+      this.incompatible = []
       this.logs = []
       // 侧边栏手动打开：非首次安装，默认勾选策略为「仅已安装」
       this.isFirstTime = false
