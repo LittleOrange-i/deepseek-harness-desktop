@@ -1,4 +1,4 @@
-import type { PreinstallPlugin } from '@/store/modules/preinstall'
+import type { IncompatibleVersion, PreinstallPlugin } from '@/store/modules/preinstall'
 import { ArrowUpRightFromSquare, Copy, PlugConnection, Xmark } from '@gravity-ui/icons'
 import { Button, Card, Checkbox, Chip, ScrollShadow, Spinner, Switch, Typography } from '@heroui/react'
 import { useMount } from '@reause/core'
@@ -190,6 +190,18 @@ export function PreinstallSetup() {
     ? initialCheckedSet(preinstall.plugins, preinstall.isFirstTime)
     : selected
 
+  /**
+   * 拦截项在勾选集合里的键：必须带上运行时版本。
+   *
+   * 豁免是按「精确包名@版本 + 运行时版本」三元组生效的，解析结果也按三元组去重，因此
+   * `name@version` 相同、运行时不同的两条是两条不同的授权。只用 `name@version` 当键会让
+   * 勾选一行连带授权另一行（把别的运行时的豁免也一起写下去，dsh 只会拒绝它）。
+   * 展示给用户的标签仍是 `name@version`，键只在内部用。
+   */
+  function incompatibleKey(item: IncompatibleVersion) {
+    return JSON.stringify([item.name, item.version, item.runtime_version])
+  }
+
   function toggle(id: string, checked: boolean) {
     // 首次交互以「当前默认勾选」为起点：selected 初始为空，若直接在其上增删，
     // 取消一个会误把其余默认项一并取消。这里先以 initialCheckedSet 播种，
@@ -241,7 +253,6 @@ export function PreinstallSetup() {
       return next
     })
   }
-
   /**
    * 授权勾选的精确版本后重跑安装。
    *
@@ -252,7 +263,7 @@ export function PreinstallSetup() {
    * 给出按钮反馈：这段等待既没有安装日志也没有列表变化，否则点完像没反应。
    */
   async function handleAllow() {
-    const versions = blocked.filter(item => allowed.has(`${item.name}@${item.version}`))
+    const versions = blocked.filter(item => allowed.has(incompatibleKey(item)))
     if (granting || versions.length === 0)
       return
     setGranting(true)
@@ -417,14 +428,15 @@ export function PreinstallSetup() {
                     <p className="text-[11px] leading-relaxed text-muted">{t('preinstall.incompatible_desc')}</p>
                     <div className="mt-0.5 flex flex-col gap-1.5">
                       {blocked.map((item) => {
-                        const key = `${item.name}@${item.version}`
+                        const label = `${item.name}@${item.version}`
+                        const key = incompatibleKey(item)
                         return (
                           <label key={key} className="flex cursor-pointer items-center gap-2">
                             <Checkbox
                               className="shrink-0"
                               isSelected={allowed.has(key)}
                               onChange={(value: boolean) => toggleAllowed(key, value)}
-                              aria-label={key}
+                              aria-label={label}
                             >
                               <Checkbox.Content>
                                 <Checkbox.Control>
@@ -432,7 +444,7 @@ export function PreinstallSetup() {
                                 </Checkbox.Control>
                               </Checkbox.Content>
                             </Checkbox>
-                            <span className="font-mono text-[11px] text-ink">{key}</span>
+                            <span className="font-mono text-[11px] text-ink">{label}</span>
                           </label>
                         )
                       })}
