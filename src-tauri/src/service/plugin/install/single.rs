@@ -18,7 +18,7 @@ use super::artifact::{ensure_plugin_entry_built, installed_package_name};
 use super::build_plugin_envs;
 use super::diagnose::{
     git_transport_hint, network_error_hint, pick_error_message,
-    policy_verification_network_failure, store_mismatch_hint,
+    policy_blocked_versions, policy_verification_network_failure, store_mismatch_hint,
 };
 use super::errors;
 use super::installed_name;
@@ -344,6 +344,21 @@ async fn run_single_plugin_command(
 
     if exit_code != 0 {
         log::error!("dsh plugin {action} failed for {id} with exit code {exit_code}");
+        // 真实的发布时长策略违规优先识别：档案已声明/装了太新的版本，pnpm 的 lockfile
+        // 校验不放行，于是升级/卸载/安装都会在这里失败。不是插件故障、也不是网络问题
+        // （发布时间都拿到了），重试无用——解析成精确 `包名@版本` 交给前端由用户授权，
+        // 写进档案的 `minimumReleaseAgeExclude` 后再重跑。
+        let policy_blocked = policy_blocked_versions(&last_attempt);
+        if !policy_blocked.is_empty() {
+            log::warn!(
+                "pnpm release-age policy rejected {} profile entries during {action}: {policy_blocked:?}",
+                policy_blocked.len()
+            );
+            return Err(format!(
+                "PLUGIN_POLICY_BLOCKED: {}",
+                serde_json::to_string(&policy_blocked).unwrap_or_default()
+            ));
+        }
         // lockfile 供应链校验因 registry 元数据拉取失败而误判违规时，对用户而言就是
         // 网络问题：给「检查网络后重试」而不是一条看不懂的供应链违规。分类只看最后
         // 一次尝试的输出——历次拼接会让早先一次的网络字样给真·违规「背书」；拼接串

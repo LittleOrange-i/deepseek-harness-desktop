@@ -1068,6 +1068,7 @@ pub fn handler() -> impl Fn(Invoke<Wry>) -> bool + Send + Sync + 'static {
         crate::bridge::install_preinstall_plugins,
         crate::bridge::cancel_preinstall_plugins,
         crate::bridge::allow_plugin_versions,
+        crate::bridge::allow_plugin_policy_versions,
         crate::bridge::skip_preinstall_plugins,
         crate::bridge::ensure_internal_plugins,
         crate::bridge::cancel_internal_plugins,

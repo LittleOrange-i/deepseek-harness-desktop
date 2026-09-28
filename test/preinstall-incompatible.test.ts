@@ -1,5 +1,5 @@
 import type { Event } from '@tauri-apps/api/event'
-import type { IncompatibleVersion } from '../src/store/modules/preinstall'
+import type { IncompatibleVersion, PolicyBlockedVersion } from '../src/store/modules/preinstall'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // 版本兼容性拒绝的往返：后端把拒绝清单挂在错误串上（Tauri 命令的错误通道只有字符串），
@@ -9,6 +9,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const BLOCKED: IncompatibleVersion[] = [
   { name: 'dsh-better-sidebar', version: '0.22.1', runtime_version: '0.2.0-rc.1' },
   { name: 'dsh-rewind-plugin', version: '0.14.0', runtime_version: '0.2.0-rc.1' },
+]
+
+// pnpm 发布时长策略拦下的条目：档案已声明太新的版本时每次插件操作都失败，因此这份清单
+// 同样要变成可勾选授权项（而不是一句「去插件面板」），授权后写档案豁免清单再重跑。
+const POLICY_BLOCKED: PolicyBlockedVersion[] = [
+  { name: '@wenbin_wb/dsh-bridge', version: '2.11.2' },
 ]
 
 const { eventListeners, invoke } = vi.hoisted(() => ({
@@ -35,6 +41,7 @@ beforeEach(() => {
   invoke.mockReset()
   preinstall.error = ''
   preinstall.incompatible = []
+  preinstall.policyBlocked = []
   preinstall.installing = false
   preinstall.logs = []
 })
@@ -109,5 +116,67 @@ describe('preinstall version-exemption grant', () => {
     await preinstall.open()
 
     expect(preinstall.incompatible).toEqual([])
+  })
+})
+
+describe('preinstall release-age policy refusal', () => {
+  it('exposes the blocked exact versions as authorizable entries instead of a failure', async () => {
+    invoke.mockRejectedValue(`PLUGIN_POLICY_BLOCKED: ${JSON.stringify(POLICY_BLOCKED)}`)
+
+    await preinstall.confirm({ installIds: ['@wenbin_wb/dsh-bridge'] })
+
+    expect(preinstall.policyBlocked).toEqual(POLICY_BLOCKED)
+    expect(preinstall.incompatible).toEqual([])
+    expect(preinstall.error).toBe('')
+  })
+
+  it('keeps a malformed policy payload as a plain install failure', async () => {
+    invoke.mockRejectedValue('PLUGIN_POLICY_BLOCKED: not-json')
+
+    await preinstall.confirm({ installIds: ['@wenbin_wb/dsh-bridge'] })
+
+    expect(preinstall.policyBlocked).toEqual([])
+    expect(preinstall.error).toBe('PLUGIN_POLICY_BLOCKED: not-json')
+  })
+
+  it('grants exactly the checked entries and clears the pending list', async () => {
+    preinstall.policyBlocked = POLICY_BLOCKED
+    invoke.mockResolvedValue(undefined)
+
+    const granted = await preinstall.allowPolicyVersions(POLICY_BLOCKED)
+
+    expect(granted).toBe(true)
+    expect(invoke).toHaveBeenCalledWith('allow_plugin_policy_versions', { versions: POLICY_BLOCKED })
+    expect(preinstall.policyBlocked).toEqual([])
+  })
+
+  it('does not touch the backend when nothing is checked', async () => {
+    preinstall.policyBlocked = POLICY_BLOCKED
+
+    const granted = await preinstall.allowPolicyVersions([])
+
+    expect(granted).toBe(false)
+    expect(invoke).not.toHaveBeenCalled()
+    expect(preinstall.policyBlocked).toEqual(POLICY_BLOCKED)
+  })
+
+  it('reports a failed grant as an install failure with the pending list cleared', async () => {
+    preinstall.policyBlocked = POLICY_BLOCKED
+    invoke.mockRejectedValue('PROFILE_WORKSPACE_WRITE: access denied')
+
+    const granted = await preinstall.allowPolicyVersions(POLICY_BLOCKED)
+
+    expect(granted).toBe(false)
+    expect(preinstall.policyBlocked).toEqual([])
+    expect(preinstall.error).toBe('PROFILE_WORKSPACE_WRITE: access denied')
+  })
+
+  it('drops a stale policy list when the wizard is reopened', async () => {
+    preinstall.policyBlocked = POLICY_BLOCKED
+    invoke.mockResolvedValue([])
+
+    await preinstall.open()
+
+    expect(preinstall.policyBlocked).toEqual([])
   })
 })

@@ -1,5 +1,5 @@
 import type { UnlistenFn } from '@tauri-apps/api/event'
-import type { IncompatibleVersion, PreinstallLogPayload, PreinstallPlugin, PreinstallSelection } from './types'
+import type { IncompatibleVersion, PolicyBlockedVersion, PreinstallLogPayload, PreinstallPlugin, PreinstallSelection } from './types'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import i18next from 'i18next'
@@ -19,6 +19,32 @@ const LOG_LIMIT = 200
  * 「逐项授权 → 重试」；解析失败返回 null，退回普通的安装失败展示，绝不假装可授权。
  */
 const INCOMPATIBLE_PREFIX = 'PLUGIN_VERSION_INCOMPATIBLE:'
+
+/**
+ * 发布时长策略拦下的载荷前缀（后端 `policy_blocked_versions` 的结果）：其后是
+ * `{ name, version }[]` 的 JSON。
+ *
+ * 与 [`INCOMPATIBLE_PREFIX`] 是两套互不相干的拦截（dsh 的版本兼容性 vs pnpm 的
+ * `minimumReleaseAge`），但处理形状一致：都交给界面列出来让用户勾选授权后重跑。
+ */
+const POLICY_BLOCKED_PREFIX = 'PLUGIN_POLICY_BLOCKED:'
+
+/**
+ * 解析后端「发布时长策略拦下」的载荷（[`POLICY_BLOCKED_PREFIX`] 之后的
+ * `{ name, version }[]` JSON）；识别不出来返回 null，退回普通失败展示。
+ */
+function parsePolicyBlocked(error: string): PolicyBlockedVersion[] | null {
+  if (!error.startsWith(POLICY_BLOCKED_PREFIX))
+    return null
+  try {
+    const parsed = JSON.parse(error.slice(POLICY_BLOCKED_PREFIX.length)) as PolicyBlockedVersion[]
+    return parsed.length > 0 ? parsed : null
+  }
+  catch (err) {
+    console.error('[Harness] failed to parse policy-blocked payload:', err)
+    return null
+  }
+}
 
 function parseIncompatible(error: string): IncompatibleVersion[] | null {
   if (!error.startsWith(INCOMPATIBLE_PREFIX))
@@ -56,6 +82,12 @@ export const preinstall = defineStore({
      * 非空时界面展示风险提示与勾选清单（而非插件列表或错误态）。
      */
     incompatible: [] as IncompatibleVersion[],
+    /**
+     * 被 pnpm 发布时长策略拦下的精确版本（`minimumReleaseAge`）。
+     * 非空时同样展示风险提示与勾选清单——档案已声明这些太新的版本，不授权则**每次**
+     * 插件操作都会失败，用户在这里勾选授权后重跑安装即可解开。
+     */
+    policyBlocked: [] as PolicyBlockedVersion[],
     /** 拉取预装插件列表失败（区别于空列表；UI 据此展示错误态 + 重试） */
     loadError: '',
     /** 是否为首次安装引导（决定默认勾选策略）：boot 流程进入时为 true，侧边栏手动打开为 false */
@@ -119,9 +151,14 @@ export const preinstall = defineStore({
         console.error('[Harness] preinstall failed:', err)
         const error = String(err)
         const incompatible = parseIncompatible(error)
+        const policyBlocked = parsePolicyBlocked(error)
         if (incompatible) {
           // 不是故障而是待授权清单：交给界面展示风险与勾选，用户授权后重跑安装
           this.incompatible = incompatible
+        }
+        else if (policyBlocked) {
+          // 同上，但拦下它的是 pnpm 的发布时长策略：清单同样交给界面勾选授权
+          this.policyBlocked = policyBlocked
         }
         else {
           this.error = error.startsWith('NETWORK_ERROR:')
@@ -153,6 +190,29 @@ export const preinstall = defineStore({
       catch (err) {
         console.error('[Harness] granting plugin version exemption failed:', err)
         this.incompatible = []
+        this.error = String(err)
+        return false
+      }
+    },
+
+    /**
+     * 授予被 pnpm 发布时长策略拦下的精确版本豁免，成功后由界面重跑安装。
+     *
+     * 与 [`allowIncompatible`] 是两套互不相干的授权（一个写档案的 `compatibility.json`、
+     * 一个写 `pnpm-workspace.yaml` 的 `minimumReleaseAgeExclude`），但形状一致：只提交
+     * 用户勾选的精确 `包名@版本`，失败按普通安装失败展示并回到可重试态。
+     */
+    async allowPolicyVersions(versions: PolicyBlockedVersion[]): Promise<boolean> {
+      if (this.installing || versions.length === 0)
+        return false
+      try {
+        await invoke('allow_plugin_policy_versions', { versions })
+        this.policyBlocked = []
+        return true
+      }
+      catch (err) {
+        console.error('[Harness] granting release-age exemption failed:', err)
+        this.policyBlocked = []
         this.error = String(err)
         return false
       }
@@ -218,6 +278,7 @@ export const preinstall = defineStore({
       this.error = ''
       // 重新打开引导时清掉上次留下的拦截清单，否则会直接落在授权对话框上
       this.incompatible = []
+      this.policyBlocked = []
       this.logs = []
       // 侧边栏手动打开：非首次安装，默认勾选策略为「仅已安装」
       this.isFirstTime = false

@@ -177,6 +177,7 @@ export function PreinstallSetup() {
   // 授权进行中：逐条起 dsh 进程写兼容性豁免，期间禁用按钮并显示加载态
   const [granting, setGranting] = useState(false)
   const blocked = preinstall.incompatible
+  const policyBlocked = preinstall.policyBlocked
 
   // 进入引导页时拉取插件列表（仅挂载一次，无需清理）
   useMount(() => {
@@ -256,19 +257,23 @@ export function PreinstallSetup() {
   /**
    * 授权勾选的精确版本后重跑安装。
    *
-   * 豁免只对「精确的包名@版本 + 运行时版本」生效、且不随插件或核心升级继承，因此
+   * 豁免只对「精确的包名@版本（+ 运行时版本）」生效、且不随插件或核心升级继承，因此
    * 必须真的重跑一次由 dsh 复核，不能假定授权即放行。
    *
-   * 授权要逐条起 `dsh plugin allow-version`（每条一次进程启动），期间用 granting
-   * 给出按钮反馈：这段等待既没有安装日志也没有列表变化，否则点完像没反应。
+   * 授权要逐条起进程（dsh 的 allow-version、或写档案豁免清单），期间用 granting 给出
+   * 按钮反馈：这段等待既没有安装日志也没有列表变化，否则点完像没反应。
    */
-  async function handleAllow() {
-    const versions = blocked.filter(item => allowed.has(incompatibleKey(item)))
+  async function handleGrant<T extends { name: string, version: string }>(
+    items: readonly T[],
+    keyOf: (item: T) => string,
+    grant: (selected: T[]) => Promise<boolean>,
+  ) {
+    const versions = items.filter(item => allowed.has(keyOf(item)))
     if (granting || versions.length === 0)
       return
     setGranting(true)
     try {
-      if (await store.preinstall.allowIncompatible(versions))
+      if (await grant(versions))
         handleConfirm()
     }
     finally {
@@ -293,10 +298,10 @@ export function PreinstallSetup() {
         <If
           cond={installing}
           else={(
-            // 被核心版本拦截（可逐项授权）或安装失败时不叠加插件列表，
-            // 只展示原因 + 日志 + 操作
+            // 被核心版本拦截、被 pnpm 发布时长策略拦截（都可逐项授权）或安装失败时
+            // 不叠加插件列表，只展示原因 + 日志 + 操作
             <If
-              cond={blocked.length > 0 || preinstall.error !== ''}
+              cond={blocked.length > 0 || policyBlocked.length > 0 || preinstall.error !== ''}
               else={(
                 <>
                   {/* 卡片网格限定高度滚动，上下溢出由 ScrollShadow 渐隐提示 */}
@@ -395,29 +400,86 @@ export function PreinstallSetup() {
               <If
                 cond={blocked.length > 0}
                 else={(
-                  <div className="flex flex-col gap-2.5">
-                    <div className="flex flex-col gap-2 rounded-md border border-danger/30 bg-danger/5 p-3">
-                      <p className="text-xs font-medium text-danger">{t('preinstall.failed')}</p>
-                      <p className="max-h-[120px] overflow-y-auto break-all font-mono text-[11px] leading-relaxed text-muted">
-                        {preinstall.error}
-                      </p>
+                  // 发布时长策略拦截：档案已声明太新的版本，pnpm 的 minimumReleaseAge
+                  // 不放行，不授权则每次插件操作都失败；同样逐项授权后重跑
+                  <If
+                    cond={policyBlocked.length > 0}
+                    else={(
+                      <div className="flex flex-col gap-2.5">
+                        <div className="flex flex-col gap-2 rounded-md border border-danger/30 bg-danger/5 p-3">
+                          <p className="text-xs font-medium text-danger">{t('preinstall.failed')}</p>
+                          <p className="max-h-[120px] overflow-y-auto break-all font-mono text-[11px] leading-relaxed text-muted">
+                            {preinstall.error}
+                          </p>
+                        </div>
+                        <LogPanel logs={preinstall.logs} />
+                        <div className="flex items-center justify-end gap-2">
+                          <Button className="h-8 rounded-md" size="sm" variant="tertiary" onPress={handleSkip} isDisabled={installing}>
+                            {t('preinstall.skip')}
+                          </Button>
+                          <Button
+                            className="h-8 rounded-md"
+                            size="sm"
+                            variant="primary"
+                            onPress={handleConfirm}
+                            isDisabled={installing || !hasChanges}
+                          >
+                            {t('app.retry')}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  >
+                    <div className="flex flex-col gap-2.5">
+                      <div className="flex flex-col gap-2 rounded-md border border-warning/30 bg-warning/5 p-3">
+                        <p className="text-xs font-medium text-warning">{t('preinstall.policy_title')}</p>
+                        <p className="text-[11px] leading-relaxed text-muted">{t('preinstall.policy_desc')}</p>
+                        <div className="mt-0.5 flex flex-col gap-1.5">
+                          {policyBlocked.map((item) => {
+                            const key = `${item.name}@${item.version}`
+                            return (
+                              <label key={key} className="flex cursor-pointer items-center gap-2">
+                                <Checkbox
+                                  className="shrink-0"
+                                  isSelected={allowed.has(key)}
+                                  onChange={(value: boolean) => toggleAllowed(key, value)}
+                                  aria-label={key}
+                                >
+                                  <Checkbox.Content>
+                                    <Checkbox.Control>
+                                      <Checkbox.Indicator />
+                                    </Checkbox.Control>
+                                  </Checkbox.Content>
+                                </Checkbox>
+                                <span className="font-mono text-[11px] text-ink">{key}</span>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      </div>
+                      <LogPanel logs={preinstall.logs} />
+                      <div className="flex items-center justify-end gap-2">
+                        <Button className="h-8 rounded-md" size="sm" variant="tertiary" onPress={handleSkip} isDisabled={installing || granting}>
+                          {t('preinstall.skip')}
+                        </Button>
+                        <Button
+                          className="h-8 rounded-md"
+                          size="sm"
+                          variant="primary"
+                          onPress={() => void handleGrant(policyBlocked, item => `${item.name}@${item.version}`, versions => store.preinstall.allowPolicyVersions(versions))}
+                          isDisabled={installing || granting || allowed.size === 0}
+                        >
+                          <If cond={granting}>
+                            <Spinner size="sm" color="current" />
+                            <span>{t('preinstall.granting')}</span>
+                          </If>
+                          <If cond={!granting}>
+                            <span>{t('preinstall.confirm')}</span>
+                          </If>
+                        </Button>
+                      </div>
                     </div>
-                    <LogPanel logs={preinstall.logs} />
-                    <div className="flex items-center justify-end gap-2">
-                      <Button className="h-8 rounded-md" size="sm" variant="tertiary" onPress={handleSkip} isDisabled={installing}>
-                        {t('preinstall.skip')}
-                      </Button>
-                      <Button
-                        className="h-8 rounded-md"
-                        size="sm"
-                        variant="primary"
-                        onPress={handleConfirm}
-                        isDisabled={installing || !hasChanges}
-                      >
-                        {t('app.retry')}
-                      </Button>
-                    </div>
-                  </div>
+                  </If>
                 )}
               >
                 {/* 版本兼容性拒绝：核心在 pnpm 之前拦下整批安装，插件与当前核心的
@@ -459,7 +521,7 @@ export function PreinstallSetup() {
                       className="h-8 rounded-md"
                       size="sm"
                       variant="primary"
-                      onPress={() => void handleAllow()}
+                      onPress={() => void handleGrant(blocked, incompatibleKey, versions => store.preinstall.allowIncompatible(versions))}
                       isDisabled={installing || granting || allowed.size === 0}
                     >
                       <If cond={granting}>

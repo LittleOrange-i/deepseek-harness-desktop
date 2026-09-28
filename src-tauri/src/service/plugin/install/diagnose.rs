@@ -84,6 +84,62 @@ fn strip_ansi(s: &str) -> String {
     out
 }
 
+/// 真实的发布时长策略违规里的一条记录（[`policy_blocked_versions`] 的解析结果）。
+///
+/// 与 [`IncompatibleVersion`] 区分：这里说的是 pnpm 的 `minimumReleaseAge` 门禁，不是
+/// dsh 的版本兼容性。豁免写入档案的 `minimumReleaseAgeExclude`（精确 `包名@版本`），
+/// 因此授权键只需要这两个字段，运行时版本与之无关。
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct PolicyBlockedVersion {
+    /// `package.json` 的包名（scoped 包含 `@scope/` 前缀）
+    pub name: String,
+    pub version: String,
+}
+
+/// 从失败输出里提取**真实**的发布时长策略违规条目。
+///
+/// pnpm 11 有两种 `ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION`：
+/// - 解析阶段（`<包名>@<版本> was published recently (released …; minimumReleaseAge is …)`）
+///   —— pnpm 自己挑中了太新的版本，回落到旧版本即可，通常不报错；
+/// - lockfile 校验阶段（`<包名>@<版本> was published at <时间>, within the minimumReleaseAge
+///   cutoff (<时间>)`）—— 档案已经声明/装了这个版本，而策略不接受它，于是**每一次**
+///   插件操作都在这里硬失败（issue #222 的另一面）。
+///
+/// 只认后一种：它带了 pnpm **真的拿到**的发布时间（`was published at <ISO>`），因此能
+/// 确定不是「元数据拉不到被误判」——那种情况见 [`policy_verification_network_failure`]，
+/// 属于可重试的网络问题。解析结果用于给用户一条可操作的出路（授权这些精确版本），
+/// 解析失败一律返回空，退回普通失败展示。
+pub(super) fn policy_blocked_versions(output: &str) -> Vec<PolicyBlockedVersion> {
+    let mut found: Vec<PolicyBlockedVersion> = Vec::new();
+    for line in output.split('\n') {
+        let stripped = strip_ansi(line);
+        let Some((key, rest)) = stripped.split_once(" was published at ") else {
+            continue;
+        };
+        // 必须同时是「按发布时间判定的违规」：缺了这句说明不是时间门禁（文案改版也走这里）
+        if !rest.contains("within the minimumReleaseAge cutoff") {
+            continue;
+        }
+        // 版本号自身不含 `@`，按最后一个 `@` 切开包名与版本（scoped 包名以 `@` 开头）
+        let Some((name, version)) = key.trim().rsplit_once('@') else {
+            continue;
+        };
+        let name = name.trim();
+        let version = version.trim();
+        if name.is_empty() || version.is_empty() {
+            continue;
+        }
+        let entry = PolicyBlockedVersion {
+            name: name.to_string(),
+            version: version.to_string(),
+        };
+        if !found.contains(&entry) {
+            found.push(entry);
+        }
+    }
+    found
+}
+
 /// dsh 版本兼容性拒绝里的一条记录（[[`incompatible_versions`]] 的解析结果）。
 ///
 /// 授权（`dsh plugin allow-version`）只认**精确**的包名 + 版本 + 运行时版本三元组，
@@ -180,10 +236,17 @@ pub(super) fn network_error_hint(output: &str) -> Option<&'static str> {
 /// 真·发布时间违规（版本确实太新）不带任何拉取失败信号，绝不命中：那种失败重试无用，
 /// 也不该把供应链信号降级成网络问题。
 ///
+/// 判据收紧到「拿不到真实发布时间」：输出里已经能解析出违规条目与它的发布时间
+/// （[`policy_blocked_versions`]）时直接返回 false——那说明 pnpm 拿到了元数据、判定是
+/// 真的，重跑同一条命令只会再失败一次，而且每次都要停服/重启。
+///
 /// 传入的必须是**单次尝试**的输出（`run_plugin_with_allow_build_retry` 为此额外返回
 /// 最后一次尝试的输出）：把历次重试拼接起来判断时，早先一次的网络字样会给最终一次的真·
 /// 违规「背书」，正好破坏上面这条边界。
 pub(super) fn policy_verification_network_failure(output: &str) -> bool {
+    if !policy_blocked_versions(output).is_empty() {
+        return false;
+    }
     let lower = output.to_ascii_lowercase();
     if !lower.contains("err_pnpm_minimum_release_age_violation") {
         return false;
@@ -481,6 +544,49 @@ mod tests {
             "ERR_PNPM_FETCH_404 registry error"
         ));
         assert!(!policy_verification_network_failure(""));
+    }
+
+    // ---- 真实的发布时长违规（档案已声明太新的版本 → 每次插件操作都硬失败）----
+
+    /// 用户实测（pnpm 11.7.0，档案 spec 被升到 `^2.11.2`）：违规条目带的是 pnpm **真的
+    /// 拿到**的发布时间；后面那些 `UND_ERR_DESTROYED` 拉取失败是进程被 kill 的后果，
+    /// 不是原因。
+    const REAL_POLICY_VIOLATION: &str = "? Verifying lockfile against supply-chain policies (201 entries)...\n✗ Lockfile failed supply-chain policy check (201 entries in 1.5s)\n[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION] 1 lockfile entries failed verification:\n@wenbin_wb/dsh-bridge@2.11.2 was published at 2026-09-28T14:14:07.937Z, within the minimumReleaseAge cutoff (2026-09-27T15:50:11.385Z)\n\nProgress: resolved 48, reused 0, downloaded 0, added 0\n[WARN] GET https://registry.npmjs.org/axios error (UND_ERR_DESTROYED). Will retry in 10 seconds. 2 retries left.\n";
+
+    #[test]
+    fn policy_blocked_versions_reads_the_real_lockfile_violation() {
+        let blocked = policy_blocked_versions(REAL_POLICY_VIOLATION);
+
+        assert_eq!(blocked.len(), 1);
+        assert_eq!(blocked[0].name, "@wenbin_wb/dsh-bridge");
+        assert_eq!(blocked[0].version, "2.11.2");
+    }
+
+    #[test]
+    fn policy_blocked_versions_dedupes_and_ignores_other_output() {
+        let output = format!(
+            "{REAL_POLICY_VIOLATION}{}\n",
+            "lodash@4.17.21 was published at 2026-09-28T10:00:00.000Z, within the minimumReleaseAge cutoff (2026-09-27T15:50:11.385Z)"
+        );
+        let blocked = policy_blocked_versions(&output);
+
+        assert_eq!(blocked.len(), 2);
+        assert_eq!(blocked[1].name, "lodash");
+        assert_eq!(blocked[1].version, "4.17.21");
+
+        // 解析阶段那种「pnpm 自己挑中太新版本」的文案：没有精确发布时间，不作为可授权项
+        let resolution_form = "[ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION] undici@7.29.1 was published recently (released 5 minutes ago; minimumReleaseAge is 1440)";
+        assert!(policy_blocked_versions(resolution_form).is_empty());
+        // 有时间但没有门禁判据（文案改版）时宁可退回普通失败
+        let no_cutoff = "undici@7.29.1 was published at 2026-09-28T10:00:00.000Z";
+        assert!(policy_blocked_versions(no_cutoff).is_empty());
+    }
+
+    #[test]
+    fn genuine_policy_violation_is_not_retried_as_a_network_failure() {
+        // 关键回归：真违规后面跟着的拉取失败（进程被 kill 的后果）不能把它改判成网络问题，
+        // 否则每次插件操作都会白停服重试 4 轮，还给出「registry 元数据拉取失败」的错因。
+        assert!(!policy_verification_network_failure(REAL_POLICY_VIOLATION));
     }
 
     // ---- pnpm store 布局不兼容（ERR_PNPM_UNEXPECTED_STORE 一族）----

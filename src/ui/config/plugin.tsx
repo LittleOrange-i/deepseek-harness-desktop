@@ -22,6 +22,37 @@ import { silence } from '@/utils/silence'
 import { toast } from '@/utils/toast'
 
 /**
+ * 被 pnpm 发布时长策略拦下的条目（后端 `PolicyBlockedVersion`）。
+ *
+ * 豁免是按精确 `包名@版本` 写进档案的 `minimumReleaseAgeExclude` 的，所以只需要这两个
+ * 字段；`published_at` 之类的细节由用户自己看时机，不参与授权键。
+ */
+interface PolicyBlockedVersion {
+  name: string
+  version: string
+}
+
+const POLICY_BLOCKED_PREFIX = 'PLUGIN_POLICY_BLOCKED:'
+
+/**
+ * 解析后端「发布时长策略拦下」的载荷；识别不出来返回 null，退回普通失败展示。
+ *
+ * 解析失败绝不能假装可授权——那会把一条读不出来的 JSON 变成用户勾选的豁免。
+ */
+function parsePolicyBlocked(error: string): PolicyBlockedVersion[] | null {
+  if (!error.startsWith(POLICY_BLOCKED_PREFIX))
+    return null
+  try {
+    const parsed = JSON.parse(error.slice(POLICY_BLOCKED_PREFIX.length)) as PolicyBlockedVersion[]
+    return parsed.length > 0 ? parsed : null
+  }
+  catch (err) {
+    console.error('[ConfigPlugin] failed to parse policy-blocked payload:', err)
+    return null
+  }
+}
+
+/**
  * 操作 chip 的样式变体：busy 时禁止点击并降低透明度，否则可点击。
  * 统一各操作 chip 的 busy 样式，避免内联三元重复。
  */
@@ -86,6 +117,59 @@ export function ConfigPlugin() {
 
   const [dialogHolder, openDialog] = useOverlay(Modal, { type: 'holder' })
 
+  /**
+   * 记录发布时长策略豁免：pnpm 的 `minimumReleaseAge`（11 默认 24 小时）不放行档案里
+   * 已声明的太新版本，于是**每次**插件操作都硬失败（见后端 `PLUGIN_POLICY_BLOCKED`）。
+   * 用户确认接受这些精确版本后写进档案的 `minimumReleaseAgeExclude`，再重跑原操作。
+   */
+  const allowPolicy = useMutation({
+    mutationFn: (versions: PolicyBlockedVersion[]) => invoke<void>('allow_plugin_policy_versions', { versions }),
+    onError: (err) => {
+      console.error('[ConfigPlugin] allow_plugin_policy_versions failed:', err)
+      toast(t('plugins.policy_allow_failed'), {})
+    },
+  })
+
+  /**
+   * 被发布时长策略拦住时的出路：先让用户看清单并明确确认（与版本兼容性豁免一样，
+   * 不放宽默认策略、不替用户决定），确认后写入精确豁免并重跑原操作。
+   */
+  async function onPolicyBlocked(blocked: PolicyBlockedVersion[], retry: () => Promise<void>) {
+    try {
+      await openDialog({
+        status: 'warning',
+        title: t('plugins.policy_blocked_title'),
+        description: (
+          <div className="flex flex-col gap-2">
+            <p>{t('plugins.policy_blocked_desc')}</p>
+            <ul className="flex flex-col gap-1">
+              {blocked.map(item => (
+                <li key={`${item.name}@${item.version}`} className="font-mono text-[11px] text-ink">
+                  {item.name}
+                  @
+                  {item.version}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ),
+        confirmText: t('plugins.policy_blocked_confirm'),
+      })
+    }
+    catch (e) {
+      silence(e, 'plugin policy blocked: dialog cancelled')
+      return
+    }
+    try {
+      await allowPolicy.mutateAsync(blocked)
+    }
+    catch (e) {
+      silence(e, 'plugin policy blocked: error already shown by mutation onError')
+      return
+    }
+    await retry()
+  }
+
   /** 行内操作进行中状态：id + 操作类型（update/remove/disable/enable/snapshot/restore/delete-snapshot），保证单例运行 */
   const [busy, setBusy] = useState<{ id: string, action: 'update' | 'remove' | 'disable' | 'enable' | 'snapshot' | 'restore' | 'delete-snapshot' } | null>(null)
 
@@ -101,6 +185,13 @@ export function ConfigPlugin() {
     onError: (err, id) => {
       const name = plugins.find(p => p.id === id)?.name ?? id
       console.error('[ConfigPlugin] upgrade failed:', err)
+      // 被发布时长策略拦住不是「升级失败」：档案已声明太新的版本，pnpm 不放行，重跑
+      // 多少次都一样。给出可操作的出路（授权精确版本后重试），而不是一句失败。
+      const blocked = parsePolicyBlocked(String(err))
+      if (blocked) {
+        void onPolicyBlocked(blocked, () => onUpgrade(id))
+        return
+      }
       toast(t('plugins.upgrade_failed', { name }), {})
     },
   })
@@ -115,6 +206,13 @@ export function ConfigPlugin() {
     onError: (err, id) => {
       const name = plugins.find(p => p.id === id)?.name ?? id
       console.error('[ConfigPlugin] remove failed:', err)
+      // 卸载同样会重写 lockfile 并复核整份档案，因此同样可能被发布时长策略拦住
+      // （档案里另有太新版本时）：一样给出授权后重跑的出路，而不是一句失败。
+      const blocked = parsePolicyBlocked(String(err))
+      if (blocked) {
+        void onPolicyBlocked(blocked, () => runRemove(id))
+        return
+      }
       toast(t('plugins.remove_failed', { name }), {})
     },
   })
@@ -221,6 +319,13 @@ export function ConfigPlugin() {
       silence(e, 'plugin remove: dialog cancelled')
       return
     }
+    await runRemove(id)
+  }
+
+  /** 已确认过的卸载（发布时长豁免后重跑时不再追问一次「确认卸载」）。 */
+  async function runRemove(id: string) {
+    if (busy)
+      return
     setBusy({ id, action: 'remove' })
     try {
       await remove.mutateAsync(id)

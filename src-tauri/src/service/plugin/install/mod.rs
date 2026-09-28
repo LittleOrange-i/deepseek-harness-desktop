@@ -34,7 +34,7 @@
 use crate::config;
 use crate::service::cli;
 use crate::service::core;
-use crate::service::profile::active_profile;
+use crate::service::profile::{active_profile, allow_profile_release_age};
 use crate::service::workflow;
 use std::collections::HashMap;
 use std::ffi::OsString;
@@ -71,14 +71,15 @@ pub(crate) use pnpm::{
 };
 pub(crate) use single::uninstall_deprecated_plugins;
 pub use single::{remove, update};
-// 版本兼容性拒绝的解析结果要跨到 `bridge`（前端逐项确认风险后授权），在此定义出口
-pub use diagnose::IncompatibleVersion;
+// 版本兼容性/发布时长两类拦截的解析结果都要跨到 `bridge`（前端逐项确认后授权），在此定义出口
+pub use diagnose::{IncompatibleVersion, PolicyBlockedVersion};
 
 use allowlist::{add_allow_build_keys, parse_allowlist_keys};
 use artifact::{ensure_plugin_entry_built, verify_installed_products};
 use diagnose::{
     diagnostic_suffix, git_transport_hint, incompatible_versions, network_error_hint,
-    pick_error_message, policy_verification_network_failure, store_mismatch_hint,
+    pick_error_message, policy_blocked_versions, policy_verification_network_failure,
+    store_mismatch_hint,
 };
 use pnpm::ensure_pnpm;
 use single::single_plugin_args;
@@ -320,6 +321,20 @@ async fn install_with_cancel(
                 .map_err(|e| format!("PREINSTALL_SERIALIZE: {e}"))?;
             return Err(format!("PLUGIN_VERSION_INCOMPATIBLE: {payload}"));
         }
+        // 真实的发布时长策略违规：档案已经声明/装了太新的版本，pnpm 的 lockfile 校验
+        // 不放行，于是**每一次**插件操作都会在这里失败。它不是安装故障，也不是网络问题
+        // （发布时间都拿到了），重试毫无意义——解析成精确 `包名@版本` 交给前端，由用户
+        // 明确授权后写进档案的 `minimumReleaseAgeExclude` 再重跑。同样排在网络分类之前。
+        let policy_blocked = policy_blocked_versions(&last_attempt);
+        if !policy_blocked.is_empty() {
+            log::warn!(
+                "pnpm release-age policy rejected {} profile entries: {policy_blocked:?}",
+                policy_blocked.len()
+            );
+            let payload = serde_json::to_string(&policy_blocked)
+                .map_err(|e| format!("PREINSTALL_SERIALIZE: {e}"))?;
+            return Err(format!("PLUGIN_POLICY_BLOCKED: {payload}"));
+        }
         // 区分 git 传输层失败与 allowBuilds 构建门禁：前者是 pnpm 走了 git+ssh
         // （用户环境无 SSH 配置），后者才是补充白名单可自愈的。传输层错误给出
         // 可读指引，避免用户被 dsh 那条 allowBuilds 提示误导。
@@ -514,6 +529,24 @@ pub async fn allow_version_exemptions(
     } else {
         Err(format!("PLUGIN_EXEMPTION_FAILED: {}", failures.join("; ")))
     }
+}
+
+/// 记录用户明确授权的发布时长策略豁免：把精确 `包名@版本` 写进档案的
+/// `minimumReleaseAgeExclude`，pnpm 的解析与 lockfile 校验随后都会放行这些条目。
+///
+/// 与 [`allow_version_exemptions`] 的分工：那个针对 dsh 的**版本兼容性**（写档案的
+/// `compatibility.json`），这个针对 pnpm 的**发布时长门禁**（写 `pnpm-workspace.yaml`）。
+/// 两者都只认精确版本、都在用户确认后才调用；这里不起进程、不停服、不碰 `node_modules`，
+/// 写完由界面重跑原操作（重跑会真正改写 lockfile/依赖，必须由 pnpm 自己跑）。
+pub fn allow_policy_versions(
+    app_handle: &AppHandle,
+    versions: &[PolicyBlockedVersion],
+) -> Result<(), String> {
+    let entries: Vec<String> = versions
+        .iter()
+        .map(|entry| format!("{}@{}", entry.name, entry.version))
+        .collect();
+    allow_profile_release_age(app_handle, &entries)
 }
 
 /// 返回 `(exit_code, 历次尝试的输出拼接, 最后一次尝试的输出)`。
