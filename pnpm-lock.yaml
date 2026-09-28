@@ -710,9 +710,9 @@ importers:
       dsh-tauri-extension:
         specifier: workspace:*
         version: link:../dsh-tauri-extension
-      dsh-tauri-model-config:
+      dsh-tauri-model:
         specifier: workspace:*
-        version: link:../dsh-tauri-model-config
+        version: link:../dsh-tauri-model
       dsh-tauri-pet:
         specifier: workspace:*
         version: link:../dsh-tauri-pet
@@ -809,7 +809,7 @@ importers:
         specifier: catalog:cli
         version: 0.17.4(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(oxc-resolver@11.24.2)(publint@0.3.24)(synckit@0.11.13)(typescript@5.8.3)
 
-  packages/dsh-tauri-model-config:
+  packages/dsh-tauri-model:
     dependencies:
       dsh-tauri:
         specifier: workspace:*

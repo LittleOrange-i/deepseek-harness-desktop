@@ -64,6 +64,8 @@
     "depercated": [
       "dsh-win-terminal-inspector",
       "dsh-session-context-menu",
+      "dsh-tauri-model-config",
+      "dsh-tauri-taiwindcss",
       "dsh-tauri-ssh",
       "dsh-tauri-panel",
       "dsh-tauri-panel-extension",
@@ -130,11 +132,11 @@
         "repo": "https://github.com/dsh-tauri-desk/dsh-tauri-plugins/tree/main/packages/dsh-tauri-rightclick"
       },
       {
-        "id": "dsh-tauri-model-config",
-        "spec": "dsh-tauri-model-config",
-        "name": "DSH Tauri Model Config",
+        "id": "dsh-tauri-model",
+        "spec": "dsh-tauri-model",
+        "name": "DSH Tauri Model",
         "description": "Model selection and parameter configuration for the DeepSeek Harness desktop shell",
-        "repo": "https://github.com/dsh-tauri-desk/dsh-tauri-plugins/tree/main/packages/dsh-tauri-model-config"
+        "repo": "https://github.com/dsh-tauri-desk/dsh-tauri-plugins/tree/main/packages/dsh-tauri-model"
       },
       {
         "id": "dsh-tauri-ssh",

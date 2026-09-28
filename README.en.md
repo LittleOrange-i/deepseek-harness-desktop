@@ -73,7 +73,7 @@ First-party plugins bundled with the installer:
 - [DSH Tauri Archive](https://github.com/dsh-tauri/deepseek-harness-desktop/tree/main/packages/dsh-tauri-archive) — replaces workspace deletion with archiving and adds an Archived Chats settings page with search, sorting, grouping, project filtering, and unarchive support
 - [DSH Tauri Pet](https://github.com/dsh-tauri/deepseek-harness-desktop/tree/main/packages/dsh-tauri-pet) — manages Chat / Codex pets, preset downloads, resource-pack imports, and conversation activity states
 - [DSH Tauri Rightclick](https://github.com/dsh-tauri/deepseek-harness-desktop/tree/main/packages/dsh-tauri-rightclick) — native-style right-click context menus for sessions, workspaces, conversation text, links, and inputs
-- [DSH Tauri Model Config](https://github.com/dsh-tauri/deepseek-harness-desktop/tree/main/packages/dsh-tauri-model-config) — provides model selection and parameter configuration
+- [DSH Tauri Model](https://github.com/dsh-tauri/deepseek-harness-desktop/tree/main/packages/dsh-tauri-model) — provides model selection and parameter configuration
 - More plugins coming soon...
 
 ## Quick Start

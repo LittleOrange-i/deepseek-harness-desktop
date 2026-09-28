@@ -1,11 +1,11 @@
 /**
- * 批次 10 · `dsh-tauri-model-config` 的模型设置页 + 其自有的模型配置宿主路由
+ * 批次 10 · `dsh-tauri-model` 的模型设置页 + 其自有的模型配置宿主路由
  * （L1/L2 契约见 `docs/specs/plugin.test.md`）。
  *
  * 插件是官方 `ui-settings-models` 的 fork：除 `webserver/index-inject` 的页面全局注入外，
  * 本仓库自有的模型配置路由（打开配置文件 / 端点探测 / 预设表）也由它注册，因此宿主契约
- * 按 `dsh-tauri-model-config` 的 base 断言。`settings.yaml` 的真实解析与
- * `GET /presets?force=true` 的上游下载由 `packages/dsh-tauri-model-config/src/host/service/`
+ * 按 `dsh-tauri-model` 的 base 断言。`settings.yaml` 的真实解析与
+ * `GET /presets?force=true` 的上游下载由 `packages/dsh-tauri-model/src/host/service/`
  * 下的 unit 用例覆盖，不在 L2 重复。
  *
  * 断言对象是外部世界（HTTP 状态码、响应字节、scratch `DSH_HOME` 的文件状态、真实 DOM 结构），
@@ -30,11 +30,11 @@ import {
   waitForCredentialModal,
 } from '../support/browser'
 
-const PRESETS_PATH = '/api/desktop/dsh-tauri-model-config/presets'
-const ENDPOINT_MODELS_PATH = '/api/desktop/dsh-tauri-model-config/endpoint/models'
-const CONFIG_OPEN_PATH = '/api/desktop/dsh-tauri-model-config/config/open'
+const PRESETS_PATH = '/api/desktop/dsh-tauri-model/presets'
+const ENDPOINT_MODELS_PATH = '/api/desktop/dsh-tauri-model/endpoint/models'
+const CONFIG_OPEN_PATH = '/api/desktop/dsh-tauri-model/config/open'
 
-/** 设置文件名（`packages/dsh-tauri-model-config/src/shared/constants.ts`）。 */
+/** 设置文件名（`packages/dsh-tauri-model/src/shared/constants.ts`）。 */
 const SETTINGS_FILE = 'settings.yaml'
 
 /** 成功响应必须**恰为**这六个字段——多一个都说明契约变了。 */
@@ -45,7 +45,7 @@ const SECRET_FIELDS = ['apiKey', 'api_key', 'key', 'token'] as const
 
 /**
  * 模型页的结构锚点：cssr 运行期类名保留官方语义
- * （`packages/dsh-tauri-model-config/src/client/models/styles.ts`）。
+ * （`packages/dsh-tauri-model/src/client/models/styles.ts`）。
  * 官方模型页没有标题行类名，标题是 `<h2 class="…title">`。
  */
 const MODELS_TITLE = '[class*="title"]'
@@ -92,9 +92,9 @@ function secretFieldsIn(body: unknown): string[] {
 describe('宿主路由：预设表', () => {
   it('验证预设端点返回六个字段且 count 与 presets 长度一致', async () => {
     // 预设表来自公网上游：不种缓存就会在离线机器上退化成 502（实测），断言随机器漂移。
-    // 这里按被测实现自己的缓存格式（`$DSH_HOME/dsh-tauri-model-config/model-presets.json`，
+    // 这里按被测实现自己的缓存格式（`$DSH_HOME/dsh-tauri-model/model-presets.json`，
     // 24h TTL 内命中即返回）种一份新鲜载荷，让「200 + 六字段契约」确定性可验、与外网解耦。
-    const cachePath = join(inject('dshHome'), 'dsh-tauri-model-config', 'model-presets.json')
+    const cachePath = join(inject('dshHome'), 'dsh-tauri-model', 'model-presets.json')
     mkdirSync(dirname(cachePath), { recursive: true })
     writeFileSync(cachePath, JSON.stringify({
       source: 'https://e2e.invalid/presets.json',

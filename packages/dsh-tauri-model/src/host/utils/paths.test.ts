@@ -24,6 +24,6 @@ describe('resolveSettingsFilePath', () => {
 describe('resolvePresetCachePath', () => {
   it('keeps the cache under the plugin directory in DSH_HOME', () => {
     expect(resolvePresetCachePath({ DSH_HOME: 'D:\\harness' } as NodeJS.ProcessEnv))
-      .toBe(resolve('D:\\harness', 'dsh-tauri-model-config', 'model-presets.json'))
+      .toBe(resolve('D:\\harness', 'dsh-tauri-model', 'model-presets.json'))
   })
 })

@@ -124,7 +124,6 @@ export function SettingsSidebar(_props: SettingsSidebarProps): ReactElement | nu
         </button>
         <Input
           {...searchInputRefProps}
-          className="w-full"
           value={ui.query}
           placeholder={locale.text('search')}
           aria-label={locale.text('search')}
