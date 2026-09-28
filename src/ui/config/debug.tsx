@@ -269,7 +269,7 @@ export function ConfigDebug() {
           <Info term={t('ui.dsh_version')}>
             <span>{info?.dsh_version ?? '-'}</span>
             <If cond={updateInfo}>
-              <Link className="ml-2 text-[10px] text-accent" onClick={handleShowNewVersion}>
+              <Link className="ml-2 text-[10px] text-info" onClick={handleShowNewVersion}>
                 {t('menu.new_version')}
                 <ChevronRight className="scale-75" />
               </Link>

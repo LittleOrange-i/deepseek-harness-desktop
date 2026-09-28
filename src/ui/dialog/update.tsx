@@ -79,7 +79,7 @@ export function DesktopUpdateDialog(props: DesktopUpdateDialogProps) {
                   </div>
                   <ProgressBar value={downloadProgress} className="w-full">
                     <ProgressBar.Track>
-                      <ProgressBar.Fill className="bg-accent" />
+                      <ProgressBar.Fill className="bg-info" />
                     </ProgressBar.Track>
                   </ProgressBar>
                 </div>

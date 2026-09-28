@@ -61,7 +61,7 @@ function PluginCard({ plugin, checked, toUninstall, disabled, onToggle, onOpenRe
       className={`h-[124px] gap-1 rounded-lg bg-panel2 p-3 shadow-none transition-colors ${plugin.unsupported ? 'opacity-60' : 'hover:border-line-strong'}`}
     >
       <div className="flex min-w-0 items-center gap-1.5">
-        <span className="grid size-6 shrink-0 place-items-center rounded-md bg-accent/10 text-accent">
+        <span className="grid size-6 shrink-0 place-items-center rounded-md bg-info/10 text-info">
           <PlugConnection className="size-3.5" />
         </span>
         <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">
