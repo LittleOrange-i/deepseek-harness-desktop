@@ -160,7 +160,7 @@ git diff --check
 | 桌宠窗口 | `ayangweb/BongoCat` | `source/BongoCat` | `44f44bc` | `v1.1.0` | HEAD 已超前 Tag 5 个 Commit | [日志](https://www.google.com/search?q=../packages/dsh-tauri-pet/docs/sync-log.md) |
 | `dsh-tauri-extension` | `qinyre/dsh-plugin-capabilities` | `source/dsh-plugin-capabilities` | `v0.3.11` (`52e3f66`) | `v0.3.11` | 暂无待评估项（该上游的 Market 模块确定不移植；扩展面板的市场页改为直接消费 `dshmarket` 的 `market` 服务） | - |
 | `dsh-tauri-extension`（市场标签页） | `dsh-market/dsh-market` | `source/dsh-market` | `v1.47.0-6` (`53f793e`) | `v1.47.0-6` (`53f793e`) | 非代码移植：消费其 `ctx.provide('market')` 服务。`render()` 尚未发版，故先以 `source` 子模块承载；待上游发版后改为常规 npm 依赖并移除子模块 | - |
-| `dsh-tauri-scheduler` | `MichengAI/dsh-automation` | `source/dsh-automation` | `f1bc91a` (+`c426c3d`) | `v0.1.42` (`e75499e`) | `v0.1.33`–`v0.1.42` 已评估：全部不采纳（2026-09-16）；无待评估项 | [日志](https://www.google.com/search?q=../packages/dsh-tauri-scheduler/docs/sync-log.md) |
+| `dsh-tauri-scheduler` | `MichengAI/dsh-automation` | `source/dsh-automation` | `ecfe1e6` (+`c426c3d`) | `v0.1.51` (`ecfe1e6`) | `v0.1.33`–`v0.1.42` 全部不采纳（2026-09-16）；`v0.1.43`–`v0.1.51` 已评估并采纳 3 项（`116c953`+`a0c4cc6` 增量摘要、`0bde1a4` 插件卸载记 `cancelled`），其余不采纳/归档（2026-09-28）；无待评估项 | [日志](https://www.google.com/search?q=../packages/dsh-tauri-scheduler/docs/sync-log.md) |
 
 ### 5.2 已知配置与异常记录
 
@@ -171,6 +171,8 @@ git diff --check
 * `source/dsh-automation` gitlink 为 `f1bc91a`，但工作区 checkout 停在 `e75499e`（`git submodule status` 前缀 `+`，
   父仓库表现为未暂存的 `source/dsh-automation` 变更）。2026-09-16 裁决不采纳 `v0.1.33`–`v0.1.42` 任何代码，
   基线不推进、工作区不回落。
+* 2026-09-28 纠偏完成：`v0.1.43`–`v0.1.51` 已评估并采纳 3 项后，gitlink 与子模块工作区一并推进到
+  `ecfe1e6`（`v0.1.51`），不再存在「gitlink 与工作区不一致」的未暂存变更。
 * `dsh-tauri-extension` 文档中引用的上游路径已更正为 `source/dsh-plugin-capabilities`。
 * 修复了 `dsh-tauri-extension/README.md` 中 `soruce` 的拼写错误。
 
