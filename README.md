@@ -54,6 +54,7 @@
 - [DSH Rewind](https://github.com/SiriLee/dsh-rewind) — 同窗口内对话回退，从不新建会话分支；自带轻量工作区备份，回退时可一并还原文件（推荐）
 - [DSH Bridge](https://github.com/wenbin-wb/dsh-bridge) — 手机扫码局域网直连、Cloudflare 与自建公网隧道，以及微信 / QQ / 飞书 / Telegram 机器人对话，人不在电脑前也能接着用本机 Harness；内置访问安全认证与防篡改守护（推荐）
 - [DSH-IM](https://github.com/xmanrui/dsh-im) — 让微信、飞书、钉钉、企业微信、QQ、Slack、Telegram、Discord、WhatsApp、iMessage 等渠道接入本机 Harness，并在左侧栏「IM」面板中统一管理（推荐）
+- [Billion Context](https://github.com/ranxianglei/billion-context) — 以原生 DSH 插件形式做上下文压缩：会话增长时自动折叠历史，小上下文窗口也能长时间连续工作，并可按需 `decompress` / `search_context` 还原折叠内容（默认不勾选）
 
 > 预设插件清单由桌面端维护。为避免不稳定的预设插件导致软件异常，如需新增或更新预设，请在 [deepseek-harness-desktop/issues](https://github.com/dsh-tauri/deepseek-harness-desktop/issues) 提起请求。
 
