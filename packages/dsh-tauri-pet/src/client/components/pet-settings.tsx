@@ -251,7 +251,7 @@ export function PetSettings(props: PetSettingsProps): ReactElement {
   )
 
   return (
-    <div className="flex flex-col gap-[12px] text-primary">
+    <div data-pet-page="1" className="flex flex-col gap-[12px] text-primary">
       {/* 开启并重启后 overlaySupported 变回 true、提示消失，没有 forceXwayland 这一支就再也关不掉。
           xwaylandRestart 一支覆盖在 XWayland 下关闭开关的情形：前两个条件同时落空，
           整块会连同刚点过的按钮一起卸载，重启提示无从显示。

@@ -14,10 +14,10 @@ describe('findBundledPluginsTree', () => {
     expect(tree!.root).toContain('src-tauri/resources/node_modules')
     expect(tree!.pluginNames).toContain('dsh-tauri-ssh')
     expect(tree!.pluginNames).toContain('dsh-tauri-ui')
-    // 第三方依赖不挂 dsh 字段，不得混入插件清单；上游 panel 包并入 core 后为 11 个
+    // 第三方依赖不挂 dsh 字段，不得混入插件清单；上游 panel 包与 tailwind 样式包并入后为 10 个
     expect(tree!.pluginNames).not.toContain('ssh2')
     expect(tree!.pluginNames).not.toContain('dsh-tauri-panel')
-    expect(tree!.pluginNames.length).toBeGreaterThanOrEqual(11)
+    expect(tree!.pluginNames.length).toBeGreaterThanOrEqual(10)
   })
 })
 

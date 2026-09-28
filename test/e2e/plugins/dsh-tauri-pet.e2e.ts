@@ -247,16 +247,16 @@ describe('L2 客户端', () => {
       const nav = app.frame.locator(SETTINGS_NAV_ITEM).filter({ hasText: '宠物' })
       expect(await nav.count(), '桌宠分区必须在导航里注册且唯一（同 id 不得重复注册）').toBe(1)
       expect(
-        await nav.first().evaluate(element => element.className.includes('nav-item')),
+        await nav.first().evaluate(element => element.closest('[data-slot-sidebar="dsh-tauri-ui"]') !== null),
         '分区导航项必须由设置侧栏渲染',
       ).toBe(true)
 
       await selectSettingsSection(app.page, app.frame, '宠物', app.syntheticFallbacks)
 
-      const panel = app.frame.locator('.dshp-pet__page')
+      const panel = app.frame.locator('[data-pet-page]')
       await expect.poll(
         async () => await panel.count(),
-        { timeout: 20_000, message: '切到桌宠分区后必须渲染出 dshp-pet__page' },
+        { timeout: 20_000, message: '切到桌宠分区后必须渲染出 [data-pet-page]' },
       ).toBe(1)
 
       const panelState = await panel.evaluate(element => ({
