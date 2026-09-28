@@ -245,7 +245,10 @@ pub(crate) async fn uninstall_deprecated_plugins(app_handle: &AppHandle) -> Resu
 /// pnpm 收到的就是 `pnpm remove remove <id>`（issue #715 日志中的 `pnpm remove
 /// remove dshmarket`）——`remove` 会去找一个名为 `remove` 的依赖，卸载/升级因此
 /// 不生效甚至失败。
-fn single_plugin_args(profile: &str, action: &str, sub_args: &[String]) -> Vec<OsString> {
+///
+/// 版本豁免授权（`allow-version`，见 [`super::allow_version_exemptions`]）同样走
+/// 这个形状：dsh 在转发给 pnpm 之前先拦下该动词，`--profile` 的拼装完全一致。
+pub(super) fn single_plugin_args(profile: &str, action: &str, sub_args: &[String]) -> Vec<OsString> {
     let mut args = vec![
         OsString::from("plugin"),
         OsString::from("--profile"),

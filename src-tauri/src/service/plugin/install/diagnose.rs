@@ -1,7 +1,7 @@
 //! 失败输出解析：识别网络错误（代理/DNS/连接/TLS）、git 传输层失败
 //! （HTTPS→SSH 回退提示）、pnpm store 布局不兼容（`ERR_PNPM_UNEXPECTED_STORE`
-//! 一族），并从输出中挑选可展示的错误消息（ANSI 清洗、命中错误标记的行优先、
-//! 截断）。
+//! 一族）、dsh 版本兼容性拒绝（逐条精确 `包名@版本` + 运行时版本，供用户授权），
+//! 并从输出中挑选可展示的错误消息（ANSI 清洗、命中错误标记的行优先、截断）。
 
 /// 给非空诊断文本加 `: ` 前缀，便于直接拼进错误消息（空文本返回空串）。
 pub(super) fn diagnostic_suffix(detail: &str) -> String {
@@ -82,6 +82,65 @@ fn strip_ansi(s: &str) -> String {
         }
     }
     out
+}
+
+/// dsh 版本兼容性拒绝里的一条记录（[[`incompatible_versions`]] 的解析结果）。
+///
+/// 授权（`dsh plugin allow-version`）只认**精确**的包名 + 版本 + 运行时版本三元组，
+/// 因此三者都必须原样带出，前端据此逐项向用户确认风险后再授权。
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct IncompatibleVersion {
+    /// `package.json` 的包名（scoped 包含 `@scope/` 前缀）
+    pub name: String,
+    pub version: String,
+    /// 被拒时所处的 dsh 运行时精确版本：授权必须与它完全一致，否则 dsh 拒绝写入
+    pub runtime_version: String,
+}
+
+/// 从安装失败输出里提取版本兼容性拒绝条目。
+///
+/// dsh 在 pnpm 之前核对每个待装插件声明的 DSH peer 依赖，未授权精确版本时整批拒绝
+/// （不下载、不构建），输出里逐条印出
+/// `Plugin <包名>@<版本> is incompatible with dsh <运行时版本>: peerDependencies …`。
+/// 这是唯一同时给出三者（可授权键）的地方：`pick_error_message` 的行标记过滤会把它
+/// 并进一大段纯文本，用户只能自己从中抄出版本去敲 CLI。解析失败一律返回空——空结果
+/// 只是退回原来的「安装失败」展示，绝不误报成可授权项。
+pub(super) fn incompatible_versions(output: &str) -> Vec<IncompatibleVersion> {
+    let mut found: Vec<IncompatibleVersion> = Vec::new();
+    for line in output.split('\n') {
+        let stripped = strip_ansi(line);
+        // 第一条警告与 `dsh: installation rejected: ` 同处一行（dsh 用同一个模板拼出
+        // 整段拒绝说明），因此只能在行内定位而不能要求行首匹配；后续条目各自成行。
+        let Some(start) = stripped.find("Plugin ") else {
+            continue;
+        };
+        let Some((key, rest)) = stripped[start + "Plugin ".len()..].split_once(" is incompatible with dsh ")
+        else {
+            continue;
+        };
+        // 版本号自身不含 `@`，按最后一个 `@` 切开包名与版本（scoped 包名以 `@` 开头）
+        let Some((name, version)) = key.rsplit_once('@') else {
+            continue;
+        };
+        let runtime_version = rest.split(':').next().unwrap_or_default().trim();
+        // 运行时版本必须以数字开头：这样即使后续文案改用别的分隔符，也不会把
+        // 冒号后的说明文字当成版本号带进授权命令
+        if name.is_empty()
+            || version.is_empty()
+            || !runtime_version.starts_with(|c: char| c.is_ascii_digit())
+        {
+            continue;
+        }
+        let entry = IncompatibleVersion {
+            name: name.to_string(),
+            version: version.to_string(),
+            runtime_version: runtime_version.to_string(),
+        };
+        if !found.contains(&entry) {
+            found.push(entry);
+        }
+    }
+    found
 }
 
 /// 从 pnpm 失败输出里识别网络错误，返回稳定提示，避免把网络问题误报为 dsh
@@ -255,6 +314,87 @@ mod tests {
             diagnostic_suffix("ERR_PNPM_LINKING_FAILED: stale symlink"),
             ": ERR_PNPM_LINKING_FAILED: stale symlink"
         );
+    }
+
+    // ---- dsh 版本兼容性拒绝：逐条精确版本授权 ----
+
+    /// 用户实测拒绝输出（dsh 0.2.0-rc.1，预装引导一次装两个插件、双双被拒）。
+    const INCOMPATIBLE_OUTPUT: &str = "\ndsh: installation rejected: Plugin dsh-better-sidebar@0.22.1 is incompatible with dsh 0.2.0-rc.1: peerDependencies {\"@deepseek-ai/dsh-llm\":\"^0.1.7-rc.1\"}. Running it may cause crashes or data loss. Update the plugin or install a plugin version compatible with this dsh runtime.\ndsh: nothing was installed.\ndsh: to accept the risk, run: dsh plugin --profile core-020 allow-version dsh-better-sidebar@0.22.1 --dsh-version 0.2.0-rc.1 --accept-risk\n";
+
+    #[test]
+    fn incompatible_versions_extracts_exact_grantable_triple() {
+        assert_eq!(
+            incompatible_versions(INCOMPATIBLE_OUTPUT),
+            vec![IncompatibleVersion {
+                name: "dsh-better-sidebar".to_string(),
+                version: "0.22.1".to_string(),
+                runtime_version: "0.2.0-rc.1".to_string(),
+            }]
+        );
+    }
+
+    #[test]
+    fn incompatible_versions_reads_header_line_and_own_lines_together() {
+        // 真实形状：dsh 把第一条警告与 `installation rejected: ` 拼在同一行，其余各自成行
+        let out = concat!(
+            "\ndsh: installation rejected: Plugin dsh-better-sidebar@0.22.1 is incompatible with dsh 0.2.0-rc.1: peerDependencies {\"@deepseek-ai/dsh-llm\":\"^0.1.7-rc.1\"}. Running it may cause crashes or data loss.\n",
+            "Plugin dsh-rewind-plugin@0.14.0 is incompatible with dsh 0.2.0-rc.1: peerDependencies {\"@deepseek-ai/dsh-fs\":\"^0.1.7-rc.2\"}. Running it may cause crashes or data loss.\n",
+            "dsh: nothing was installed.\n",
+        );
+        assert_eq!(
+            incompatible_versions(out),
+            vec![
+                IncompatibleVersion {
+                    name: "dsh-better-sidebar".to_string(),
+                    version: "0.22.1".to_string(),
+                    runtime_version: "0.2.0-rc.1".to_string(),
+                },
+                IncompatibleVersion {
+                    name: "dsh-rewind-plugin".to_string(),
+                    version: "0.14.0".to_string(),
+                    runtime_version: "0.2.0-rc.1".to_string(),
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn incompatible_versions_keeps_scoped_package_name() {
+        let out = "dsh: installation rejected: Plugin @wenbin_wb/dsh-bridge@1.2.3 is incompatible with dsh 0.2.0-rc.1: peerDependencies {}.\n";
+        assert_eq!(
+            incompatible_versions(out),
+            vec![IncompatibleVersion {
+                name: "@wenbin_wb/dsh-bridge".to_string(),
+                version: "1.2.3".to_string(),
+                runtime_version: "0.2.0-rc.1".to_string(),
+            }]
+        );
+    }
+
+    #[test]
+    fn incompatible_versions_dedupes_repeated_refusals() {
+        // 重试拼接的整串里同一插件会出现多次：授权列表只应留一条
+        let repeated = format!("{INCOMPATIBLE_OUTPUT}{INCOMPATIBLE_OUTPUT}");
+        assert_eq!(incompatible_versions(&repeated).len(), 1);
+    }
+
+    #[test]
+    fn incompatible_versions_ignores_other_failures_and_malformed_lines() {
+        assert!(incompatible_versions("ERR_PNPM_FETCH_404 registry error").is_empty());
+        assert!(incompatible_versions("").is_empty());
+        assert!(incompatible_versions(
+            "dsh: plugin command failed; diagnostics: /tmp/pnpm.log\n"
+        )
+        .is_empty());
+        // 运行时版本不是版本号（文案改版）时宁可放弃解析，也不把说明文字当版本带进授权
+        assert!(incompatible_versions(
+            "Plugin foo@1.0.0 is incompatible with dsh unknown-runtime: peerDependencies {}."
+        )
+        .is_empty());
+        assert!(incompatible_versions(
+            "Plugin foo is incompatible with dsh 0.2.0-rc.1: peerDependencies {}."
+        )
+        .is_empty());
     }
 
     // ---- git 传输层错误识别（区别于 allowBuilds 门禁）----

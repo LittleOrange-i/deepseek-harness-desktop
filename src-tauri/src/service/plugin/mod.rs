@@ -54,7 +54,7 @@ pub use cancel::cancel;
 pub(crate) use cancel::terminate_active_installs_blocking;
 pub(crate) use install::harness_prefer_bundled_pnpm;
 pub(crate) use install::uninstall_deprecated_plugins;
-pub use install::{install, remove, update};
+pub use install::{allow_version_exemptions, install, remove, update, IncompatibleVersion};
 pub(crate) use installed::{ensure_profile_npmrc, installed_name, list_installed, profile_dir};
 pub use installed::{list, PreinstallPlugin};
 pub(crate) use internal::cancel as cancel_internal_plugins;

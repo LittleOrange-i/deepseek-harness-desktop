@@ -73,6 +73,19 @@ pub async fn cancel_preinstall_plugins(app_handle: AppHandle) {
     plugin::cancel(&app_handle).await;
 }
 
+/// 授予「插件版本豁免」：为被核心版本兼容性拒绝的精确 `包名@版本` 组合写授权。
+///
+/// 前端在风险提示中让用户逐项确认后调用（授权项来自 `install_preinstall_plugins`
+/// 返回的 `PLUGIN_VERSION_INCOMPATIBLE:` 载荷），随后重跑安装；豁免不随插件或
+/// 核心升级继承，且只对列出的精确版本 + 运行时版本生效。
+#[tauri::command]
+pub async fn allow_plugin_versions(
+    app_handle: AppHandle,
+    versions: Vec<plugin::IncompatibleVersion>,
+) -> Result<(), String> {
+    plugin::allow_version_exemptions(&app_handle, &versions).await
+}
+
 /// 跳过预装插件引导：记录状态与预设指纹，之后不再弹出（除非清单内容变更）
 #[tauri::command]
 pub async fn skip_preinstall_plugins(app_handle: AppHandle) -> Result<(), String> {

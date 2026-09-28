@@ -1,6 +1,6 @@
 import type { PreinstallPlugin } from '@/store/modules/preinstall'
 import { ArrowUpRightFromSquare, Copy, PlugConnection, Xmark } from '@gravity-ui/icons'
-import { Button, Card, Chip, ScrollShadow, Spinner, Switch, Typography } from '@heroui/react'
+import { Button, Card, Checkbox, Chip, ScrollShadow, Spinner, Switch, Typography } from '@heroui/react'
 import { useMount } from '@reause/core'
 import { invoke } from '@tauri-apps/api/core'
 import { useState } from 'react'
@@ -171,6 +171,12 @@ export function PreinstallSetup() {
   // 用户手动调整后的选择（一旦交互即接管默认勾选）
   const [selected, setSelected] = useState<Set<string>>(() => new Set())
   const [touched, setTouched] = useState(false)
+  // 版本豁免的勾选集合：默认全不勾——「可能导致崩溃或数据丢失」的风险必须由用户
+  // 明确接受，不想装这些插件的人有「跳过」可走
+  const [allowed, setAllowed] = useState<Set<string>>(() => new Set())
+  // 授权进行中：逐条起 dsh 进程写兼容性豁免，期间禁用按钮并显示加载态
+  const [granting, setGranting] = useState(false)
+  const blocked = preinstall.incompatible
 
   // 进入引导页时拉取插件列表（仅挂载一次，无需清理）
   useMount(() => {
@@ -223,6 +229,42 @@ export function PreinstallSetup() {
     void store.preinstall.skip()
   }
 
+  function toggleAllowed(key: string, checked: boolean) {
+    setAllowed((prev) => {
+      const next = new Set(prev)
+      if (checked) {
+        next.add(key)
+      }
+      else {
+        next.delete(key)
+      }
+      return next
+    })
+  }
+
+  /**
+   * 授权勾选的精确版本后重跑安装。
+   *
+   * 豁免只对「精确的包名@版本 + 运行时版本」生效、且不随插件或核心升级继承，因此
+   * 必须真的重跑一次由 dsh 复核，不能假定授权即放行。
+   *
+   * 授权要逐条起 `dsh plugin allow-version`（每条一次进程启动），期间用 granting
+   * 给出按钮反馈：这段等待既没有安装日志也没有列表变化，否则点完像没反应。
+   */
+  async function handleAllow() {
+    const versions = blocked.filter(item => allowed.has(`${item.name}@${item.version}`))
+    if (granting || versions.length === 0)
+      return
+    setGranting(true)
+    try {
+      if (await store.preinstall.allowIncompatible(versions))
+        handleConfirm()
+    }
+    finally {
+      setGranting(false)
+    }
+  }
+
   // 是否有变更：存在需安装或需卸载的插件时启用"确定"
   const toInstallCount = preinstall.plugins.filter(p => effectiveSelected.has(p.id) && !p.installed).length
   const toUninstallCount = preinstall.plugins.filter(p => p.installed && !effectiveSelected.has(p.id) && !p.unsupported).length
@@ -240,9 +282,10 @@ export function PreinstallSetup() {
         <If
           cond={installing}
           else={(
-            // 安装失败时不叠加插件列表，只展示错误 + 日志 + 重试/跳过
+            // 被核心版本拦截（可逐项授权）或安装失败时不叠加插件列表，
+            // 只展示原因 + 日志 + 操作
             <If
-              cond={preinstall.error !== ''}
+              cond={blocked.length > 0 || preinstall.error !== ''}
               else={(
                 <>
                   {/* 卡片网格限定高度滚动，上下溢出由 ScrollShadow 渐隐提示 */}
@@ -338,29 +381,86 @@ export function PreinstallSetup() {
               )}
             >
               {/* 安装失败：错误信息 + 日志 + 操作 */}
-              <div className="flex flex-col gap-2.5">
-                <div className="flex flex-col gap-2 rounded-md border border-danger/30 bg-danger/5 p-3">
-                  <p className="text-xs font-medium text-danger">{t('preinstall.failed')}</p>
-                  <p className="max-h-[120px] overflow-y-auto break-all font-mono text-[11px] leading-relaxed text-muted">
-                    {preinstall.error}
-                  </p>
+              <If
+                cond={blocked.length > 0}
+                else={(
+                  <div className="flex flex-col gap-2.5">
+                    <div className="flex flex-col gap-2 rounded-md border border-danger/30 bg-danger/5 p-3">
+                      <p className="text-xs font-medium text-danger">{t('preinstall.failed')}</p>
+                      <p className="max-h-[120px] overflow-y-auto break-all font-mono text-[11px] leading-relaxed text-muted">
+                        {preinstall.error}
+                      </p>
+                    </div>
+                    <LogPanel logs={preinstall.logs} />
+                    <div className="flex items-center justify-end gap-2">
+                      <Button className="h-8 rounded-md" size="sm" variant="tertiary" onPress={handleSkip} isDisabled={installing}>
+                        {t('preinstall.skip')}
+                      </Button>
+                      <Button
+                        className="h-8 rounded-md"
+                        size="sm"
+                        variant="primary"
+                        onPress={handleConfirm}
+                        isDisabled={installing || !hasChanges}
+                      >
+                        {t('app.retry')}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              >
+                {/* 版本兼容性拒绝：核心在 pnpm 之前拦下整批安装，插件与当前核心的
+                    DSH peer 依赖不匹配；逐项授权精确版本（风险由用户明确承担）后重试 */}
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex flex-col gap-2 rounded-md border border-danger/30 bg-danger/5 p-3">
+                    <p className="text-xs font-medium text-danger">{t('preinstall.incompatible_title')}</p>
+                    <p className="text-[11px] leading-relaxed text-muted">{t('preinstall.incompatible_desc')}</p>
+                    <div className="mt-0.5 flex flex-col gap-1.5">
+                      {blocked.map((item) => {
+                        const key = `${item.name}@${item.version}`
+                        return (
+                          <label key={key} className="flex cursor-pointer items-center gap-2">
+                            <Checkbox
+                              className="shrink-0"
+                              isSelected={allowed.has(key)}
+                              onChange={(value: boolean) => toggleAllowed(key, value)}
+                              aria-label={key}
+                            >
+                              <Checkbox.Content>
+                                <Checkbox.Control>
+                                  <Checkbox.Indicator />
+                                </Checkbox.Control>
+                              </Checkbox.Content>
+                            </Checkbox>
+                            <span className="font-mono text-[11px] text-ink">{key}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <LogPanel logs={preinstall.logs} />
+                  <div className="flex items-center justify-end gap-2">
+                    <Button className="h-8 rounded-md" size="sm" variant="tertiary" onPress={handleSkip} isDisabled={installing || granting}>
+                      {t('preinstall.skip')}
+                    </Button>
+                    <Button
+                      className="h-8 rounded-md"
+                      size="sm"
+                      variant="primary"
+                      onPress={() => void handleAllow()}
+                      isDisabled={installing || granting || allowed.size === 0}
+                    >
+                      <If cond={granting}>
+                        <Spinner size="sm" color="current" />
+                        <span>{t('preinstall.granting')}</span>
+                      </If>
+                      <If cond={!granting}>
+                        <span>{t('preinstall.confirm')}</span>
+                      </If>
+                    </Button>
+                  </div>
                 </div>
-                <LogPanel logs={preinstall.logs} />
-                <div className="flex items-center justify-end gap-2">
-                  <Button className="h-8 rounded-md" size="sm" variant="tertiary" onPress={handleSkip} isDisabled={installing}>
-                    {t('preinstall.skip')}
-                  </Button>
-                  <Button
-                    className="h-8 rounded-md"
-                    size="sm"
-                    variant="primary"
-                    onPress={handleConfirm}
-                    isDisabled={installing || !hasChanges}
-                  >
-                    {t('app.retry')}
-                  </Button>
-                </div>
-              </div>
+              </If>
             </If>
           )}
         >

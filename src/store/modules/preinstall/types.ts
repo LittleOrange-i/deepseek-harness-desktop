@@ -25,3 +25,14 @@ export interface PreinstallSelection {
   installIds?: string[]
   uninstallIds?: string[]
 }
+
+/**
+ * 被核心版本兼容性拦截的插件（与 Rust `service::plugin::IncompatibleVersion` 对齐）。
+ *
+ * 授权只对**精确的**包名 + 版本 + 运行时版本生效，因此三个字段原样往返后端。
+ */
+export interface IncompatibleVersion {
+  name: string
+  version: string
+  runtime_version: string
+}

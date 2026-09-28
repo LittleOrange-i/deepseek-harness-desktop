@@ -1,5 +1,5 @@
 import type { UnlistenFn } from '@tauri-apps/api/event'
-import type { PreinstallLogPayload, PreinstallPlugin, PreinstallSelection } from './types'
+import type { IncompatibleVersion, PreinstallLogPayload, PreinstallPlugin, PreinstallSelection } from './types'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import i18next from 'i18next'
@@ -10,6 +10,28 @@ import { harnessUpdater } from '../harness-updater'
 
 /** 预装安装日志在界面上的保留行数 */
 const LOG_LIMIT = 200
+
+/**
+ * 后端版本兼容性拒绝的前缀：其后是 `IncompatibleVersion[]` 的 JSON。
+ *
+ * dsh 在 pnpm 之前核对插件声明的 DSH peer 依赖，未授权精确版本即整批拒绝。后端把
+ * 拒绝清单挂在错误串上（Tauri 命令的错误通道只有字符串），这里解出来交给界面走
+ * 「逐项授权 → 重试」；解析失败返回 null，退回普通的安装失败展示，绝不假装可授权。
+ */
+const INCOMPATIBLE_PREFIX = 'PLUGIN_VERSION_INCOMPATIBLE:'
+
+function parseIncompatible(error: string): IncompatibleVersion[] | null {
+  if (!error.startsWith(INCOMPATIBLE_PREFIX))
+    return null
+  try {
+    const parsed = JSON.parse(error.slice(INCOMPATIBLE_PREFIX.length)) as IncompatibleVersion[]
+    return parsed.length > 0 ? parsed : null
+  }
+  catch (err) {
+    console.error('[Harness] failed to parse incompatible plugin payload:', err)
+    return null
+  }
+}
 
 /**
  * 预装插件引导模块：首次安装、老版本升级或资源清单 plugins 节内容变更后，
@@ -29,6 +51,11 @@ export const preinstall = defineStore({
     logs: [] as string[],
     /** 安装失败错误（区别于下面列表加载失败） */
     error: '',
+    /**
+     * 被核心版本兼容性拦截、等待用户逐项授权的插件版本。
+     * 非空时界面展示风险提示与勾选清单（而非插件列表或错误态）。
+     */
+    incompatible: [] as IncompatibleVersion[],
     /** 拉取预装插件列表失败（区别于空列表；UI 据此展示错误态 + 重试） */
     loadError: '',
     /** 是否为首次安装引导（决定默认勾选策略）：boot 流程进入时为 true，侧边栏手动打开为 false */
@@ -77,6 +104,7 @@ export const preinstall = defineStore({
         return
       this.installing = true
       this.error = ''
+      this.incompatible = []
       this.logs = []
       let unlisten: UnlistenFn | null = null
       try {
@@ -90,14 +118,43 @@ export const preinstall = defineStore({
       catch (err) {
         console.error('[Harness] preinstall failed:', err)
         const error = String(err)
-        this.error = error.startsWith('NETWORK_ERROR:')
-          ? i18next.t('preinstall.network_error')
-          : error
+        const incompatible = parseIncompatible(error)
+        if (incompatible) {
+          // 不是故障而是待授权清单：交给界面展示风险与勾选，用户授权后重跑安装
+          this.incompatible = incompatible
+        }
+        else {
+          this.error = error.startsWith('NETWORK_ERROR:')
+            ? i18next.t('preinstall.network_error')
+            : error
+        }
       }
       finally {
         unlisten?.()
         this.installing = false
         this.cancelling = false
+      }
+    },
+
+    /**
+     * 授予被核心拒绝的插件精确版本豁免，成功后由界面重跑安装。
+     *
+     * 只提交用户在风险提示中勾选的条目；授权失败按普通安装失败展示（错误态 + 重试），
+     * 届时重试会再次触发拒绝、重新给出勾选清单。
+     */
+    async allowIncompatible(versions: IncompatibleVersion[]): Promise<boolean> {
+      if (this.installing || versions.length === 0)
+        return false
+      try {
+        await invoke('allow_plugin_versions', { versions })
+        this.incompatible = []
+        return true
+      }
+      catch (err) {
+        console.error('[Harness] granting plugin version exemption failed:', err)
+        this.incompatible = []
+        this.error = String(err)
+        return false
       }
     },
 

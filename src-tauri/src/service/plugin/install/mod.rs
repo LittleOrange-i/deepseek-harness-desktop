@@ -71,14 +71,17 @@ pub(crate) use pnpm::{
 };
 pub(crate) use single::uninstall_deprecated_plugins;
 pub use single::{remove, update};
+// 版本兼容性拒绝的解析结果要跨到 `bridge`（前端逐项确认风险后授权），在此定义出口
+pub use diagnose::IncompatibleVersion;
 
 use allowlist::{add_allow_build_keys, parse_allowlist_keys};
 use artifact::{ensure_plugin_entry_built, verify_installed_products};
 use diagnose::{
-    diagnostic_suffix, git_transport_hint, network_error_hint, pick_error_message,
-    policy_verification_network_failure, store_mismatch_hint,
+    diagnostic_suffix, git_transport_hint, incompatible_versions, network_error_hint,
+    pick_error_message, policy_verification_network_failure, store_mismatch_hint,
 };
 use pnpm::ensure_pnpm;
+use single::single_plugin_args;
 use spec::{bundled_dir_of, normalize_git_spec, preset_spec_for_install, spec_argument};
 
 /// 允许构建重试的上限。每次重试解决 pnpm 报出的一个允许键（git depPath 或
@@ -306,6 +309,17 @@ async fn install_with_cancel(
         if !detail.is_empty() {
             log::error!("dsh plugin install diagnostic: {detail}");
         }
+        // 版本兼容性拒绝：dsh 在 pnpm 之前核对声明的 DSH peer 依赖，未授权精确版本
+        // 即整批拒绝（不下载、不构建）。这不是安装故障而是待用户授权的清单，解析成
+        // 精确三元组交给前端走「勾选授权 → 重试」。必须排在网络/store 分类之前：
+        // 该拒绝几乎没有 pnpm 输出，落到通用分支只会给出一段用户无从下手的纯文本。
+        let incompatible = incompatible_versions(&last_attempt);
+        if !incompatible.is_empty() {
+            log::warn!("dsh rejected the install for incompatible plugin versions: {incompatible:?}");
+            let payload = serde_json::to_string(&incompatible)
+                .map_err(|e| format!("PREINSTALL_SERIALIZE: {e}"))?;
+            return Err(format!("PLUGIN_VERSION_INCOMPATIBLE: {payload}"));
+        }
         // 区分 git 传输层失败与 allowBuilds 构建门禁：前者是 pnpm 走了 git+ssh
         // （用户环境无 SSH 配置），后者才是补充白名单可自愈的。传输层错误给出
         // 可读指引，避免用户被 dsh 那条 allowBuilds 提示误导。
@@ -422,6 +436,84 @@ async fn install_with_cancel(
 
     log::info!("Preinstall plugins installed successfully: {ids:?}");
     Ok(())
+}
+
+/// 授予被核心拒绝的插件精确版本豁免：逐条执行 `dsh plugin --profile <档案>
+/// allow-version <包名@版本> --dsh-version <运行时> --accept-risk`，写 profile 的
+/// `compatibility.json`（不改依赖、bundles 与 patch 层）。
+///
+/// 授权由用户在风险提示中逐项确认后触发，`--accept-risk` 是这条命令的强制前提；
+/// 豁免只对**精确的包名@版本 + 运行时版本**生效，插件或 DSH 升级后都不继承，
+/// 因此授权后必须重跑安装由 dsh 自己复核，不能假定一定通过。
+///
+/// 不走 `ensure_pnpm`/停服：dsh 在 `allow-version` 分支里根本不进入 pnpm，
+/// 也不碰 `node_modules`，无需 pnpm 就绪或重启服务。
+pub async fn allow_version_exemptions(
+    app_handle: &AppHandle,
+    versions: &[IncompatibleVersion],
+) -> Result<(), String> {
+    if versions.is_empty() {
+        return Err("PLUGIN_EXEMPTION_EMPTY: no plugin version exemption to grant".to_string());
+    }
+    let window = app_handle
+        .get_webview_window("main")
+        .ok_or("WINDOW_NOT_FOUND: main window missing")?;
+    let node = config::get_node_binary_path(app_handle);
+    let dsh_bin = core::active_dsh_binary(app_handle);
+    if !node.exists() {
+        return Err("NODE_NOT_FOUND: Node.js runtime missing".to_string());
+    }
+    if !dsh_bin.exists() {
+        return Err("HARNESS_NOT_FOUND: dsh CLI missing".to_string());
+    }
+
+    let envs = build_plugin_envs(app_handle, harness_prefer_bundled_pnpm(app_handle));
+    let cwd = config::get_dsh_install_path(app_handle);
+    let profile = active_profile(app_handle);
+    let owner = new_process_owner();
+    let mut failures: Vec<String> = Vec::new();
+    for entry in versions {
+        let mut args = vec![dsh_bin.as_os_str().to_os_string()];
+        args.extend(single_plugin_args(
+            &profile,
+            "allow-version",
+            &[
+                format!("{}@{}", entry.name, entry.version),
+                "--dsh-version".to_string(),
+                entry.runtime_version.clone(),
+                "--accept-risk".to_string(),
+            ],
+        ));
+        log::info!(
+            "Granting plugin version exemption {}@{} for DSH {}",
+            entry.name,
+            entry.version,
+            entry.runtime_version
+        );
+        let (exit_code, output) =
+            run_plugin_process(&node, &args, &cwd, &envs, &window, owner).await?;
+        if exit_code != 0 {
+            let detail = pick_error_message(&output, None);
+            log::error!(
+                "granting plugin version exemption {}@{} failed with exit code {exit_code}: {detail}",
+                entry.name,
+                entry.version
+            );
+            failures.push(format!(
+                "{}@{}: dsh plugin exited with code {exit_code}{}",
+                entry.name,
+                entry.version,
+                diagnostic_suffix(&detail)
+            ));
+        }
+    }
+    // 逐条执行而不是遇错即停：一个条目失败（版本漂移、compatibility.json 损坏）
+    // 不该让用户已勾选的其它条目也不被授权；错误跨条目聚合后一次性返回。
+    if failures.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("PLUGIN_EXEMPTION_FAILED: {}", failures.join("; ")))
+    }
 }
 
 /// 返回 `(exit_code, 历次尝试的输出拼接, 最后一次尝试的输出)`。
