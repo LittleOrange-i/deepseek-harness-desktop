@@ -112,7 +112,7 @@ export function findBundledPluginsTree(): BundledPluginsTree | undefined {
     resolve(ownPkgDir, '../../src-tauri/resources/node_modules'),
   ]
   for (const root of candidates) {
-    if (!existsSync(join(root, 'dsh-tauri-ssh-ui', 'package.json'))
+    if (!existsSync(join(root, 'dsh-tauri-ssh', 'package.json'))
       || !existsSync(join(root, 'ssh2', 'package.json'))) {
       continue
     }

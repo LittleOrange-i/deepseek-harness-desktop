@@ -1,7 +1,8 @@
 /**
- * Cross-half protocol constants of the SSH remote-machine plugin pair
- * (`dsh-tauri-ssh` host / `dsh-tauri-ssh-ui` client). Both halves and the
- * docs reference these identifiers; centralizing them prevents drift.
+ * Cross-half protocol constants of the SSH remote-machine plugin
+ * (`dsh-tauri-ssh` host half + `dsh-tauri-ssh/client` browser half). Both
+ * halves and the docs reference these identifiers; centralizing them prevents
+ * drift.
  * @module dsh-tauri-ssh/shared/constants
  */
 

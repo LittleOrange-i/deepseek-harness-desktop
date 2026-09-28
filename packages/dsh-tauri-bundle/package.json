@@ -12,7 +12,7 @@
     "dsh-tauri-running-changes": "workspace:*",
     "dsh-tauri-session": "workspace:*",
     "dsh-tauri-ssh": "workspace:*",
-    "dsh-tauri-ssh-ui": "workspace:*",
+    "dsh-tauri-taiwindcss": "workspace:*",
     "dsh-tauri-ui": "workspace:*",
     "dsh-tauri-worktree": "workspace:*"
   }
