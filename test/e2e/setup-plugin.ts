@@ -40,12 +40,12 @@ declare module 'vitest' {
 const DEFAULT_ALSO = [
   'dsh-tauri',
   'dsh-tauri-rightclick',
-  'dsh-tauri-session',
+  'dsh-tauri-archive',
   'dsh-tauri-worktree',
   'dsh-tauri-ui',
-  'dsh-tauri-panel-extension',
-  'dsh-tauri-panel-scheduler',
-  'dsh-tauri-running-changes',
+  'dsh-tauri-extension',
+  'dsh-tauri-scheduler',
+  'dsh-tauri-experimental',
   'dsh-tauri-model-config',
 ].join(',')
 

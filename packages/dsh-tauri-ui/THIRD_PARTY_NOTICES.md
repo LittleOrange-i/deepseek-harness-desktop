@@ -19,7 +19,6 @@ Derived (upstream → this package):
 - Official sidebar branding row and its collapse toggle → `src/client/styles/global.cssr.ts`: hiding rule for the duplicated official entry, keyed off the official class shape (`clsx(brand, wide)`) and `aria-label` dictionaries instead of hashed class names.
 - Official slot `conversation.hero.workspace` (single/root, declared by `ui-workspace`, official `WorkspacePicker` at default priority) → `src/client/register/hero-workspace.ts`, `src/client/ui/hero-workspace.*`: takeover at a lower priority so the official registration stays in place; the official `WorkspacePickFlow` "add workspace" item id is reused verbatim.
 - Official settings launcher seat (`ui-settings-general` `SettingsRoot` rendering the account menu) → `src/client/constants/index.ts` (`SETTINGS_TRIGGER_PRIORITY`), `src/client/ui/trigger.tsx`: seat takeover keeping a host for the official account UI, plus the official dictionary strings for the sidebar "new session" button and the ungrouped workspace-group `+` (`new-session.utils.ts`, official `UNGROUPED_KEY`).
-- Official reference chips (`ctx.conversation.input` insertion path) → `src/client/register/paste-collapse.ts`: large pastes collapse into the official reference chip through the official public surface only.
 - Official primitives variants `PermissionRow.selector`, `PermissionSelect`, `AgentPresetSeat` → `src/client/components/chip.tsx`: per-variant wrapping and the official `@container` query that `css-render` can only emit as a top-level raw rule.
 
 ## License

@@ -1264,16 +1264,16 @@ mod tests {
     fn dev_merge_carries_static_version_declaration() {
         let root = temp_dev_root("merge-cap");
         write_dev_manifest(
-            &root.join("dsh-tauri-running-changes"),
-            "dsh-tauri-running-changes",
+            &root.join("dsh-tauri-experimental"),
+            "dsh-tauri-experimental",
         );
         let declared = matrix(&[("^1.2.3", "^0.1.7-alpha.0")]);
         let static_internal = vec![PreinstallPluginInfo {
-            id: "dsh-tauri-running-changes".into(),
-            spec: "dsh-tauri-running-changes".into(),
+            id: "dsh-tauri-experimental".into(),
+            spec: "dsh-tauri-experimental".into(),
             internal: true,
-            package: Some("dsh-tauri-running-changes".into()),
-            name: "DSH Running Changes".into(),
+            package: Some("dsh-tauri-experimental".into()),
+            name: "DSH Tauri Experimental".into(),
             description: String::new(),
             repo_url: String::new(),
             recommended: false,
@@ -1287,10 +1287,10 @@ mod tests {
         let merged = merge_dev_internal_plugins_at(&root, static_internal);
         let renamed = merged
             .iter()
-            .find(|p| p.id == "dsh-tauri-running-changes")
+            .find(|p| p.id == "dsh-tauri-experimental")
             .expect("merged entry must exist");
         assert_eq!(renamed.version.as_ref(), Some(&declared));
-        assert_eq!(renamed.spec, "dsh-tauri-running-changes");
+        assert_eq!(renamed.spec, "dsh-tauri-experimental");
         assert_eq!(renamed.description, "desc");
         assert!(!renamed.unsupported_on(Some("0.1.7-alpha.0")));
         assert!(renamed.unsupported_on(Some("0.2.0")));

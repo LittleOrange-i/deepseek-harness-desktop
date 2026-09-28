@@ -93,7 +93,7 @@ export function definePanel(ctx: ClientContext, entry: PanelEntry): PanelHandle
 
 ## 三、 迁移与重构指南
 
-所有面板插件（`dsh-tauri-panel-extension`、`dsh-tauri-panel-scheduler` 等）必须执行以下重构：
+所有面板插件（`dsh-tauri-extension`、`dsh-tauri-scheduler` 等）必须执行以下重构：
 
 1. **常量与类型清理**：
 * 删除 `PANEL_SLOT_NAME` / `PANEL_PROTOCOL_NAME` / `PROTOCOL_RETRY_MS`。

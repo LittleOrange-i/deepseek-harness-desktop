@@ -1044,8 +1044,8 @@ mod tests {
     fn link_materialization_failure_detects_uv_unknown_readback() {
         let error = "PREINSTALL_FAILED: dsh plugin exited with code -4094: UNKNOWN  UNKNOWN: \
                      unknown error, open 'C:\\Users\\w00012491\\.dsh\\profiles\\tauri\\node_modules\\\
-                     dsh-tauri-panel-scheduler\\package.json'";
-        let need = need_entries(&["dsh-tauri-panel-scheduler"]);
+                     dsh-tauri-scheduler\\package.json'";
+        let need = need_entries(&["dsh-tauri-scheduler"]);
         assert!(is_link_materialization_failure(error, &need));
         // pnpm / Node 的措辞随版本变化，判定大小写不敏感
         assert!(is_link_materialization_failure(
@@ -1072,7 +1072,7 @@ mod tests {
                      someone-else-plugin\\package.json'";
         assert!(!is_link_materialization_failure(
             error,
-            &need_entries(&["dsh-tauri-panel-scheduler"])
+            &need_entries(&["dsh-tauri-scheduler"])
         ));
     }
 
@@ -1082,7 +1082,7 @@ mod tests {
     fn link_materialization_failure_rejects_unattributed_diagnostic() {
         let error = "PREINSTALL_FAILED: dsh plugin exited with code -4094: UNKNOWN: cannot \
                      materialize node_modules entry";
-        let need = need_entries(&["dsh-tauri-panel-scheduler"]);
+        let need = need_entries(&["dsh-tauri-scheduler"]);
 
         assert!(!is_link_materialization_failure(error, &need));
         assert!(is_untraceable_link_readback_failure(error));

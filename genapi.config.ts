@@ -7,11 +7,11 @@ import { pluginPipeline } from './genapi.pipeline'
 // webserver 全局注入（`webserver/index-inject`），没有 HTTP 路由，因此没有可生成的 API；
 // 本仓库自有的 5 条路由已随自动配置/打开配置文件能力迁到 `dsh-tauri-ui`。
 const plugins = [
-  'dsh-tauri-panel-extension',
-  'dsh-tauri-panel-scheduler',
+  'dsh-tauri-extension',
+  'dsh-tauri-scheduler',
   'dsh-tauri-rightclick',
-  'dsh-tauri-session',
-  'dsh-tauri-running-changes',
+  'dsh-tauri-archive',
+  'dsh-tauri-experimental',
   'dsh-tauri-ui',
   'dsh-tauri-worktree',
 ]

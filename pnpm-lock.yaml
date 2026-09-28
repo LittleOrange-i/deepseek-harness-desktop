@@ -665,32 +665,57 @@ importers:
         specifier: catalog:runtime
         version: 1.4.1(@types/react@19.2.18)(react@19.2.8)
 
+  packages/dsh-tauri-archive:
+    dependencies:
+      dsh-tauri:
+        specifier: workspace:*
+        version: link:../dsh-tauri
+      hookable:
+        specifier: catalog:utils
+        version: 6.1.1
+      lodash-es:
+        specifier: catalog:utils
+        version: 4.18.1
+      pathe:
+        specifier: catalog:utils
+        version: 2.0.3
+    devDependencies:
+      '@types/lodash-es':
+        specifier: catalog:types
+        version: 4.17.12
+      dsh-tauri-tsdown:
+        specifier: workspace:*
+        version: link:../dsh-tauri-tsdown
+      dsh-tauri-ui:
+        specifier: workspace:*
+        version: link:../dsh-tauri-ui
+      tsdown:
+        specifier: catalog:cli
+        version: 0.17.4(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(oxc-resolver@11.24.2)(publint@0.3.24)(synckit@0.11.13)(typescript@5.8.3)
+
   packages/dsh-tauri-bundle:
     dependencies:
       dsh-tauri:
         specifier: workspace:*
         version: link:../dsh-tauri
+      dsh-tauri-archive:
+        specifier: workspace:*
+        version: link:../dsh-tauri-archive
+      dsh-tauri-extension:
+        specifier: workspace:*
+        version: link:../dsh-tauri-extension
       dsh-tauri-model-config:
         specifier: workspace:*
         version: link:../dsh-tauri-model-config
-      dsh-tauri-panel-extension:
-        specifier: workspace:*
-        version: link:../dsh-tauri-panel-extension
-      dsh-tauri-panel-scheduler:
-        specifier: workspace:*
-        version: link:../dsh-tauri-panel-scheduler
       dsh-tauri-pet:
         specifier: workspace:*
         version: link:../dsh-tauri-pet
       dsh-tauri-rightclick:
         specifier: workspace:*
         version: link:../dsh-tauri-rightclick
-      dsh-tauri-running-changes:
+      dsh-tauri-scheduler:
         specifier: workspace:*
-        version: link:../dsh-tauri-running-changes
-      dsh-tauri-session:
-        specifier: workspace:*
-        version: link:../dsh-tauri-session
+        version: link:../dsh-tauri-scheduler
       dsh-tauri-ssh:
         specifier: workspace:*
         version: link:../dsh-tauri-ssh
@@ -704,7 +729,7 @@ importers:
         specifier: workspace:*
         version: link:../dsh-tauri-worktree
 
-  packages/dsh-tauri-model-config:
+  packages/dsh-tauri-experimental:
     dependencies:
       dsh-tauri:
         specifier: workspace:*
@@ -712,51 +737,24 @@ importers:
       dsh-tauri-ui:
         specifier: workspace:*
         version: link:../dsh-tauri-ui
+      hookable:
+        specifier: catalog:utils
+        version: 6.1.1
+      pathe:
+        specifier: catalog:utils
+        version: 2.0.3
+      unstorage:
+        specifier: catalog:utils
+        version: 1.17.5(idb-keyval@6.3.0)
     devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: catalog:dsh
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.7)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@deepseek-ai/dsh-client-connection':
-        specifier: catalog:dsh
-        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-scope@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)))
-      '@deepseek-ai/dsh-client-locale':
-        specifier: catalog:dsh
-        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
-      '@deepseek-ai/dsh-client-store':
-        specifier: catalog:dsh
-        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
-      '@deepseek-ai/dsh-client-ui-primitives':
-        specifier: catalog:dsh
-        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
-      '@deepseek-ai/dsh-client-ui-renderer':
-        specifier: catalog:dsh
-        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
-      '@deepseek-ai/dsh-client-ui-settings':
-        specifier: catalog:dsh
-        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
-      '@deepseek-ai/dsh-client-ui-slots':
-        specifier: catalog:dsh
-        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
-      '@deepseek-ai/dsh-util-values':
-        specifier: catalog:dsh
-        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
-      '@types/node':
-        specifier: catalog:types
-        version: 22.20.1
       dsh-tauri-tsdown:
         specifier: workspace:*
         version: link:../dsh-tauri-tsdown
-      react-if-lite:
-        specifier: catalog:runtime
-        version: 0.1.0(react@19.2.8)
       tsdown:
         specifier: catalog:cli
         version: 0.17.4(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(oxc-resolver@11.24.2)(publint@0.3.24)(synckit@0.11.13)(typescript@5.8.3)
-      vitest:
-        specifier: catalog:testing
-        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(@vitest/coverage-v8@4.1.11)(jsdom@26.1.0)(vite@7.3.6(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.30.1)(tsx@4.23.12)(yaml@2.9.0))
 
-  packages/dsh-tauri-panel-extension:
+  packages/dsh-tauri-extension:
     dependencies:
       dsh-tauri:
         specifier: workspace:*
@@ -808,48 +806,51 @@ importers:
         specifier: catalog:cli
         version: 0.17.4(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(oxc-resolver@11.24.2)(publint@0.3.24)(synckit@0.11.13)(typescript@5.8.3)
 
-  packages/dsh-tauri-panel-scheduler:
+  packages/dsh-tauri-model-config:
     dependencies:
-      cron-schedule:
-        specifier: catalog:utils
-        version: 6.0.0
       dsh-tauri:
         specifier: workspace:*
         version: link:../dsh-tauri
       dsh-tauri-ui:
         specifier: workspace:*
         version: link:../dsh-tauri-ui
-      lodash-es:
-        specifier: catalog:utils
-        version: 4.18.1
-      pathe:
-        specifier: catalog:utils
-        version: 2.0.3
     devDependencies:
-      '@deepseek-ai/dsh-agent':
+      '@deepseek-ai/cordis':
         specifier: catalog:dsh
-        version: 0.1.7-rc.2(a45a646f3ab086a6b98898d7d7db0630)
-      '@deepseek-ai/dsh-llm':
+        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.7)(@deepseek-ai/cordis-plugin-loader@1.0.5)
+      '@deepseek-ai/dsh-client-connection':
+        specifier: catalog:dsh
+        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-scope@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)))
+      '@deepseek-ai/dsh-client-locale':
         specifier: catalog:dsh
         version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
-      '@deepseek-ai/dsh-session':
+      '@deepseek-ai/dsh-client-store':
         specifier: catalog:dsh
-        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-scope@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)))
-      '@deepseek-ai/dsh-tools':
+        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
+      '@deepseek-ai/dsh-client-ui-primitives':
         specifier: catalog:dsh
-        version: 0.1.7-rc.2(d2e08270f2205e73d65e98cfcd910cae)
-      '@deepseek-ai/dsh-user-approval':
+        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
+      '@deepseek-ai/dsh-client-ui-renderer':
         specifier: catalog:dsh
-        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-agent@0.1.7-rc.2(a45a646f3ab086a6b98898d7d7db0630))(@deepseek-ai/dsh-brand@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-llm@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-scope@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)))(@deepseek-ai/dsh-session@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-scope@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))))(@deepseek-ai/dsh-system-prompt@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-llm@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-scope@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))))
-      '@deepseek-ai/dsh-workspace':
+        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
+      '@deepseek-ai/dsh-client-ui-settings':
         specifier: catalog:dsh
-        version: 0.1.7-rc.2(bb62eb618f9c24e6adb5430fe59c1ef7)
-      '@types/lodash-es':
+        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: catalog:dsh
+        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
+      '@deepseek-ai/dsh-util-values':
+        specifier: catalog:dsh
+        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
+      '@types/node':
         specifier: catalog:types
-        version: 4.17.12
+        version: 22.20.1
       dsh-tauri-tsdown:
         specifier: workspace:*
         version: link:../dsh-tauri-tsdown
+      react-if-lite:
+        specifier: catalog:runtime
+        version: 0.1.0(react@19.2.8)
       tsdown:
         specifier: catalog:cli
         version: 0.17.4(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(oxc-resolver@11.24.2)(publint@0.3.24)(synckit@0.11.13)(typescript@5.8.3)
@@ -916,39 +917,17 @@ importers:
         specifier: catalog:cli
         version: 0.17.4(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(oxc-resolver@11.24.2)(publint@0.3.24)(synckit@0.11.13)(typescript@5.8.3)
 
-  packages/dsh-tauri-running-changes:
+  packages/dsh-tauri-scheduler:
     dependencies:
+      cron-schedule:
+        specifier: catalog:utils
+        version: 6.0.0
       dsh-tauri:
         specifier: workspace:*
         version: link:../dsh-tauri
       dsh-tauri-ui:
         specifier: workspace:*
         version: link:../dsh-tauri-ui
-      hookable:
-        specifier: catalog:utils
-        version: 6.1.1
-      pathe:
-        specifier: catalog:utils
-        version: 2.0.3
-      unstorage:
-        specifier: catalog:utils
-        version: 1.17.5(idb-keyval@6.3.0)
-    devDependencies:
-      dsh-tauri-tsdown:
-        specifier: workspace:*
-        version: link:../dsh-tauri-tsdown
-      tsdown:
-        specifier: catalog:cli
-        version: 0.17.4(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(oxc-resolver@11.24.2)(publint@0.3.24)(synckit@0.11.13)(typescript@5.8.3)
-
-  packages/dsh-tauri-session:
-    dependencies:
-      dsh-tauri:
-        specifier: workspace:*
-        version: link:../dsh-tauri
-      hookable:
-        specifier: catalog:utils
-        version: 6.1.1
       lodash-es:
         specifier: catalog:utils
         version: 4.18.1
@@ -956,18 +935,36 @@ importers:
         specifier: catalog:utils
         version: 2.0.3
     devDependencies:
+      '@deepseek-ai/dsh-agent':
+        specifier: catalog:dsh
+        version: 0.1.7-rc.2(a45a646f3ab086a6b98898d7d7db0630)
+      '@deepseek-ai/dsh-llm':
+        specifier: catalog:dsh
+        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)
+      '@deepseek-ai/dsh-session':
+        specifier: catalog:dsh
+        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-scope@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)))
+      '@deepseek-ai/dsh-tools':
+        specifier: catalog:dsh
+        version: 0.1.7-rc.2(d2e08270f2205e73d65e98cfcd910cae)
+      '@deepseek-ai/dsh-user-approval':
+        specifier: catalog:dsh
+        version: 0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-agent@0.1.7-rc.2(a45a646f3ab086a6b98898d7d7db0630))(@deepseek-ai/dsh-brand@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-llm@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-scope@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)))(@deepseek-ai/dsh-session@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-scope@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))))(@deepseek-ai/dsh-system-prompt@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-llm@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-scope@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.1.7-rc.2(@deepseek-ai/cordis@4.0.4))))
+      '@deepseek-ai/dsh-workspace':
+        specifier: catalog:dsh
+        version: 0.1.7-rc.2(bb62eb618f9c24e6adb5430fe59c1ef7)
       '@types/lodash-es':
         specifier: catalog:types
         version: 4.17.12
       dsh-tauri-tsdown:
         specifier: workspace:*
         version: link:../dsh-tauri-tsdown
-      dsh-tauri-ui:
-        specifier: workspace:*
-        version: link:../dsh-tauri-ui
       tsdown:
         specifier: catalog:cli
         version: 0.17.4(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(oxc-resolver@11.24.2)(publint@0.3.24)(synckit@0.11.13)(typescript@5.8.3)
+      vitest:
+        specifier: catalog:testing
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(@vitest/coverage-v8@4.1.11)(jsdom@26.1.0)(vite@7.3.6(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.30.1)(tsx@4.23.12)(yaml@2.9.0))
 
   packages/dsh-tauri-ssh:
     dependencies:

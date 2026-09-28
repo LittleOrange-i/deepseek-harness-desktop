@@ -78,13 +78,6 @@
         "repo": "https://github.com/dsh-tauri-desk/dsh-tauri-plugins/tree/main/packages/dsh-tauri"
       },
       {
-        "id": "dsh-tauri-running-changes",
-        "spec": "dsh-tauri-running-changes",
-        "name": "DSH Running Changes",
-        "description": "Turn-level change tracking for the desktop shell: a private Git snapshot per agent turn and an input-dock chip reporting the changed files and +N -M of the turn that is currently running. Restoring files is handled by the recommended dsh-rewind plugin.",
-        "repo": "https://github.com/dsh-tauri-desk/deepseek-harness-desktop/tree/main/packages/dsh-tauri-running-changes"
-      },
-      {
         "id": "dsh-tauri-ui",
         "spec": "dsh-tauri-ui",
         "name": "DSH Tauri UI",
@@ -99,25 +92,25 @@
         "repo": "https://github.com/dsh-tauri-desk/dsh-tauri-plugins/tree/main/packages/dsh-tauri-worktree"
       },
       {
-        "id": "dsh-tauri-panel-extension",
-        "spec": "dsh-tauri-panel-extension",
-        "name": "DSH Tauri Panel Extension",
+        "id": "dsh-tauri-extension",
+        "spec": "dsh-tauri-extension",
+        "name": "DSH Tauri Extension",
         "description": "Skills, MCP, and the plugin market in the DeepSeek Harness desktop extension panel.",
-        "repo": "https://github.com/dsh-tauri-desk/dsh-tauri-plugins/tree/main/packages/dsh-tauri-panel-extension"
+        "repo": "https://github.com/dsh-tauri-desk/dsh-tauri-plugins/tree/main/packages/dsh-tauri-extension"
       },
       {
-        "id": "dsh-tauri-panel-scheduler",
-        "spec": "dsh-tauri-panel-scheduler",
-        "name": "DSH Tauri Panel Scheduler",
+        "id": "dsh-tauri-scheduler",
+        "spec": "dsh-tauri-scheduler",
+        "name": "DSH Tauri Scheduler",
         "description": "Scheduled tasks for the DeepSeek Harness desktop panel: create daily/interval/workday/weekly automations, run them in fresh sessions on schedule, and review run history.",
-        "repo": "https://github.com/dsh-tauri-desk/deepseek-harness-desktop/tree/main/packages/dsh-tauri-panel-scheduler"
+        "repo": "https://github.com/dsh-tauri-desk/deepseek-harness-desktop/tree/main/packages/dsh-tauri-scheduler"
       },
       {
-        "id": "dsh-tauri-session",
-        "spec": "dsh-tauri-session",
-        "name": "DSH Tauri Session",
+        "id": "dsh-tauri-archive",
+        "spec": "dsh-tauri-archive",
+        "name": "DSH Tauri Archive",
         "description": "Session archive for the desktop: rewrites the workspace browser's 'delete workspace' action into 'archive workspace', and adds an 'Archived chats' settings page with search, sort, grouping, project filter and unarchive.",
-        "repo": "https://github.com/dsh-tauri-desk/dsh-tauri-plugins/tree/main/packages/dsh-tauri-session"
+        "repo": "https://github.com/dsh-tauri-desk/dsh-tauri-plugins/tree/main/packages/dsh-tauri-archive"
       },
       {
         "id": "dsh-tauri-pet",

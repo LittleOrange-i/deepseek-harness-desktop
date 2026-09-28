@@ -412,7 +412,7 @@ function patchComposerCwd(dshBin: string): void {
  * 往 scratch `DSH_HOME` 写入一个确定性技能夹具。
  *
  * 核心的用户技能根是 `<DSH_HOME>/skills`（`dsh-skill-filesystem` 的 `user-dsh` 根），
- * 也正是 `dsh-tauri-panel-extension` 自己保存技能的位置。不写它就等于把「技能目录非空」
+ * 也正是 `dsh-tauri-extension` 自己保存技能的位置。不写它就等于把「技能目录非空」
  * 外包给运行机的个人技能：开发机 `~/.agents/skills` 有上百个技能，干净 runner 一个都
  * 没有，`/skills` 清单前置在 CI 上必然空。
  */
