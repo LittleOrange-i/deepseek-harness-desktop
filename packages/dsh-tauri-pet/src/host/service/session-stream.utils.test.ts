@@ -387,6 +387,57 @@ describe('petSessionReducer (host)', () => {
     expect(pushes.length).toBe(before + 1)
   })
 
+  it('todo/write 取最后一个 in_progress（agent 忘标上一步 completed 时文案不卡在最早那步）', () => {
+    const { reducer, pushes } = collect()
+    reducer.create(peer())
+    reducer.apply(peer(), ev('turn/start', { turn: 1 }, 1))
+    reducer.apply(peer(), ev('todo/write', {
+      todos: [
+        { id: 't1', status: 'in_progress', content: '第一步' },
+        { id: 't2', status: 'completed', content: '中间' },
+        { id: 't3', status: 'in_progress', content: '第三步' },
+      ],
+    }, 2))
+    expect(pushes.at(-1)!.payload).toMatchObject({ task: '第三步' })
+  })
+
+  it('todo/write 无进行中项时回落第一个 pending', () => {
+    const { reducer, pushes } = collect()
+    reducer.create(peer())
+    reducer.apply(peer(), ev('turn/start', { turn: 1 }, 1))
+    reducer.apply(peer(), ev('todo/write', {
+      todos: [
+        { id: 't1', status: 'completed', content: '已完成' },
+        { id: 't2', status: 'pending', content: '待办一' },
+        { id: 't3', status: 'pending', content: '待办二' },
+      ],
+    }, 2))
+    expect(pushes.at(-1)!.payload).toMatchObject({ task: '待办一' })
+  })
+
+  it('todo/write 长文案按码点截断到 40 并加省略号（不劈开 emoji）', () => {
+    const { reducer, pushes } = collect()
+    reducer.create(peer())
+    reducer.apply(peer(), ev('turn/start', { turn: 1 }, 1))
+    const emoji = '🐟'
+    reducer.apply(peer(), ev('todo/write', {
+      todos: [{ id: 't1', status: 'in_progress', content: emoji.repeat(50) }],
+    }, 2))
+    const task = pushes.at(-1)!.payload.task as string
+    expect(Array.from(task)).toHaveLength(41)
+    expect(task).toBe(`${emoji.repeat(40)}…`)
+    expect(task.endsWith('…')).toBe(true)
+  })
+
+  it('todo/write 恰好 40 码点不截断', () => {
+    const { reducer, pushes } = collect()
+    reducer.create(peer())
+    reducer.apply(peer(), ev('turn/start', { turn: 1 }, 1))
+    const content = '字'.repeat(40)
+    reducer.apply(peer(), ev('todo/write', { todos: [{ id: 't1', status: 'in_progress', content }] }, 2))
+    expect(pushes.at(-1)!.payload).toMatchObject({ task: content })
+  })
+
   // ---------------------------------------------------------------------------
   // agent/status idle 兜底：核心漏发 turn/end 的中断必须回落空闲，否则 toast + 循环动画一直持续。
   // 真实现场见 session-2a2abd15（用户中止一个刚起流的会话）：日志只有 assistant/attempt +

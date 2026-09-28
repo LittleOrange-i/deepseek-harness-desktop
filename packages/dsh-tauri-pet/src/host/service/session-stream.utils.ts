@@ -10,6 +10,8 @@ import type {
 export const PET_REASONING_TAIL_WINDOW = 120
 /** 推理文本推送间隔（毫秒）：状态实时累积，最多每 500ms 推送一次最新尾部，避免逐 token 洪泛。 */
 export const PET_REASONING_PUSH_INTERVAL_MS = 500
+/** 任务文案最大码点数：气泡最大宽只有宠物宽的 0.5 倍，超出即截断加省略号。 */
+export const PET_TASK_TEXT_MAX = 40
 
 /**
  * service/session-stream.utils.ts — 纯函数「会话增量 → 桌宠展示态」reducer。
@@ -251,13 +253,25 @@ function completedStatus(state: PetSessionState): PetWorkStatus {
   return state.goalClosing === 'complete' ? 'success' : 'result'
 }
 
-/** 从 todo/write 提取当前任务文本（in_progress 优先、其次 pending）。 */
+/**
+ * 从 todo/write 提取当前任务文本。
+ *
+ * 取**最后一个** in_progress：agent 常把新步骤标 in_progress 却忘标上一步 completed，
+ * 取第一个会让文案永远停在最早那步。清单无进行中项时回落第一个 pending。
+ *
+ * 文案按**码点**截断到 `PET_TASK_TEXT_MAX`（气泡最大宽只有宠物宽的 0.5 倍，长 todo 原文
+ * 会把气泡撑成多行）；用 `Array.from` 而非 `slice`，避免劈开代理对或 emoji。
+ */
 function currentTaskFromTodo(data: Record<string, unknown>): string | undefined {
   const todos = Array.isArray(data.todos) ? (data.todos as Array<{ status?: string, content?: string }>) : []
-  const current = todos.find(todo => todo?.status === 'in_progress')
+  const current = todos.findLast(todo => todo?.status === 'in_progress')
     ?? todos.find(todo => todo?.status === 'pending')
-  const content = String(current?.content ?? '').trim()
-  return content || undefined
+  const content = Array.from(String(current?.content ?? '').trim())
+  if (!content.length)
+    return undefined
+  return content.length > PET_TASK_TEXT_MAX
+    ? `${content.slice(0, PET_TASK_TEXT_MAX).join('')}…`
+    : content.join('')
 }
 
 /** 需要 fold+去重的边界事件（增量 chunk 不在其中，防止高频转发）。 */
