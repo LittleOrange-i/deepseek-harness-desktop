@@ -359,8 +359,9 @@ fn command_line_has_argument_after(cmdline: &str, preceding: &str, argument: &st
 fn is_windows_harness_command_line(cmdline: &str, dsh_bin: &str) -> bool {
     let normalized = cmdline.replace('/', "\\");
     let path = dsh_bin.replace('/', "\\");
+    // node 选项（`--max-old-space-size` 等）合法地夹在 node 与入口之间（issue #751）。
     let boundary = format!(
-        r#"(?i)^\s*(?:"[^"]*\\node(?:\.exe)?"|[^\s"]*node(?:\.exe)?)\s+"?{}(?:"|\s|$)"#,
+        r#"(?i)^\s*(?:"[^"]*\\node(?:\.exe)?"|[^\s"]*node(?:\.exe)?)(?:\s+-[^\s"]*)*\s+"?{}(?:"|\s|$)"#,
         regex::escape(&path)
     );
     regex::Regex::new(&boundary).is_ok_and(|pattern| pattern.is_match(&normalized))
@@ -970,6 +971,20 @@ mod tests {
         let bin = r"C:\Users\Example User\AppData\Roaming\dsh-tauri\dev\dependencies\dsh\node_modules\@deepseek-ai\dsh\lib\bin.js";
         let command = format!(r#""C:\node.exe" "{bin}" --profile web --port 3081 --no-open"#);
         assert!(is_windows_harness_command_line(&command, bin));
+        // 回归 issue #751：node 与入口之间夹着堆选项时仍须命中孤儿。
+        assert!(is_windows_harness_command_line(
+            &command.replace(r#""C:\node.exe" "#, r#""C:\node.exe" --max-old-space-size=8192 "#),
+            bin
+        ));
+        assert!(is_windows_harness_command_line(
+            &format!(r#"node.exe --max-old-space-size=8192 "{bin}" --profile web --port 3081 --no-open"#),
+            bin
+        ));
+        // 入口前还夹着别的脚本参数时不得命中，避免误伤外来的 node 进程。
+        assert!(!is_windows_harness_command_line(
+            &format!(r#"node.exe unrelated.js --max-old-space-size=8192 "{bin}" --profile web --port 3081 --no-open"#),
+            bin
+        ));
         assert!(!is_windows_harness_command_line(
             &command.replace(bin, &format!("{bin}.backup")),
             bin
