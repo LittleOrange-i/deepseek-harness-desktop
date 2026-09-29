@@ -8,7 +8,8 @@
 //! `PET_SIZE_OUT_OF_RANGE:`）。
 //!
 //! 实时性：一切会改变设置状态（开关/选择/大小）的命令都通过 `pet://status`
-//! 事件把最新设置推给 pet 窗口；会话 CRUD 则通过独立的 `session:*` 事件直接转发。
+//! 事件把最新设置推给 pet 窗口；会话 CRUD 则通过独立的 `session:*` 事件直接转发
+//! （含 `session:clear`：宿主会话流重连时整批作废桌宠侧遗留气泡）。
 
 use crate::config;
 use crate::desktop::pet as pet_window;
@@ -319,12 +320,25 @@ pub fn push_pet_session(app: AppHandle, action: String, session: Value) -> Resul
 /// SESSION_STREAM_PATH 保持一致）。
 const SESSION_STREAM_PATH: &str = "/api/desktop/dsh-tauri-pet/session/stream";
 
+/// 「宿主累计态已丢弃」注释帧文本（与
+/// `packages/dsh-tauri-pet/src/shared/constants.ts` 的 `SSE_STATE_LOST_COMMENT` 逐字一致）。
+///
+/// 宿主逐会话累计态只在**最后一个**消费者断开时丢弃。新消费者接入时若已无其他消费者，
+/// 宿主状态必然从零重建，旧气泡全部作废——宿主随后下发这一帧，消费端据此清屏。
+const SSE_STATE_LOST_COMMENT: &str = "state-lost";
+
 /// 会话增量「动作 → 桌宠窗口事件名」映射（与 push_pet_session 共用）。
+///
+/// `clear` 不是单个会话的动作而是整批作废：它由宿主在「接入时已无其他消费者」的连接上以
+/// `: state-lost` 注释帧宣告（见 [`SSE_STATE_LOST_COMMENT`]）——宿主不会把累计态重放给新
+/// 消费者，因此那份状态一旦随旧连接丢弃，桌宠侧就只能整批作废；反之只要还有别的消费者在，
+/// 宿主状态就仍然有效，清屏会误杀活气泡。
 fn session_event_of(action: &str) -> Option<&'static str> {
     match action {
         "create" => Some("session:create"),
         "update" => Some("session:update"),
         "remove" => Some("session:remove"),
+        "clear" => Some("session:clear"),
         _ => None,
     }
 }
@@ -338,11 +352,23 @@ fn emit_pet_session(app: &AppHandle, action: &str, payload: &Value) {
 }
 
 /// 消费宿主会话增量 SSE 流：读取 `http://127.0.0.1:<port>/api/desktop/dsh-tauri-pet/session/stream`，
-/// 每个 `data:` 帧（`{"action":...,"payload":...}`）解析后经 emit_to 直达桌宠 WebView。
+/// 每个 `data:` 帧（`{"action":...,"payload":...}`）解析后经 emit_to 直达桌宠 WebView；
+/// `: state-lost` 注释帧翻译成一次整批作废（见 [`SSE_STATE_LOST_COMMENT`]）。
 ///
 /// 方案 1（host → rust → pet）：Rust 不再依赖 iframe 的 invoke 桥转发（#396 根因），
 /// 而是作为宿主流的消费者。流中断（宿主未就绪/重启）时退避重连，幂等可恢复。
 async fn consume_pet_session_stream(app: &AppHandle, url: &str) -> Result<(), String> {
+    consume_pet_session_stream_with(url, |action, payload| {
+        emit_pet_session(app, action, payload);
+    })
+    .await
+}
+
+/// [`consume_pet_session_stream`] 的取帧主体：把每个动作交给 `on_frame`，与 Tauri 运行时解耦。
+async fn consume_pet_session_stream_with<F>(url: &str, mut on_frame: F) -> Result<(), String>
+where
+    F: FnMut(&str, &Value),
+{
     // 访问的是本机 dsh，不能继承 `HTTP_PROXY` / `ALL_PROXY`（与 `loopback_http_client`
     // 同一理由）：部分代理不尊重回环地址直连，会把这条 SSE 转发到外部代理，表现为
     // `HTTP 502` / `HTTP 404` / `error decoding response body` 的反复断线重连 ——
@@ -360,9 +386,14 @@ async fn consume_pet_session_stream(app: &AppHandle, url: &str) -> Result<(), St
         return Err(format!("HTTP {}", response.status()));
     }
 
+    // 宿主侧累计态的生命周期就是「有消费者」，本端一断一接（宿主重启、宿主热重载、
+    // 桌宠重新启用）都意味着宿主已丢弃逐会话状态、不会再为旧会话补发 remove；此时
+    // 桌宠窗口里的气泡仍是上一轮的并作废。但这件事**只有宿主知道**：若仍有别的消费者
+    // 挂在流上，宿主状态留存且不会重放，本端无条件清屏就会误杀那些仍然有效的气泡。
+    // 因此清屏时机交给宿主宣告（`: state-lost` 注释帧，见 `SSE_STATE_LOST_COMMENT`）。
     let mut stream = response.bytes_stream();
     let mut buffer: Vec<u8> = Vec::new();
-    // SSE: data: 行累积，遇空行派发一帧；': keepalive' 注释帧忽略。
+    // SSE: data: 行累积，遇空行派发一帧；注释帧只认 state-lost，其余（含心跳）忽略。
     let mut pending_data: Vec<String> = Vec::new();
 
     while let Some(chunk) = stream.next().await {
@@ -383,10 +414,13 @@ async fn consume_pet_session_stream(app: &AppHandle, url: &str) -> Result<(), St
                     .unwrap_or_default()
                     .to_string();
                 let payload = frame.get("payload").cloned().unwrap_or(Value::Null);
-                emit_pet_session(app, &action, &payload);
+                on_frame(&action, &payload);
                 pending_data.clear();
+            } else if trimmed.strip_prefix(':').map(str::trim) == Some(SSE_STATE_LOST_COMMENT) {
+                // 宿主宣告上一轮累计态已丢弃（接入时已无其他消费者才会发）：整批作废气泡。
+                on_frame("clear", &Value::Null);
             }
-            // 其余（'：' 开头的注释帧等）忽略。
+            // 其余行（心跳等注释帧、SSE 字段行）忽略。
         }
     }
     Ok(())
@@ -1289,6 +1323,90 @@ mod tests {
     struct TestDirectory(PathBuf);
 
     // ---- 重连日志节流（宿主不可用期间每 2s 一次失败不能刷满日志）----
+
+    #[test]
+    fn session_event_of_maps_every_stream_action() {
+        // 宿主会话流的 action → 桌宠窗口事件名；clear 是「整批作废」的首帧动作。
+        assert_eq!(session_event_of("create"), Some("session:create"));
+        assert_eq!(session_event_of("update"), Some("session:update"));
+        assert_eq!(session_event_of("remove"), Some("session:remove"));
+        assert_eq!(session_event_of("clear"), Some("session:clear"));
+        // 未知 action 静默忽略（不 emit），而不是把它拼成事件名。
+        assert_eq!(session_event_of("bogus"), None);
+    }
+
+    /// 起一个「先回 `prefix` 注释帧、再回一帧 SSE 数据」后关闭的本地服务端，返回其 URL。
+    fn spawn_single_frame_sse_server(prefix: &str, action: &str, payload: &str) -> String {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind sse port");
+        let port = listener.local_addr().expect("read sse port").port();
+        let body = format!("{prefix}data: {{\"action\":\"{action}\",\"payload\":{payload}}}\n\n");
+        std::thread::spawn(move || {
+            let (mut socket, _) = listener.accept().expect("accept sse client");
+            let mut request = [0u8; 1024];
+            let _ = std::io::Read::read(&mut socket, &mut request);
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            let _ = std::io::Write::write_all(&mut socket, response.as_bytes());
+        });
+        format!("http://127.0.0.1:{port}/session/stream")
+    }
+
+    /// 宿主宣告累计态已丢弃（接入时已无其他消费者）时必须先整批作废：宿主不会把累计态重放
+    /// 给新消费者，桌宠窗口里上一轮的气泡只能靠这一帧清掉（重启后残留气泡的根因）。
+    #[tokio::test]
+    async fn stream_connect_clears_stale_bubbles_when_host_state_was_dropped() {
+        let url = spawn_single_frame_sse_server(": state-lost\n\n", "create", "{\"id\":\"s1\"}");
+        let mut actions: Vec<String> = Vec::new();
+        consume_pet_session_stream_with(&url, |action, _| actions.push(action.to_string()))
+            .await
+            .expect("consume single-frame stream");
+
+        assert_eq!(actions, vec!["clear".to_string(), "create".to_string()]);
+    }
+
+    /// 没有 state-lost 宣告就说明宿主累计态仍然有效（还有别的消费者挂在流上）：这时宿主
+    /// 既不重放也不丢弃状态，清屏会把仍然活着的气泡误杀，因此只能原样保留；心跳注释帧
+    /// 同样不得被当成清屏信号。
+    #[tokio::test]
+    async fn stream_connect_without_state_lost_keeps_live_bubbles() {
+        let url = spawn_single_frame_sse_server(": keepalive\n\n", "create", "{\"id\":\"s1\"}");
+        let mut actions: Vec<String> = Vec::new();
+        consume_pet_session_stream_with(&url, |action, _| actions.push(action.to_string()))
+            .await
+            .expect("consume single-frame stream");
+
+        assert_eq!(actions, vec!["create".to_string()]);
+    }
+
+    /// 连接未建立成功（宿主未就绪，返回非 2xx）时不得清屏：此刻是重连退避中的常态失败，
+    /// 桌宠窗口里正在显示的气泡仍然有效，误清会让气泡每 2s 闪没一次。
+    #[tokio::test]
+    async fn stream_connect_failure_leaves_bubbles_untouched() {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind sse port");
+        let port = listener.local_addr().expect("read sse port").port();
+        std::thread::spawn(move || {
+            let (mut socket, _) = listener.accept().expect("accept sse client");
+            let mut request = [0u8; 1024];
+            let _ = std::io::Read::read(&mut socket, &mut request);
+            let _ = std::io::Write::write_all(
+                &mut socket,
+                b"HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+            );
+        });
+
+        let mut actions: Vec<String> = Vec::new();
+        let error = consume_pet_session_stream_with(
+            &format!("http://127.0.0.1:{port}/session/stream"),
+            |action, _| actions.push(action.to_string()),
+        )
+        .await
+        .expect_err("non-2xx stream must fail");
+
+        assert!(error.starts_with("HTTP 502"), "unexpected error: {error}");
+        assert!(actions.is_empty(), "no frame may be emitted: {actions:?}");
+    }
 
     fn throttle(relog_interval: Duration) -> PetStreamLogThrottle {
         PetStreamLogThrottle {
