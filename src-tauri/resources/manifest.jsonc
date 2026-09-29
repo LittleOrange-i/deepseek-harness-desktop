@@ -212,6 +212,16 @@
           { "version": "^4.29.0", "dsh": "^0.1.7-rc.1" },
           { "version": "^4.30.0", "dsh": "^0.2.0-rc.1" }
         ]
+      },
+      {
+        "id": "billion-context",
+        "spec": "billion-context",
+        "name": "Billion Context",
+        "description": "Context compression for DeepSeek Harness: folds conversation history as it grows so long sessions keep running within a small context window, and restores folded content on demand via decompress / search_context.",
+        "repo": "https://github.com/ranxianglei/billion-context",
+        "recommended": false,
+        "checked": false,
+        "version": "latest"
       }
     ]
   },

@@ -68,6 +68,17 @@ describe('unchecked preset suppresses first-run preselection', () => {
   })
 })
 
+// ── Suite B3 — 非推荐预设既不标推荐也不预选（behavior） ────────────────────────
+// 缺省语义：recommended / checked 未声明即为 false，故断言按 `?? false` 取值。
+describe('non-recommended preset stays fully opt-in', () => {
+  it('declares Billion Context without the recommended chip and without preselecting it', () => {
+    const entry = readManifest().plugins.preset.find(p => p.id === 'billion-context')
+    expect(entry).toBeDefined()
+    expect(entry?.recommended ?? false).toBe(false)
+    expect(entry?.checked ?? false).toBe(false)
+  })
+})
+
 // ── Suite D — store empty-selection guard (behavior, regression lock) ────────
 // vi.mock 工厂会被提升到文件顶部，必须先经 vi.hoisted 声明模块级 mock 状态，
 // 否则工厂执行时引用未初始化的绑定（Vitest 4.x 语义）。
