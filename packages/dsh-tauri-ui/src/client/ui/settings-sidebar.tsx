@@ -108,6 +108,8 @@ export function SettingsSidebar(_props: SettingsSidebarProps): ReactElement | nu
     <div
       className="fixed inset-0 z-[1000] flex bg-[var(--dsw-specific-sidebar-fill)] text-primary [--dsh-chat-content-width:748px] [--dsh-composer-card-max-width:calc(var(--dsh-chat-content-width)_+_32px)] [--dsh-composer-side-clearance:16px]"
       data-slot-sidebar="dsh-tauri-ui"
+      role="dialog"
+      aria-label={locale.text('settings')}
     >
       <div
         className="flex-none box-border flex flex-col gap-[14px] w-[var(--dsh-settings-rail-width)] px-[12px] py-[6px] bg-[var(--dsw-specific-sidebar-fill)] overflow-hidden"

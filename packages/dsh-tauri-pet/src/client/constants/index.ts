@@ -2,7 +2,7 @@ import { PLUGIN_ID } from '../../shared/constants'
 
 /** settings.section 槽位里的桌宠分区标识与排序权重。 */
 export const PET_SECTION_ID = 'dsh-tauri-pet-settings'
-export const PET_SECTION_ORDER = 230
+export const PET_SECTION_ORDER = 210
 
 /** effect 标签。 */
 export const PET_LOCALE_EFFECT = `${PLUGIN_ID}: locale`
