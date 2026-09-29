@@ -573,7 +573,7 @@ async fn run_plugin_with_allow_build_retry(
     super::process::clear_orphan_plugin_writer_lock(&super::installed::profile_dir(app_handle));
     let mut retries = 0usize;
     let mut all_output = String::new();
-    let mut last_attempt = String::new();
+    let mut last_attempt;
     let exit_code = loop {
         if cancel.is_some_and(|signal| *signal.borrow()) {
             return Err("PLUGIN_OPERATION_CANCELLED: plugin operation was cancelled".to_string());
