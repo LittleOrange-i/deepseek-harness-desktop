@@ -66,6 +66,7 @@
       "dsh-session-context-menu",
       "dsh-tauri-model-config",
       "dsh-tauri-taiwindcss",
+      "dsh-tauri-session",
       "dsh-tauri-ssh",
       "dsh-tauri-panel",
       "dsh-tauri-panel-extension",
