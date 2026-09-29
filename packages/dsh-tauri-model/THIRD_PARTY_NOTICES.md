@@ -3,8 +3,8 @@
 ## deepseek-ai/deepseek-harness
 
 - Repository: <https://github.com/deepseek-ai/deepseek-harness>
-- Version: `dsh-v0.2.0-rc.1`
-- Revision: `4878cdabd87d4041bdaff61d04c966883b9fd07a`
+- Version: `dsh-v0.2.0-rc.2`
+- Revision: `639ed015397290b3745d163aafe02ffee4aa3f84`
 - Source: `source/deepseek-harness`
 - License: MIT — Copyright (c) 2026 DeepSeek
 
@@ -21,6 +21,12 @@ Derived (upstream `packages/client/ui-settings-models/` → this package `src/`)
 - `src/client/ModelListEditor.tsx`, `ModelRow.tsx`, `ModelInputTypes.tsx`, `EditorFooter.tsx` → `client/models/` (same names)
 - `src/client/OnboardingModal.tsx`, `WelcomeNotice.tsx` → `client/models/` (same names)
 - `src/client/apiKey.ts`, `protocol-label.ts`, `operations.ts`, `schema-operations.ts`, `slot-contract.ts`, `store.ts`, `welcome-store.ts`, `locales.ts` → `client/models/` (same names)
+
+Synced `0.2.0-rc.1` → `0.2.0-rc.2`:
+
+- `ui-settings-models/` — this package's derived source — carries no code change across the range; only its `package.json` version string moves.
+- The release's third-party model-catalog and compatibility refresh (`pi-ai` 0.87.1) needs nothing here: no `pi-ai` compat field is named in this package (`deferredToolsMode`, `supportsToolReferences`, `supportsMidConvo*`, `sessionAffinityFormat`, `mistral-conversations` are all absent), `model-compat.ts` keeps writing `thinkingFormat` / `chatTemplateKwargs` / `supportsDeveloperRole`, and the preset catalog is sourced from the live LiteLLM index instead of `pi-ai`'s bundled model ids.
+- `ModelListEditor.tsx`: the fetched-model picker takes the release's model-picker search posture. `rankByName` from `@deepseek-ai/dsh-client-ui-primitives` replaces the substring filter, and the search field gains ArrowUp / ArrowDown (wrapping), Home / End, Enter to toggle the active row, and Escape to close, with the active row scrolled into view and highlighted.
 
 Synced `0.1.7-alpha.1` → `0.1.7-rc.2`:
 
