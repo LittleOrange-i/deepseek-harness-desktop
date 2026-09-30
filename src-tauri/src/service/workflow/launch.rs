@@ -441,6 +441,12 @@ pub async fn launch(app_handle: tauri::AppHandle) -> Result<(), String> {
     if let Err(e) = crate::service::patch::workspace_view::apply(&app_handle) {
         log::warn!("workspace view state patch failed: {e}");
     }
+    // 内置插件（dsh-tauri-*）只在壳的插件弹窗里可见：官方侧边栏 Plugins 页与插件市场
+    // 都按各自的硬编码内置/inbox 名单判断 bundle 归属，上游没有可配置开关，因此对这两个
+    // 前端做幂等补丁。最佳努力且幂等：锚点缺失（上游改写布局）时安全跳过。
+    if let Err(e) = crate::service::patch::plugin_visibility::apply(&app_handle) {
+        log::warn!("plugin visibility patch failed: {e}");
+    }
     mark_phase("core_patches", &mut phase_started);
     // 预防性处理：pnpm 在无 TTY 环境（dsh-market 等子进程）下重装/更新插件时，
     // 清理/重建 node_modules 会触发交互确认并因无 TTY 直接中止
@@ -474,6 +480,11 @@ pub async fn launch(app_handle: tauri::AppHandle) -> Result<(), String> {
         log::warn!("ensure preset plugins failed: {e}");
     }
     mark_phase("ensure_preset_plugins", &mut phase_started);
+    // 插件自愈（内置插件重装 / 预装插件完整性自检）可能刚把插件市场装进档案，而上一轮补丁
+    // 执行时它还不存在、已被安全跳过；自愈完成后按需重打一次（逐名字判定，已登记则跳过）。
+    if let Err(e) = crate::service::patch::plugin_visibility::apply(&app_handle) {
+        log::warn!("plugin visibility patch after plugin self-healing failed: {e}");
+    }
     // 预打包核心运行时自愈：把 app 内置插件与 profile 插件入口链接进活动核心的
     // node_modules（dsh 的 loader 以核心根为裸包解析根），并核验/修复 sharp/koffi
     // 原生可选依赖。只作用于 CoreSource::App，本地核心由用户自行管理。dsh 在缺失
