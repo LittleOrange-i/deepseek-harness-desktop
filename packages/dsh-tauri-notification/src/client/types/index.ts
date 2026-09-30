@@ -18,6 +18,8 @@ export interface SessionSummaryFace {
   readonly id: string
   readonly title?: string
   readonly displayTitle?: string
+  /** 宿主标注的子代理会话；与桌宠一致，不参与通知。 */
+  readonly origin?: 'subagent'
   readonly running: boolean
   readonly updatedAt?: number
 }

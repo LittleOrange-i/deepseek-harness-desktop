@@ -316,6 +316,9 @@ export const notifyFeature = defineRegister<ClientContext>((controller, ctx, ada
     const entries = new Map<string, SessionObservation>()
     for (const sessionId of list.ids) {
       const summary = list.byId[sessionId]
+      // 子代理会话由父会话驱动，与桌宠（use-bubble-tracker）一致：不进观察集，也就不发通知。
+      if (summary?.origin === 'subagent')
+        continue
       const status = statuses?.get(sessionId)
       entries.set(sessionId, {
         running: status ? status.running : summary?.running,
