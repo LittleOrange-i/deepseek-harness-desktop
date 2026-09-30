@@ -21,10 +21,11 @@
 //! 并就地补构建缺失的声明入口（见 [`artifact::ensure_plugin_entry_built`]）。
 //!
 //! 模块划分（`install/`）：
-//! - [`self`]：安装编排入口（install / install_internal）与 allowBuilds 重试循环
-//! - [`single`]：单插件升级/卸载（`dsh plugin update/remove`，卸载后核验 + 离线兜底、
+//! - [`self`]：安装编排入口（install / install_specs / install_internal）与 allowBuilds 重试循环
+//! - [`single`]：批量升级/卸载（`dsh plugin update/remove`，卸载后核验 + 离线兜底、
 //!   弃用插件自动卸载）
-//! - [`spec`]：安装 spec 准备（内置插件捆绑目录、GitHub 简写规范化、Windows 引号）
+//! - [`spec`]：安装 spec 准备（内置插件捆绑目录、GitHub 简写规范化、Windows 引号、包名解析）
+//! - [`inspect`]：安装前只读兼容性检查（registry `latest` + DSH 家族 peer 判定）
 //! - [`env`]：`dsh plugin` 子进程环境（$DSH_HOME 隔离、git HTTPS 强制）
 //! - [`pnpm`]：pnpm 选版与版本探测（store 主版本感知、捆绑版补齐、有界 probe 监控）
 //! - [`allowlist`]：构建放行白名单解析与 pnpm-workspace.yaml 写回
@@ -35,7 +36,6 @@ use crate::config;
 use crate::service::cli;
 use crate::service::core;
 use crate::service::profile::{active_profile, allow_profile_release_age};
-use crate::service::workflow;
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::path::Path;
@@ -60,6 +60,7 @@ mod allowlist;
 mod artifact;
 mod diagnose;
 mod env;
+mod inspect;
 mod pnpm;
 mod single;
 mod spec;
@@ -70,7 +71,8 @@ pub(crate) use pnpm::{
     bundled_pnpm_major, harness_prefer_bundled_pnpm, pnpm_major_version_at, profile_store_major,
 };
 pub(crate) use single::uninstall_deprecated_plugins;
-pub use single::{remove, update};
+pub use inspect::inspect_specs;
+pub use single::{remove_many, update_many};
 // 版本兼容性/发布时长两类拦截的解析结果都要跨到 `bridge`（前端逐项确认后授权），在此定义出口
 pub use diagnose::{IncompatibleVersion, PolicyBlockedVersion};
 
@@ -128,8 +130,18 @@ fn policy_verification_retry_delay(retry: usize) -> std::time::Duration {
     std::time::Duration::from_secs(seconds)
 }
 
+/// 一次安装操作的目标：`id` 是稳定标识（错误记录 / 快照 / bundles 对账），
+/// `name` 是 `node_modules` 下的目录名（产物核验与入口补构建用，无法解析时为
+/// `None`，此时跳过这两步），`spec` 是最终交给 `dsh plugin add` 的参数。
+pub(crate) struct InstallTarget {
+    pub id: String,
+    pub name: Option<String>,
+    pub spec: String,
+}
+
 pub async fn install(app_handle: &AppHandle, ids: &[String]) -> Result<(), String> {
-    install_with_cancel(app_handle, ids, None, new_process_owner()).await
+    let targets = preset_targets(app_handle, ids)?;
+    install_with_cancel(app_handle, &targets, None, new_process_owner()).await
 }
 
 /// 内置插件启动自愈专用入口：取消信号会阻止被结束的 pnpm/dsh 进程再次进入
@@ -140,15 +152,39 @@ pub(crate) async fn install_internal(
     cancel: tokio::sync::watch::Receiver<bool>,
     owner: ProcessOwner,
 ) -> Result<(), String> {
-    install_with_cancel(app_handle, ids, Some(cancel), owner).await
+    let targets = preset_targets(app_handle, ids)?;
+    install_with_cancel(app_handle, &targets, Some(cancel), owner).await
 }
 
-async fn install_with_cancel(
-    app_handle: &AppHandle,
-    ids: &[String],
-    cancel: Option<tokio::sync::watch::Receiver<bool>>,
-    owner: ProcessOwner,
-) -> Result<(), String> {
+/// 按原始 spec 安装（插件市场 / 手动输入）：与预装路径共用同一套编排，只是目标
+/// 不再来自预设清单，因而没有捆绑目录与版本矩阵——spec 原样交给 pnpm 解析。
+pub async fn install_specs(app_handle: &AppHandle, specs: &[String]) -> Result<(), String> {
+    let targets = spec_targets(app_handle, specs);
+    if targets.is_empty() {
+        return Err("PLUGIN_SPECS_EMPTY: no plugin specs provided".to_string());
+    }
+    install_with_cancel(app_handle, &targets, None, new_process_owner()).await
+}
+
+/// 预设 id → 安装目标：解析捆绑目录与清单 spec，规范化为 `git+https://`。
+///
+/// 内置插件改为从随包分发的捆绑目录安装（`link:` 本地联接依赖，见
+/// preset::bundled_dep_spec；不用 `file:`——pnpm 对盘符冒号的绝对路径会当相对
+/// 路径解析），其余沿用清单声明的 spec；随后统一把 `github:user/repo` 规范为显式
+/// `git+https://...`，绕开 pnpm 对 GitHub 简写「HTTPS 探测失败即回退 SSH」的已知
+/// 缺陷（pnpm issue #3948 / #7243 / #13276）：公开仓库一旦落进 git+ssh，在没有
+/// SSH 配置的桌面机上必然 `Host key verification failed` / `Permission denied
+/// (publickey)`。
+///
+/// 最后按活动核心决定是否为含空格的 spec 加内嵌双引号：0.1.6-alpha.2 起 dsh CLI
+/// 改用 execa 以 argv 数组启动 pnpm，参数不再经 shell 拼接，预加引号只会让 pnpm
+/// 收到带字面引号的 spec（issue #647）；更早的核心在 win32 用 `shell:true` 把参数
+/// 拼成命令行（Node 只拼接、不转义，DEP0190），含空格的内置插件路径
+/// （`link:<应用安装目录>`）不预加引号就会被切碎成多个 spec，pnpm 报
+/// `ERR_PNPM_SPEC_NOT_SUPPORTED`、启动自愈每轮重装（死循环）。两种形态落盘
+/// `package.json` 的值都是不带引号的 `link:<路径>`，与内核对账的 `expected`
+/// （bundled_dep_spec）一致（见 [`spec_argument`]）。
+fn preset_targets(app_handle: &AppHandle, ids: &[String]) -> Result<Vec<InstallTarget>, String> {
     if ids.is_empty() {
         return Err("PREINSTALL_EMPTY: no plugins selected".to_string());
     }
@@ -157,45 +193,136 @@ async fn install_with_cancel(
     let presets = load_presets(app_handle);
     let preset_map: HashMap<&str, &PreinstallPluginInfo> =
         presets.iter().map(|p| (p.id.as_str(), p)).collect();
-
-    let mut specs = Vec::with_capacity(ids.len());
-    let mut needs_git = false;
-    // 是否给含空格的 spec 预加引号取决于活动核心的 `dsh plugin` 实现（见
-    // [`spec_argument`]）：0.1.6-alpha.2 起 pnpm 由 argv 数组启动，预加引号会变成
-    // spec 的一部分（issue #647）。
     let core_version = crate::service::core::active_version(app_handle);
+
+    let mut targets = Vec::with_capacity(ids.len());
     for id in ids {
         let preset = preset_map
             .get(id.as_str())
             .ok_or_else(|| format!("PREINSTALL_INVALID_ID: {id}"))?;
-        // 内置插件改为从随包分发的捆绑目录安装（`link:` 本地联接依赖，见
-        // preset::bundled_dep_spec；不用 `file:`——pnpm 对盘符冒号的绝对路径
-        // 会当相对路径解析），其余沿用清单声明的 spec；随后统一把
-        // `github:user/repo` 规范为显式 `git+https://...`，绕开 pnpm 对
-        // GitHub 简写「HTTPS 探测失败即回退 SSH」的已知缺陷（pnpm issue
-        // #3948 / #7243 / #13276）：公开仓库一旦落进 git+ssh，在没有 SSH 配置
-        // 的桌面机上必然 `Host key verification failed` / `Permission denied (publickey)`。
-        //
-        // 最后按活动核心决定是否为含空格的 spec 加内嵌双引号：0.1.6-alpha.2 起
-        // dsh CLI 改用 execa 以 argv 数组启动 pnpm，参数不再经 shell 拼接，预加引号
-        // 只会让 pnpm 收到带字面引号的 spec（issue #647）；更早的核心在 win32 用
-        // `shell:true` 把参数拼成命令行（Node 只拼接、不转义，DEP0190），含空格的
-        // 内置插件路径（`link:<应用安装目录>`）不预加引号就会被切碎成多个 spec，
-        // pnpm 报 `ERR_PNPM_SPEC_NOT_SUPPORTED`、启动自愈每轮重装（死循环）。两种
-        // 形态落盘 `package.json` 的值都是不带引号的 `link:<路径>`，与内核
-        // 对账的 `expected`（bundled_dep_spec）一致（见 [`spec_argument`]）。
         let raw = normalize_git_spec(&preset_spec_for_install(
             preset,
             bundled_dir_of(app_handle, preset),
             core_version.as_deref(),
         )?);
-        // 规范化后 `git+...` 前缀即 git 托管依赖：pnpm 安装时需要实际可用的 git
-        // （见下方预检）；npm 包名（如 `dshmarket`）与 `link:` 本地依赖无需 git。
-        if raw.starts_with("git+") {
-            needs_git = true;
-        }
-        specs.push(spec_argument(&raw, core_version.as_deref()));
+        targets.push(InstallTarget {
+            id: preset.id.clone(),
+            name: Some(installed_name(preset).to_string()),
+            spec: spec_argument(&raw, core_version.as_deref()),
+        });
     }
+    Ok(targets)
+}
+
+/// 原始 spec → 安装目标：`link:`/`file:` 读目标包名（读不到回落目录名），npm 形态
+/// 剥离版本后缀，git / URL 形态无法静态得知包名，回落 spec 本身并放弃产物核验。
+///
+/// 命中资源清单的 spec 走 [`preset_targets`] 同一套解析：同一条目无论从预装引导页
+/// （预设 id）还是从面板 / 市场（原始 spec）进入，都必须解析出相同的安装目标——内置
+/// 插件的捆绑 `link:` 目录与清单版本矩阵只能在这一侧得到。解析失败（内置插件缺
+/// 捆绑产物，属发布缺陷）时退回裸 spec，让 pnpm 报出真实原因而不是静默跳过该条目。
+fn spec_targets(app_handle: &AppHandle, specs: &[String]) -> Vec<InstallTarget> {
+    let core_version = crate::service::core::active_version(app_handle);
+    let presets = load_presets(app_handle);
+    let mut targets = Vec::with_capacity(specs.len());
+    for spec in specs {
+        let spec = spec.trim();
+        if spec.is_empty() {
+            continue;
+        }
+        if let Some(preset) = presets
+            .iter()
+            .find(|preset| preset.id == spec || preset.spec == spec)
+        {
+            if let Ok(raw) = preset_spec_for_install(
+                preset,
+                bundled_dir_of(app_handle, preset),
+                core_version.as_deref(),
+            ) {
+                targets.push(InstallTarget {
+                    id: preset.id.clone(),
+                    name: Some(installed_name(preset).to_string()),
+                    spec: spec_argument(&normalize_git_spec(&raw), core_version.as_deref()),
+                });
+                continue;
+            }
+        }
+        let raw = normalize_git_spec(spec);
+        let name = spec::package_name_of_spec(&raw);
+        targets.push(InstallTarget {
+            id: name.clone().unwrap_or_else(|| raw.clone()),
+            name,
+            spec: spec_argument(&raw, core_version.as_deref()),
+        });
+    }
+    targets
+}
+
+/// 被门禁拦下的条目**全部**已在 lock 中时，返回该补写的豁免条目（精确 `包名@版本`）。
+fn locked_release_age_exemptions(
+    profile: &Path,
+    blocked: &[PolicyBlockedVersion],
+) -> Option<Vec<String>> {
+    if blocked.is_empty() {
+        return None;
+    }
+    let mut entries = Vec::with_capacity(blocked.len());
+    for item in blocked {
+        if single::locked_package_version(profile, &item.name).as_deref()
+            != Some(item.version.as_str())
+        {
+            return None;
+        }
+        entries.push(format!("{}@{}", item.name, item.version));
+    }
+    Some(entries)
+}
+
+/// 这次失败是不是「lockfile 里早就有的太新条目又被门禁拦下」：是则补齐豁免并返回 `true`。
+///
+/// pnpm 的 `minimumReleaseAgeExclude` 只被**解析**阶段采信，lockfile 校验阶段照旧按窗口
+/// 判定：一旦 lock 里存在比窗口更新的条目（用户授权后放宽窗口装上的那一次就会写入），
+/// 此后**每一次**触发状态变更的插件操作都会失败——升级第二个插件卡在第一个插件的条目上，
+/// 启动期的内置插件安装失败还会让应用起不来（`INTERNAL_PLUGIN_INSTALL_FAILED`）。
+/// 已在 lock 里的版本说明它早就装到本机，不是本次要审的新版本：补进豁免清单（幂等）并让
+/// 调用方放宽窗口重跑一次，把档案带回自洽状态。
+///
+/// 被拦下的条目里只要有一个不在 lock 中（或 lock 里是别的版本），说明那是本次新解析出来
+/// 的版本：保持默认窗口、交前端走「逐项授权」，绝不放宽。
+fn heal_locked_release_age(app_handle: &AppHandle, output: &str) -> bool {
+    let blocked = policy_blocked_versions(output);
+    let Some(entries) = locked_release_age_exemptions(&profile_dir(app_handle), &blocked) else {
+        return false;
+    };
+    match allow_profile_release_age(app_handle, &entries) {
+        Ok(()) => {
+            log::warn!(
+                "pnpm release-age policy blocked {} entries that are already locked; recorded them as exempt and retrying with the window relaxed",
+                entries.len()
+            );
+            true
+        }
+        Err(error) => {
+            log::warn!("failed to record the release-age exemptions for locked entries: {error}");
+            false
+        }
+    }
+}
+
+async fn install_with_cancel(
+    app_handle: &AppHandle,
+    targets: &[InstallTarget],
+    cancel: Option<tokio::sync::watch::Receiver<bool>>,
+    owner: ProcessOwner,
+) -> Result<(), String> {
+    if targets.is_empty() {
+        return Err("PREINSTALL_EMPTY: no plugins selected".to_string());
+    }
+
+    let specs: Vec<&str> = targets.iter().map(|t| t.spec.as_str()).collect();
+    // 规范化后 `git+...` 前缀即 git 托管依赖：pnpm 安装时需要实际可用的 git
+    // （见下方预检）；npm 包名（如 `dshmarket`）与 `link:` 本地依赖无需 git。
+    let needs_git = specs.iter().any(|s| s.starts_with("git+"));
 
     // git 托管插件安装前预检（issue #369）：Linux/macOS 完全依赖系统 git（不在
     // 空白 Windows 自动配置范围，`config::git_runtime_ready` 非 Windows 恒真），
@@ -236,35 +363,13 @@ async fn install_with_cancel(
     // 旧档案可能由早期版本创建，没有同步 Harness 的最小发布时间例外；补齐
     // 精确的已审查 zod 版本，避免 registry 元数据瞬时失败阻断插件安装（issue #222）。
     super::ensure_profile_pnpm_policy(app_handle)?;
-    // 安装前停止运行中的服务，避免资源冲突。
-    // 记录停服结果：停服失败意味着服务可能仍在运行、插件目录可能被写入，
-    // 此时创建快照会捕获不一致状态，因此停服失败时跳过快照（不终止安装）。
-    let mut stopped = true;
-    if workflow::has_owned_process() {
-        // 停服务会让用户感到"重启"，先在日志面板讲清缘由（issue #48）
-        let _ = window.emit(
-            PREINSTALL_LOG_EVENT,
-            PreinstallLogPayload {
-                line: "[harness] 正在停止运行中的服务（安装插件需要短暂重启）…".to_string(),
-            },
-        );
-        log::info!("Stopping running harness service before installing plugins");
-        stopped = match workflow::stop(app_handle.clone()).await {
-            Ok(()) => true,
-            Err(e) => {
-                log::warn!("failed to stop harness before plugin install: {e}");
-                false
-            }
-        };
-    }
-    // 安装/升级前自动快照已安装的插件（覆盖式），失败仅告警不阻断安装。
-    // 仅在服务已确认停止后执行，保证快照一致
+    // 安装/升级前自动快照已安装的插件（覆盖式），失败仅告警不阻断安装
     // （issue #303：自动快照失败不阻塞主流程，避免升级被陈旧快照问题拖垮）。
-    if stopped {
-        for id in ids {
-            if is_installed(app_handle, id) {
-                super::snapshot::create_best_effort(app_handle, id);
-            }
+    // 这里**不再**为了快照停掉运行中的服务：插件包只会被随后的 pnpm 改写，先停服对
+    // 快照一致性没有帮助，却让用户看到一次「服务被重启」；是否重启交给结算后的提示。
+    for target in targets {
+        if is_installed(app_handle, &target.id) {
+            super::snapshot::create_best_effort(app_handle, &target.id);
         }
     }
 
@@ -278,7 +383,7 @@ async fn install_with_cancel(
         OsString::from(active_profile(app_handle)),
         OsString::from("add"),
     ];
-    args.extend(specs.iter().map(|s| OsString::from(s.as_str())));
+    args.extend(specs.iter().map(OsString::from));
 
     let cwd = config::get_dsh_install_path(app_handle);
     // 日志打印实际传给 dsh 的 spec（此前打印 id 会误导排查：安装用的是 spec）
@@ -301,6 +406,29 @@ async fn install_with_cancel(
         owner,
     )
     .await?;
+
+    // 门禁自愈：lockfile 里早有的太新条目会让**每一次**状态变更都失败
+    // （见 [`heal_locked_release_age`]）。补齐豁免后放宽窗口重跑一次，仍失败就照原样分类。
+    let (exit_code, last_output, last_attempt) = if exit_code != 0
+        && heal_locked_release_age(app_handle, &last_attempt)
+    {
+        let mut retry_args = args.clone();
+        retry_args.push(OsString::from(single::RELEASE_AGE_RELAXED_FLAG));
+        run_plugin_install_with_transient_retry(
+            app_handle,
+            &node,
+            &retry_args,
+            &cwd,
+            &envs,
+            &window,
+            "install",
+            cancel.as_ref(),
+            owner,
+        )
+        .await?
+    } else {
+        (exit_code, last_output, last_attempt)
+    };
 
     if exit_code != 0 {
         log::error!("dsh plugin install failed with exit code {exit_code}");
@@ -359,9 +487,9 @@ async fn install_with_cancel(
         };
         // 批量安装失败时给本次选中的每个插件记一条错误（前端据此展示异常标记，
         // 可针对单个插件重试更新/卸载）
-        for id in ids {
-            if let Err(e) = errors::record(app_handle, id, "install", &message) {
-                log::warn!("failed to record plugin error for {id}: {e}");
+        for target in targets {
+            if let Err(e) = errors::record(app_handle, &target.id, "install", &message) {
+                log::warn!("failed to record plugin error for {}: {e}", target.id);
             }
         }
         if let Some(network_hint) = network_hint {
@@ -412,7 +540,7 @@ async fn install_with_cancel(
     // 真正修复：核验本次安装是否真实落盘。pnpm 可能在 allowBuilds 阻断时仍以
     // exit 0 退出（假成功），若产物缺失则记录错误并返回 Err，让前端如实展示失败、
     // 允许重试，而不是误报「已安装」。已落盘的插件在上一步被核验并清除历史错误。
-    verify_installed_products(app_handle, ids, &preset_map, &last_output)?;
+    verify_installed_products(app_handle, targets, &last_output)?;
 
     // 产物级核验：包已落盘但声明入口（如 `lib/index.js`）未构建时，本次安装
     // 同样是假成功——cordis 加载器在下一次启动必然 ERR_MODULE_NOT_FOUND 崩溃
@@ -420,18 +548,18 @@ async fn install_with_cancel(
     // 静默进入下一次启动；包目录按预设的 `installed_name` 解析（scoped 插件
     // 与 id 不同名），失败跨插件聚合后一次性返回，前端可一并重试。
     let mut entry_errors = Vec::new();
-    for id in ids {
-        let Some(preset) = preset_map.get(id.as_str()) else {
+    for target in targets {
+        let Some(name) = target.name.as_deref() else {
             continue;
         };
-        let pkg_dir = profile_dir(app_handle)
-            .join("node_modules")
-            .join(installed_name(preset));
-        if let Err(e) = ensure_plugin_entry_built(app_handle, id, &pkg_dir, &envs, &window).await {
-            if let Err(err) = errors::record(app_handle, id, "install", &e) {
-                log::warn!("failed to record plugin error for {id}: {err}");
+        let pkg_dir = profile_dir(app_handle).join("node_modules").join(name);
+        if let Err(e) =
+            ensure_plugin_entry_built(app_handle, &target.id, &pkg_dir, &envs, &window).await
+        {
+            if let Err(err) = errors::record(app_handle, &target.id, "install", &e) {
+                log::warn!("failed to record plugin error for {}: {err}", target.id);
             }
-            entry_errors.push(format!("{id}: {e}"));
+            entry_errors.push(format!("{}: {e}", target.id));
         }
     }
     if !entry_errors.is_empty() {
@@ -445,11 +573,14 @@ async fn install_with_cancel(
     let _ = window.emit(
         PREINSTALL_LOG_EVENT,
         PreinstallLogPayload {
-            line: format!("[harness] 已安装 {} 个插件", ids.len()),
+            line: format!("[harness] 已安装 {} 个插件", targets.len()),
         },
     );
 
-    log::info!("Preinstall plugins installed successfully: {ids:?}");
+    log::info!(
+        "Preinstall plugins installed successfully: {:?}",
+        targets.iter().map(|t| &t.id).collect::<Vec<_>>()
+    );
     Ok(())
 }
 
@@ -532,7 +663,9 @@ pub async fn allow_version_exemptions(
 }
 
 /// 记录用户明确授权的发布时长策略豁免：把精确 `包名@版本` 写进档案的
-/// `minimumReleaseAgeExclude`，pnpm 的解析与 lockfile 校验随后都会放行这些条目。
+/// `minimumReleaseAgeExclude`，pnpm 的解析随后会放行这些条目；lockfile 校验阶段
+/// 仍按默认窗口拦截，因此升级调用还会附上 `--config.minimumReleaseAge=0`
+/// （见 `single::update_many`），否则授权过的版本依旧装不上。
 ///
 /// 与 [`allow_version_exemptions`] 的分工：那个针对 dsh 的**版本兼容性**（写档案的
 /// `compatibility.json`），这个针对 pnpm 的**发布时长门禁**（写 `pnpm-workspace.yaml`）。
@@ -776,6 +909,41 @@ pub(super) fn append_command_output(all_output: &mut String, captured: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn locked_release_age_exemptions_require_every_blocked_entry_to_be_locked() {
+        let dir = std::env::temp_dir().join(format!("dsh-heal-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(
+            dir.join("pnpm-lock.yaml"),
+            "lockfileVersion: '9.0'\nimporters:\n  .:\n    dependencies:\n      dshmarket:\n        specifier: ^2.12.0\n        version: 2.12.0\n",
+        )
+        .unwrap();
+
+        let locked = PolicyBlockedVersion {
+            name: "dshmarket".to_string(),
+            version: "2.12.0".to_string(),
+        };
+        let newer = PolicyBlockedVersion {
+            name: "dshmarket".to_string(),
+            version: "2.13.0".to_string(),
+        };
+        let absent = PolicyBlockedVersion {
+            name: "elsewhere".to_string(),
+            version: "1.0.0".to_string(),
+        };
+
+        assert_eq!(
+            locked_release_age_exemptions(&dir, &[locked.clone()]),
+            Some(vec!["dshmarket@2.12.0".to_string()])
+        );
+        assert_eq!(locked_release_age_exemptions(&dir, &[newer]), None);
+        assert_eq!(locked_release_age_exemptions(&dir, &[absent]), None);
+        assert_eq!(locked_release_age_exemptions(&dir, &[]), None);
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn command_output_retains_earlier_retry_diagnostics() {
