@@ -337,15 +337,21 @@ pub fn restore_backup(
             })?;
             let new_dir = profiles_root.join(format!("{active}-{timestamp}"));
             // 目标已存在时不合并解压：解压会把旧备份的内容混进既有档案，而调用方
-            // 会以为得到的是一个全新的档案目录。
-            if new_dir.exists() {
-                return Err(format!(
-                    "BACKUP_RESTORE_TARGET_EXISTS: {}",
-                    new_dir.display()
-                ));
+            // 会以为得到的是一个全新的档案目录。独占创建而不是先查后建：解压内部是
+            // `create_dir_all`，若只做存在性检查，别的组件在此刻建出的目录会被当成
+            // 我们的新档案，失败清理时 `remove_dir_all` 会连同它的内容一起删掉。
+            match fs::create_dir(&new_dir) {
+                Ok(()) => {}
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                    return Err(format!(
+                        "BACKUP_RESTORE_TARGET_EXISTS: {}",
+                        new_dir.display()
+                    ));
+                }
+                Err(e) => return Err(format!("BACKUP_RESTORE_MKDIR_NEW: {e}")),
             }
             if let Err(e) = archive::extract_archive(&archive_path, &new_dir) {
-                // 失败时删掉半成品目录，避免同名时间戳重试被上面的存在性检查挡住
+                // 失败时删掉本次创建的半成品目录，避免同名时间戳重试被上面的检查挡住
                 let _ = fs::remove_dir_all(&new_dir);
                 return Err(format!("BACKUP_RESTORE_EXTRACT_FAILED: {e}"));
             }
