@@ -107,25 +107,26 @@ fn append_dir_filtered(
             if reject_links {
                 return Err(format!("RECOVERY_LINK_UNSUPPORTED: {}", path.display()));
             }
-            // 符号链接：读取 target，tar Symlink 存储（GNU header 限制 100 字节）
+            // 符号链接：读取 target，tar Symlink 存储（GNU header 链接名上限 100 字节）
             let target =
                 std::fs::read_link(&path).map_err(|e| format!("BACKUP_ARCHIVE_READLINK: {e}"))?;
-            if target.as_os_str().len() > 100 {
-                eprintln!(
-                    "[backup] 跳过超长符号链接: {} -> {}",
-                    path.display(),
-                    target.display()
-                );
-            } else {
-                let mut header = tar::Header::new_gnu();
-                header.set_entry_type(tar::EntryType::Symlink);
-                header.set_size(0);
-                header
-                    .set_link_name(&target)
-                    .map_err(|e| format!("BACKUP_ARCHIVE_LINK_NAME: {e}"))?;
-                builder
-                    .append_link(&mut header, &archived, &target)
-                    .map_err(|e| format!("BACKUP_ARCHIVE_APPEND_LINK: {e}"))?;
+            let mut header = tar::Header::new_gnu();
+            header.set_entry_type(tar::EntryType::Symlink);
+            header.set_size(0);
+            match header.set_link_name(&target) {
+                Ok(()) => {
+                    builder
+                        .append_link(&mut header, &archived, &target)
+                        .map_err(|e| format!("BACKUP_ARCHIVE_APPEND_LINK: {e}"))?;
+                }
+                // 单个链接放不进 tar header 不能拖垮整份备份：跳过并继续
+                Err(e) => {
+                    eprintln!(
+                        "[backup] 跳过无法归档的符号链接: {} -> {} ({e})",
+                        path.display(),
+                        target.display()
+                    );
+                }
             }
         } else {
             // socket/FIFO/设备：runtime 资源，跳过
@@ -210,11 +211,41 @@ pub fn extract_archive_gzip(archive: &Path, dest: &Path) -> Result<(), String> {
     extract_tar_entries(&mut archive, dest)
 }
 
+/// 判断条目的中间目录里是否存在链接（symlink / junction）。
+///
+/// 只检查 `relative` 的父级组件，不含 `dest` 自身：目标目录本身就是链接是
+/// 调用方的选择（例如用户把 `$DSH_HOME/sessions` 软链到别处），不属于越界。
+fn has_link_parent(dest: &Path, relative: &Path) -> bool {
+    let Some(parent) = relative.parent() else {
+        return false;
+    };
+    let mut current = dest.to_path_buf();
+    for component in parent.components() {
+        current.push(component);
+        let Ok(metadata) = current.symlink_metadata() else {
+            continue;
+        };
+        let file_type = metadata.file_type();
+        #[cfg(windows)]
+        let is_link = {
+            use std::os::windows::fs::FileTypeExt;
+            file_type.is_symlink() || file_type.is_symlink_dir()
+        };
+        #[cfg(not(windows))]
+        let is_link = file_type.is_symlink();
+        if is_link {
+            return true;
+        }
+    }
+    false
+}
+
 /// 从 tar 归档安全解压所有条目到 `dest`（压缩格式无关）。
 ///
-/// 逐个条目：拒绝含 `..` 的路径（防逃逸）、拒绝硬链接、目录直接创建、
-/// 符号链接按 target 创建、普通文件先写临时文件再原子 rename。自定义
-/// 解压（替代 `entry.unpack`）是为了规避 macOS 上的 tar bug。
+/// 逐个条目：拒绝绝对路径/`..`/盘符前缀（防逃逸）、拒绝中间目录为链接的
+/// 条目、拒绝硬链接、目录直接创建、符号链接按 target 创建、普通文件先写
+/// 临时文件再原子 rename。自定义解压（替代 `entry.unpack`）是为了规避
+/// macOS 上的 tar bug。
 fn extract_tar_entries<R: Read>(archive: &mut tar::Archive<R>, dest: &Path) -> Result<(), String> {
     // 禁用 ownership 保留：归档里 uid/gid 可能是 root（uid=0），非 root 用户无法 chown
     archive.set_preserve_ownerships(false);
@@ -230,13 +261,17 @@ fn extract_tar_entries<R: Read>(archive: &mut tar::Archive<R>, dest: &Path) -> R
             .map_err(|e| format!("BACKUP_EXTRACT_PATH: {e}"))?
             .into_owned();
 
-        // 拒绝含 `..` 组件的条目（防路径穿越）
-        if path
-            .components()
-            .any(|c| matches!(c, std::path::Component::ParentDir))
+        // 拒绝绝对路径与含 `..` / 盘符前缀的条目（防路径穿越）
+        if path.has_root()
+            || path.components().any(|c| {
+                matches!(
+                    c,
+                    std::path::Component::ParentDir | std::path::Component::Prefix(_)
+                )
+            })
         {
             return Err(format!(
-                "BACKUP_EXTRACT_PATH_ESCAPE: entry {:?} contains ..",
+                "BACKUP_EXTRACT_PATH_ESCAPE: entry {:?} escapes the restore directory",
                 path
             ));
         }
@@ -246,6 +281,14 @@ fn extract_tar_entries<R: Read>(archive: &mut tar::Archive<R>, dest: &Path) -> R
         let stripped: std::path::PathBuf = path.clone();
 
         let dest_path = dest.join(&stripped);
+
+        // 中间目录是链接时，create_dir_all + 写入会顺着链接落到 dest 之外，直接拒绝
+        if has_link_parent(dest, &stripped) {
+            return Err(format!(
+                "BACKUP_EXTRACT_LINK_PARENT: entry {:?} is under a linked directory",
+                path
+            ));
+        }
 
         // 拒绝硬链接
         let entry_type = entry.header().entry_type();
@@ -536,6 +579,30 @@ mod tests {
         assert!(
             !std::path::Path::new("/tmp/dsh-evil-passwd").exists(),
             "恶意文件不应被写入系统目录"
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rejects_absolute_path_on_restore() {
+        let dir = std::env::temp_dir().join(format!("dsh-backup-absolute-{}", unique_suffix()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        let archive_path = dir.join("evil.tar.zst");
+        // 以裸字节写 zstd（tar crate 的 set_path 会拒绝绝对路径，故绕开）
+        let file = fs::File::create(&archive_path).unwrap();
+        let mut enc = zstd::stream::Encoder::new(file, 0).unwrap();
+        write_raw_tar_entry(&mut enc, "/tmp/dsh-evil-absolute", b"evil").unwrap();
+        enc.write_all(&[0u8; 1024]).unwrap();
+        enc.finish().unwrap();
+
+        let dest = dir.join("dest");
+        let result = extract_archive(&archive_path, &dest);
+        assert!(result.is_err(), "绝对路径条目应被拒绝: {result:?}");
+        assert!(
+            !dest.join("tmp").join("dsh-evil-absolute").exists(),
+            "绝对路径条目不应被解压"
         );
         let _ = fs::remove_dir_all(&dir);
     }
@@ -841,5 +908,105 @@ mod tests {
         let _ = fs::remove_dir_all(&source);
         let _ = fs::remove_file(&dest);
         let _ = fs::remove_dir_all(&restore_dir);
+    }
+
+    /// 建立目录链接：Unix 用符号链接，Windows 用无需特权的 junction。
+    fn create_dir_link(target: &Path, link: &Path) {
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(target, link).unwrap();
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            let created = std::process::Command::new("cmd")
+                .arg("/C")
+                .raw_arg(format!(
+                    "mklink /J \"{}\" \"{}\"",
+                    link.display(),
+                    target.display()
+                ))
+                .creation_flags(0x08000000)
+                .status()
+                .unwrap();
+            assert!(created.success(), "目录联接创建应成功");
+        }
+    }
+
+    /// Windows：junction 同样被识别为符号链接，其 target 超过 tar 链接名上限时应跳过，
+    /// 而不是让整份备份失败（回归用户报告的 BACKUP_ARCHIVE_LINK_NAME 备份失败）。
+    #[cfg(windows)]
+    #[test]
+    fn skips_overlong_junction_targets() {
+        let root = std::env::temp_dir().join(format!("dsh-backup-junction-{}", unique_suffix()));
+        let _ = fs::remove_dir_all(&root);
+        let mut deep = root.join("real");
+        for i in 0..6 {
+            deep = deep.join(format!("segment_{i}_padding_padding"));
+        }
+        fs::create_dir_all(&deep).unwrap();
+        let source = root.join("source");
+        fs::create_dir_all(&source).unwrap();
+        fs::write(source.join("target.txt"), "content").unwrap();
+        create_dir_link(&deep, &source.join("link"));
+        assert!(
+            fs::read_link(source.join("link")).unwrap().as_os_str().len() > 100,
+            "夹具链接名应超过 tar 链接名上限"
+        );
+
+        let dest = root.join("out.tar.zst");
+        create_archive(&source, &dest, false).expect("超长 junction 应被跳过，备份仍应成功");
+
+        let entries = list_archive_entries(&dest).unwrap();
+        assert!(
+            entries.iter().any(|e| e.contains("target.txt")),
+            "普通文件应已备份"
+        );
+        assert!(
+            !entries.iter().any(|e| e.ends_with("link")),
+            "超长 junction 不应写入归档"
+        );
+
+        let restore = root.join("restore");
+        extract_archive(&dest, &restore).unwrap();
+        assert_eq!(
+            fs::read_to_string(restore.join("target.txt")).unwrap(),
+            "content"
+        );
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    /// 回归 CodeRabbit：解压遇到既有链接父级必须拒绝，不能顺着链接把文件写到 dest 之外。
+    #[test]
+    fn extract_rejects_entries_under_a_linked_parent() {
+        let root =
+            std::env::temp_dir().join(format!("dsh-backup-link-extract-{}", unique_suffix()));
+        let _ = fs::remove_dir_all(&root);
+        let source = root.join("source");
+        fs::create_dir_all(source.join("sub")).unwrap();
+        fs::write(source.join("sub").join("child.txt"), b"escaped").unwrap();
+
+        let dest = root.join("out.tar.zst");
+        create_archive(&source, &dest, false).unwrap();
+
+        // 目标处预先存在指向外部目录的链接（Unix 符号链接 / Windows junction）
+        let target = root.join("target");
+        let outside = root.join("outside");
+        fs::create_dir_all(&target).unwrap();
+        fs::create_dir_all(&outside).unwrap();
+        let link = target.join("sub");
+        create_dir_link(&outside, &link);
+
+        let err = extract_archive(&dest, &target).unwrap_err();
+        assert!(
+            err.contains("BACKUP_EXTRACT_LINK_PARENT"),
+            "父级是链接的条目必须被拒绝，实际错误: {err}"
+        );
+        assert!(
+            !outside.join("child.txt").exists(),
+            "不得跟随链接把文件写到解压目录之外"
+        );
+
+        let _ = fs::remove_dir(&link);
+        let _ = fs::remove_dir_all(&root);
     }
 }
