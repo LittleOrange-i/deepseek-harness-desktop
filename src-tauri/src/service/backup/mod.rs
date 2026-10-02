@@ -151,15 +151,20 @@ fn now_timestamp() -> String {
     )
 }
 
-/// 生成碰撞安全的归档路径：若同名文件已存在，追加 `-2`、`-3`… 直到空闲。
-/// 调用方需持有 `BACKUP_LOCK` 以保证检查-创建的原子性。
-fn collision_safe_path(backup_dir: &Path, profile: &str, timestamp: &str) -> PathBuf {
-    let mut candidate = backup_dir.join(archive_filename(profile, timestamp));
+/// 生成碰撞安全的时间戳：同名归档已存在时追加 `-2`、`-3`… 直到空闲。
+///
+/// 时间戳同时是文件名主体、清单键和 IPC 键，三者必须一致；早期实现只给文件名
+/// 加后缀、`BackupInfo.timestamp` 保持原值，导致还原 / 删除按时间戳拼出的文件名
+/// 指向另一份备份。
+fn collision_safe_timestamp(backup_dir: &Path, profile: &str, timestamp: &str) -> String {
+    let mut candidate = timestamp.to_string();
     let mut counter = 1;
-    while candidate.exists() {
+    while backup_dir
+        .join(archive_filename(profile, &candidate))
+        .exists()
+    {
         counter += 1;
-        let ts = format!("{timestamp}-{counter}");
-        candidate = backup_dir.join(archive_filename(profile, &ts));
+        candidate = format!("{timestamp}-{counter}");
     }
     candidate
 }
@@ -173,14 +178,18 @@ pub fn create_backup(
     options: BackupOptions,
 ) -> Result<BackupInfo, String> {
     let backup_dir = get_backup_dir(app_handle);
-    let timestamp = now_timestamp();
     // 只备份当前激活的 profile 目录（其他 profile 不参与备份）
     let active = crate::service::profile::active_profile(app_handle);
     let source = crate::service::profile::profile_dir_of(app_handle, &active);
-    // 碰撞安全：同名文件已存在时追加 -2、-3…（锁内检查-创建保证原子性）
-    let dest = collision_safe_path(&backup_dir, &active, &timestamp);
+    // 碰撞安全：同名文件已存在时追加 -2、-3…
+    let timestamp = collision_safe_timestamp(&backup_dir, &active, &now_timestamp());
+    let dest = backup_dir.join(archive_filename(&active, &timestamp));
 
-    archive::create_archive(&source, &dest, options.include_credentials)?;
+    if let Err(e) = archive::create_archive(&source, &dest, options.include_credentials) {
+        // 失败时删除半成品归档，避免留下无法还原的孤儿备份文件
+        let _ = fs::remove_file(&dest);
+        return Err(e);
+    }
 
     let size = fs::metadata(&dest)
         .map(|m| m.len())
@@ -327,7 +336,19 @@ pub fn restore_backup(
                 format!("BACKUP_RESTORE_MKDIR_PROFILES: {e}")
             })?;
             let new_dir = profiles_root.join(format!("{active}-{timestamp}"));
-            archive::extract_archive(&archive_path, &new_dir)?;
+            // 目标已存在时不合并解压：解压会把旧备份的内容混进既有档案，而调用方
+            // 会以为得到的是一个全新的档案目录。
+            if new_dir.exists() {
+                return Err(format!(
+                    "BACKUP_RESTORE_TARGET_EXISTS: {}",
+                    new_dir.display()
+                ));
+            }
+            if let Err(e) = archive::extract_archive(&archive_path, &new_dir) {
+                // 失败时删掉半成品目录，避免同名时间戳重试被上面的存在性检查挡住
+                let _ = fs::remove_dir_all(&new_dir);
+                return Err(format!("BACKUP_RESTORE_EXTRACT_FAILED: {e}"));
+            }
         }
     }
     Ok(())
@@ -350,6 +371,36 @@ mod tests {
         // 格式：yyyymmddhhmmss（紧凑 14 位）
         assert_eq!(ts.len(), 14, "时间戳长度应为 14: {ts}");
         assert!(ts.chars().all(|c| c.is_ascii_digit()), "时间戳应全为数字: {ts}");
+    }
+
+    /// 碰撞安全的时间戳必须同时是文件名主体：还原 / 删除按时间戳拼文件名，
+    /// 若信息里的时间戳与文件名不一致就会指向另一份备份。
+    #[test]
+    fn collision_safe_timestamp_matches_archive_filename() {
+        let dir = std::env::temp_dir().join(format!("dsh-backup-collision-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+
+        let base = "2026-10-02T15-24-08";
+        let first = collision_safe_timestamp(&dir, "web", base);
+        assert_eq!(first, base, "无同名文件时应保持原时间戳");
+        fs::write(dir.join(archive_filename("web", &first)), b"first").unwrap();
+
+        let second = collision_safe_timestamp(&dir, "web", base);
+        assert_ne!(second, first, "同名归档已存在时必须换一个时间戳");
+        assert_eq!(second, format!("{base}-2"));
+        assert!(
+            !dir.join(archive_filename("web", &second)).exists(),
+            "换出的时间戳必须是一个空闲文件名"
+        );
+        fs::write(dir.join(archive_filename("web", &second)), b"second").unwrap();
+        assert_eq!(
+            collision_safe_timestamp(&dir, "web", base),
+            format!("{base}-3"),
+            "再次碰撞应继续递增"
+        );
+
+        let _ = fs::remove_dir_all(&dir);
     }
 
     /// 集成测试：create_archive 真实文件系统往返（验证 zstd 多线程在 CI/release 下可用）
