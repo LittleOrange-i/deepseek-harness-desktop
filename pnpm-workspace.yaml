@@ -9,8 +9,6 @@ allowBuilds:
 catalogMode: prefer
 
 inject-workspace-packages: true
-trustPolicyExclude:
-  - 'dsh-pet-component@0.2.3'
 minimumReleaseAgeExclude:
   - '@reause/core@0.1.7'
   - '@reause/shared@0.1.7'
@@ -98,6 +96,8 @@ shellEmulator: true
 
 trustPolicy: no-downgrade
 
+trustPolicyExclude:
+  - dsh-pet-component@0.2.3
 packages:
   - packages/*
 
