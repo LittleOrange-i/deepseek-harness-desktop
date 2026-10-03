@@ -1,7 +1,6 @@
 import type { ReactElement } from 'react'
 import type { MarketFace } from '../service/market.types'
 import { SegmentedControl } from 'dsh-tauri-ui/client'
-import { useWatchImmediate } from 'dsh-tauri/client'
 import { useId, useState } from 'react'
 import { locale } from '../locales'
 import { resolveActiveTab } from './extension-panel.utils'
@@ -36,7 +35,8 @@ export function ExtensionPanel({ createSkill, market, plugins }: ExtensionPanelP
   const [requestedId, setRequestedId] = useState(initialId)
   const [visited, setVisited] = useState<ReadonlySet<string>>(() => new Set([initialId]))
   const activeId = resolveActiveTab(rows, requestedId)
-  useWatchImmediate(activeId, () => setVisited(previous => previous.has(activeId) ? previous : new Set([...previous, activeId])))
+  if (!visited.has(activeId))
+    setVisited(new Set([...visited, activeId]))
 
   return (
     <div>
