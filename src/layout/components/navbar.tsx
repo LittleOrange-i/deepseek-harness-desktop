@@ -479,7 +479,6 @@ export function Navbar({ onRemoteChange, sidebarCollapsed = false, onToggleSideb
     }
   }, { target: getCurrentWindow().label })
 
-
   return (
     <div
       className={cn(
@@ -770,7 +769,7 @@ export function Navbar({ onRemoteChange, sidebarCollapsed = false, onToggleSideb
           {t('update.chip_available')}
         </Chip>
       </If>
-      
+
       <If cond={import.meta.env.DEV}>
         <Chip size="sm" variant="primary" color="warning" className="text-xs text-background ml-1" data-testid="dsh-navbar-dev-chip">
           {t('app.dev_env')}
@@ -794,7 +793,6 @@ export function Navbar({ onRemoteChange, sidebarCollapsed = false, onToggleSideb
           0.1.7-rc.2 起官方遮罩的底色落在 `::after` 并带入场淡入，镜像层随样式一起带上
           同参数的 `background` / `backdrop-filter` 过渡（见 `getOverlayMarkedStyle`）。 */}
       <div className="absolute" style={dshStyle.marked || {}} />
-
 
       {/* 「本地」/ 远端机器切换器：SSH 功能启用后才出现（未启用时组件自身不渲染），
           固定在右侧，与左侧的文件/运行/帮助菜单分列两端（macOS 上左侧是「更新可用」chip）。 */}
