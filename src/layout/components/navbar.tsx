@@ -479,19 +479,6 @@ export function Navbar({ onRemoteChange, sidebarCollapsed = false, onToggleSideb
     }
   }, { target: getCurrentWindow().label })
 
-  const updateChip = (
-    <If cond={updateInfo != null}>
-      <Chip
-        color="success"
-        size="sm"
-        variant="soft"
-        className="ml-1 cursor-pointer text-xs mr-1"
-        onClick={handleOpenUpdateDialog}
-      >
-        {t('update.chip_available')}
-      </Chip>
-    </If>
-  )
 
   return (
     <div
@@ -769,9 +756,21 @@ export function Navbar({ onRemoteChange, sidebarCollapsed = false, onToggleSideb
               </Dropdown.Menu>
             </Dropdown.Popover>
           </Dropdown>
-          {updateChip}
         </div>
       </If>
+
+      <If cond={updateInfo != null}>
+        <Chip
+          color="success"
+          size="sm"
+          variant="soft"
+          className="ml-1 cursor-pointer text-xs mr-1"
+          onClick={handleOpenUpdateDialog}
+        >
+          {t('update.chip_available')}
+        </Chip>
+      </If>
+      
       <If cond={import.meta.env.DEV}>
         <Chip size="sm" variant="primary" color="warning" className="text-xs text-background ml-1" data-testid="dsh-navbar-dev-chip">
           {t('app.dev_env')}
@@ -796,9 +795,6 @@ export function Navbar({ onRemoteChange, sidebarCollapsed = false, onToggleSideb
           同参数的 `background` / `backdrop-filter` 过渡（见 `getOverlayMarkedStyle`）。 */}
       <div className="absolute" style={dshStyle.marked || {}} />
 
-      {/* macOS：「帮助」由原生菜单栏承载，左侧壳层菜单不渲染，该 chip 落到右侧控件区，
-          保证三平台都有可见的更新入口（非 macOS 见上方紧邻「帮助」的位置）。 */}
-      <If cond={IS_MACOS}>{updateChip}</If>
 
       {/* 「本地」/ 远端机器切换器：SSH 功能启用后才出现（未启用时组件自身不渲染），
           固定在右侧，与左侧的文件/运行/帮助菜单分列两端（macOS 上左侧是「更新可用」chip）。 */}
