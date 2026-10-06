@@ -30,8 +30,7 @@
   <a href="https://trendshift.io/repositories/151676?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-151676" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/151676/daily?language=Rust" alt="dsh-tauri%2Fdeepseek-harness-desktop | Trendshift" width="250" height="55"/></a>
 </p>
 
-<img width="2678" height="1692" alt="image" src="https://github.com/user-attachments/assets/0af74e0b-ec33-471d-8a09-751f48c24725" />
-
+<img width="2678" height="1692" alt="666897572-0af74e0b-ec33-471d-8a09-751f48c24725" src="https://github.com/user-attachments/assets/878f0a90-24af-4232-bbc8-250d2e90f98b" />
 
 ## 功能
 
