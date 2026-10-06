@@ -1,11 +1,16 @@
 import type { ClientContext } from 'dsh-tauri/client'
-import type { ComposerIconState, ComposerSessionBinding, ComposerSessionSnapshot, ComposerSessionsRuntime } from './composer-resume.types'
+import type { ContentRiskRecoveryDialog } from '../components/content-risk-recovery-dialog'
+import type { ComposerIconState, ComposerSessionBinding, ComposerSessionEventEntry, ComposerSessionSnapshot, ComposerSessionsRuntime } from './composer-resume.types'
 import { defineRegister } from 'dsh-tauri/client'
 import { PLUGIN_ID } from '../../shared/constants'
+import { isContentRiskFailure } from '../../shared/content-risk'
+import { openContentRiskRecoveryConfirmation, openContentRiskRecoveryUnavailable } from '../components/content-risk-recovery-dialog'
 import { locale } from '../locales'
 import { resumeComposer } from '../service/composer-resume'
 import {
+  contentRiskRecoveryBoundary,
   isComposerEmpty,
+  lastTurnEndReason,
   paintResumeIcon,
   primaryButtonOf,
   readIconPath,
@@ -30,10 +35,14 @@ export const composerResumeFeature = defineRegister<ClientContext>((controller, 
   let watchedSessionId: string | undefined
   let unwatchEvents: (() => void) | undefined
   let unwatchSession: (() => void) | undefined
-  let patch: { button: HTMLButtonElement, icon: ComposerIconState } | undefined
+  let patch: { button: HTMLButtonElement, icon: ComposerIconState, label: string } | undefined
+  let closeDialog: (() => void) | undefined
   let pending = false
 
-  const resumeLabel = (): string => locale.text('resumeTask')
+  const resumeLabel = (entries?: readonly ComposerSessionEventEntry[]): string =>
+    isContentRiskFailure(lastTurnEndReason(entries)?.error)
+      ? locale.text('recoverContentRisk')
+      : locale.text('resumeTask')
 
   const snapshotNow = (): ComposerSessionSnapshot | undefined => binding?.session?.getSnapshot?.()
 
@@ -56,10 +65,10 @@ export const composerResumeFeature = defineRegister<ClientContext>((controller, 
       snapshot?.running === true,
       snapshot?.subagent !== null && snapshot?.subagent !== undefined,
     )
-    restorePrimaryIcon(current.button, current.icon, { label: resumeLabel(), disabled })
+    restorePrimaryIcon(current.button, current.icon, { label: current.label, disabled })
   }
 
-  function paint(button: HTMLButtonElement): void {
+  function paint(button: HTMLButtonElement, label: string): void {
     if (patch?.button !== button) {
       const path = readIconPath(button)
       if (path === null) {
@@ -67,9 +76,14 @@ export const composerResumeFeature = defineRegister<ClientContext>((controller, 
         return
       }
       restore()
-      patch = { button, icon: { path, ariaLabel: button.getAttribute('aria-label') } }
+      patch = {
+        button,
+        icon: { path, ariaLabel: button.getAttribute('aria-label'), title: button.getAttribute('title') },
+        label,
+      }
     }
-    paintResumeIcon(button, resumeLabel())
+    patch.label = label
+    paintResumeIcon(button, label)
   }
 
   function reconcile(): void {
@@ -80,7 +94,7 @@ export const composerResumeFeature = defineRegister<ClientContext>((controller, 
     if (card !== null && isComposerEmpty(card) && shouldOfferResume({ session: snapshotNow(), entries })) {
       const button = primaryButtonOf(card)
       if (button !== null) {
-        paint(button)
+        paint(button, resumeLabel(entries))
         return
       }
     }
@@ -92,6 +106,18 @@ export const composerResumeFeature = defineRegister<ClientContext>((controller, 
     unwatchEvents = undefined
     unwatchSession?.()
     unwatchSession = undefined
+  }
+
+  async function waitForDialog(dialog: ContentRiskRecoveryDialog): Promise<boolean> {
+    closeDialog?.()
+    closeDialog = dialog.close
+    try {
+      return await dialog.result
+    }
+    finally {
+      if (closeDialog === dialog.close)
+        closeDialog = undefined
+    }
   }
 
   function refresh(): void {
@@ -114,19 +140,105 @@ export const composerResumeFeature = defineRegister<ClientContext>((controller, 
     if (sessionId === undefined || pending)
       return
     pending = true
-    const outcome = await resumeComposer({ sessionId })
-    pending = false
-    if (!outcome.ok) {
-      console.warn(`[${PLUGIN_ID}] 会话继续失败: ${outcome.error ?? 'unknown'}`)
+    try {
+      const source = bindingOf(sessionId)
+      const eventSource = source?.eventSource
+      let recoveryBoundary: number | undefined
+      let excludedEventCount = 0
+      let entries = eventSource?.getSnapshot?.().entries
+      if (isContentRiskFailure(lastTurnEndReason(entries)?.error)) {
+        if (eventSource === undefined) {
+          console.warn(`[${PLUGIN_ID}] 无法读取内容审核错误的会话事件`)
+          const dialog = openContentRiskRecoveryUnavailable()
+          await waitForDialog(dialog)
+          return
+        }
+        let eventSnapshot = eventSource.getSnapshot()
+        recoveryBoundary = contentRiskRecoveryBoundary(entries, { historyComplete: eventSnapshot.hasMore !== true })
+        let firstSeq = entries?.[0]?.event?.seq
+        const sourceSession = source?.session
+        const loadOlder = sourceSession?.loadOlder?.bind(sourceSession)
+        if (loadOlder !== undefined) {
+          while (recoveryBoundary === undefined && eventSource.getSnapshot().hasMore === true) {
+            await loadOlder()
+            if (controller.isDisposed())
+              return
+            eventSnapshot = eventSource.getSnapshot()
+            entries = eventSnapshot.entries
+            const nextFirstSeq = entries?.[0]?.event?.seq
+            recoveryBoundary = contentRiskRecoveryBoundary(entries, { historyComplete: eventSnapshot.hasMore !== true })
+            if (nextFirstSeq === firstSeq)
+              break
+            firstSeq = nextFirstSeq
+          }
+        }
+        if (recoveryBoundary === undefined) {
+          console.warn(`[${PLUGIN_ID}] 无法定位内容审核错误之前的安全恢复边界`)
+          const dialog = openContentRiskRecoveryUnavailable()
+          await waitForDialog(dialog)
+          return
+        }
+        const safeBoundary = recoveryBoundary
+        excludedEventCount = entries?.filter((entry) => {
+          const seq = entry.event?.seq
+          return typeof seq === 'number' && seq > safeBoundary
+        }).length ?? 0
+      }
+      if (controller.isDisposed() || sessionIdNow() !== sessionId)
+        return
+      let outcome: Awaited<ReturnType<typeof resumeComposer>>
+      if (recoveryBoundary === undefined) {
+        outcome = await resumeComposer({ sessionId })
+      }
+      else {
+        const fork = sessions.fork
+        if (typeof fork !== 'function') {
+          console.warn(`[${PLUGIN_ID}] 当前内核不支持安全分叉，已拒绝在原会话重放内容审核错误`)
+          const dialog = openContentRiskRecoveryUnavailable()
+          await waitForDialog(dialog)
+          return
+        }
+        const dialog = openContentRiskRecoveryConfirmation({
+          safeSeq: recoveryBoundary,
+          excludedEventCount,
+        })
+        const confirmed = await waitForDialog(dialog)
+        if (!confirmed || controller.isDisposed() || sessionIdNow() !== sessionId)
+          return
+        outcome = await resumeComposer({
+          sessionId,
+          recovery: {
+            atSeq: recoveryBoundary,
+            sessions: { fork: options => fork.call(sessions, options) },
+            navigation: { open: childId => adapter.openSession(childId) },
+          },
+        })
+      }
+      if (!outcome.ok)
+        console.warn(`[${PLUGIN_ID}] 会话继续失败: ${outcome.error ?? 'unknown'}`)
+    }
+    catch (error) {
+      console.warn(`[${PLUGIN_ID}] 会话继续失败: ${error instanceof Error ? error.message : String(error)}`)
+    }
+    finally {
+      pending = false
       reconcile()
     }
   }
 
   controller.add(sessionsList.subscribe(refresh))
   controller.add(ctx.locale.subscribe(() => {
-    if (patch !== undefined)
-      paintResumeIcon(patch.button, resumeLabel())
+    if (patch !== undefined) {
+      const entries = binding?.eventSource?.getSnapshot?.().entries
+      patch.label = resumeLabel(entries)
+      paintResumeIcon(patch.button, patch.label)
+    }
   }))
+  controller.add(() => {
+    const close = closeDialog
+    closeDialog = undefined
+    close?.()
+  })
   controller.add(unwatch)
   controller.listen('click', (event) => {
     if (patch === undefined)
