@@ -1,10 +1,4 @@
-
-
-<p align="center">
-  <a href="https://github.com/dsh-tauri/deepseek-harness-desktop">
-    <img src="https://socialify.git.ci/dsh-tauri/deepseek-harness-desktop/image?custom_description=DeepSeek+Harness+Tauri+%E6%A1%8C%E9%9D%A2%E7%89%88+%7C+Small+installer%2C+zero+environment+setup%2C+preset+plugins%2C+Windows+%2F+macOS+%2F+Linux.&custom_language=Rust&description=1&font=Bitter&forks=1&issues=1&language=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2Fdsh-tauri%2Fdeepseek-harness-desktop%2F73e89bbe8430896cb9c989f96c083cf74aa75de6%2Fpublic%2Fdeepseek-harness-desktop-tauri.svg&name=1&owner=1&pattern=Circuit+Board&pulls=1&stargazers=1&theme=Dark" alt="deepseek-harness-desktop" width="640" height="320" />
-  </a>
-</p>
+![deepseek-harness-desktop](https://socialify.git.ci/dsh-tauri/deepseek-harness-desktop/image?custom_description=DeepSeek+Harness+Tauri+%E6%A1%8C%E9%9D%A2%E7%89%88+%7C+Small+installer%2C+zero+environment+setup%2C+preset+plugins%2C+Windows+%2F+macOS+%2F+Linux.&custom_language=Rust&description=1&font=Bitter&forks=1&issues=1&language=1&logo=https%3A%2F%2Fraw.githubusercontent.com%2Fdsh-tauri%2Fdeepseek-harness-desktop%2F73e89bbe8430896cb9c989f96c083cf74aa75de6%2Fpublic%2Fdeepseek-harness-desktop-tauri.svg&name=1&owner=1&pattern=Circuit+Board&pulls=1&stargazers=1&theme=Dark)
 
 <h1 align="center">DeepSeek Harness 桌面版</h1>
 
