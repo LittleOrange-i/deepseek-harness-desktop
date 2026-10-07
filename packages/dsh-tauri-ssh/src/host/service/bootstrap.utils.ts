@@ -5,7 +5,7 @@ import { Buffer } from 'node:buffer'
 import { readFileSync } from 'node:fs'
 import { messageOf } from '../../shared/error'
 import { DEFAULT_REMOTE_PROFILE, REMOTE_ROOT } from '../config/constants'
-import { assetMatrixFor, dshNpmTarballUrls, dshZipDownloadUrls, NODE_VERSION, nodeDownloadUrls, nodeShasumUrls, parsePlatform, PNPM_SHA256, PNPM_VERSION, pnpmDownloadUrls } from '../utils/assets'
+import { assetMatrixFor, dshNpmTarballUrls, dshZipDownloadUrls, NODE_SHASUMS256_SHA256, NODE_VERSION, nodeDownloadUrls, nodeShasumUrls, parsePlatform, PNPM_SHA256, PNPM_VERSION, pnpmDownloadUrls } from '../utils/assets'
 import { clientUrlsFromBootHtml, looksLikePluginBundle } from '../utils/boot-html'
 import { shQuote } from '../utils/shell'
 import { listGithubAssets, listGithubReleases, npmDistMetadata, parseGitHubRepo, pickReleaseTag, pkgRepoOf } from '../utils/version'
@@ -110,6 +110,7 @@ export async function planRemoteInstall(
   const node = {
     urls: nodeDownloadUrls(os, arch),
     shasumUrls: nodeShasumUrls(),
+    shasumSha256: NODE_SHASUMS256_SHA256,
     filename: matrix.nodeFilename,
     version: NODE_VERSION,
   }
@@ -287,8 +288,9 @@ export function buildInstallScript(plan: RemoteInstallPlan): string {
     '    fi',
     '  fi',
     '  if [ -z "$_got" ]; then',
-    '    log verify "警告: 远端缺少摘要工具，跳过校验 $_name"',
-    '    return 0',
+    // 跳过校验等于让镜像同时决定运行时和它的校验依据，这里必须失败而不是放行。
+    '    log failed "REMOTE_INSTALL_NO_DIGEST_TOOL: 远端缺少可用的摘要工具（sha256sum/shasum），无法校验 $_name"',
+    '    exit 14',
     '  fi',
     '  if [ "$_got" != "$_hex" ]; then',
     '    log verify "校验不通过: $_name (want sha$_algo:$_hex, got $_got)"',
@@ -328,7 +330,7 @@ export function buildInstallScript(plan: RemoteInstallPlan): string {
     '  log install "node 已就绪: $("$ROOT/runtime/bin/node" --version 2>/dev/null || echo installed)"',
     'else',
     `  log download "node ${plan.node.version}"`,
-    `  fetch "$TMP/SHASUMS256.txt" ${quoteUrls(plan.node.shasumUrls)}`,
+    `  fetch_verified "$TMP/SHASUMS256.txt" "sha256:${plan.node.shasumSha256}" "SHASUMS256.txt" ${quoteUrls(plan.node.shasumUrls)}`,
     `  _want="$(grep " ${plan.node.filename}\$" "$TMP/SHASUMS256.txt" | head -n 1 | tr -d '\\r' | sed 's/^ *//' | cut -d' ' -f1)"`,
     `  fetch_verified "$TMP/node.tar.gz" "\$_want" "${plan.node.filename}" ${quoteUrls(plan.node.urls)}`,
     '  rm -rf "$ROOT/runtime.new"',
